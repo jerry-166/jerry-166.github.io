@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 静态导出配置（未来可用于静态部署）
-  output: 'standalone',
+  // GitHub Pages 部署配置
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
 }
 
 module.exports = nextConfig

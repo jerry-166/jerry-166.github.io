@@ -17,6 +17,6 @@ export const navLinks = [
 
 // 个人链接
 export const socialLinks = {
-  github: 'https://github.com',
-  email: 'jerry@example.com',
+  github: 'https://github.com/jerry-166',
+  email: '2132049351@qq.com',
 }

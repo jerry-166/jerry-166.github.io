@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+/* 代码高亮主题 - 适配古风配色（类似 GitHub Light） */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css');
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 滚动条宽度 */
+    scrollbar-width: thin;
+    scrollbar-color: #a8b5a0 #f5f3ef;
+  }
+
+  /* WebKit 浏览器滚动条样式 */
+  html::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* 滚动条轨道 */
+  html::-webkit-scrollbar-track {
+    @apply bg-rice rounded-sm;
+  }
+
+  /* 滚动条滑块 */
+  html::-webkit-scrollbar-thumb {
+    @apply bg-bamboo rounded-sm transition-colors;
+  }
+
+  /* 滚动条滑块 hover 效果 */
+  html::-webkit-scrollbar-thumb:hover {
+    @apply bg-bamboo-dark;
+  }
+
+  body {
+    @apply bg-rice-light text-ink font-sans;
+    font-family: 'Inter', 'Noto Serif SC', system-ui, sans-serif;
+  }
+
+  /* 古风文章内容样式 */
+  .prose-classic {
+    @apply font-zhserif text-lg leading-relaxed text-ink-dark;
+    font-family: 'Noto Serif SC', Georgia, serif;
+  }
+
+  .prose-classic h1 {
+    @apply text-2xl md:text-3xl font-semibold mb-6 mt-10 text-ink-dark;
+  }
+
+  .prose-classic h2 {
+    @apply text-xl md:text-2xl font-medium mb-4 mt-8 text-ink-dark;
+  }
+
+  .prose-classic h3 {
+    @apply text-lg md:text-xl font-medium mb-3 mt-6 text-ink-dark;
+  }
+
+  .prose-classic p {
+    @apply mb-5 text-ink;
+  }
+
+  .prose-classic ul {
+    @apply list-disc list-inside mb-5 space-y-2;
+  }
+
+  .prose-classic ol {
+    @apply list-decimal list-inside mb-5 space-y-2;
+  }
+
+  .prose-classic li {
+    @apply text-ink;
+  }
+
+  .prose-classic blockquote {
+    @apply border-l-2 border-bamboo pl-4 py-2 my-6 bg-mist-light/50 italic text-ink-dark;
+  }
+
+  .prose-classic code {
+    @apply bg-mist px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .prose-classic pre {
+    @apply bg-[#f6f5f3] p-4 md:p-5 rounded-lg overflow-x-auto my-6 border border-mist/40;
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .prose-classic pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  /* 代码块语言标签 */
+  .prose-classic pre {
+    position: relative;
+  }
+
+  /* 代码块右上角圆点装饰（仿古卷纸） */
+  .prose-classic pre::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    background: #c4b8a8;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+
+  .prose-classic a {
+    @apply text-bamboo-dark underline underline-offset-2 hover:text-bamboo transition-colors;
+  }
+
+  .prose-classic hr {
+    @apply border-mist my-8;
+  }
+
+  .prose-classic strong {
+    @apply font-semibold text-ink-dark;
+  }
+}
+
+@layer components {
+  /* 装饰性分隔线 - 古风云纹效果 */
+  .divider {
+    @apply flex items-center justify-center my-12;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent via-mist to-transparent;
+  }
+
+  .divider-text {
+    @apply px-4 text-mist text-sm tracking-wide-custom;
+  }
+
+  /* 古风卡片 */
+  .card-classic {
+    @apply bg-rice p-6 md:p-8 rounded-sm border border-mist/50 
+           transition-all duration-300;
+  }
+
+  .card-classic:hover {
+    @apply border-bamboo-light shadow-sm;
+  }
+
+  /* 古风按钮 */
+  .btn-classic {
+    @apply px-5 py-2 text-sm tracking-wide-custom
+           border border-ink/20 rounded-sm
+           transition-all duration-300
+           hover:border-ink/40 hover:bg-rice-warm;
+  }
+}
+
+@layer utilities {
+  /* 淡墨渐变 */
+  .bg-ink-gradient {
+    @apply bg-gradient-to-b from-rice-light to-rice;
+  }
+
+  /* 水墨晕染效果 */
+  .ink-wash {
+    background: radial-gradient(ellipse at top, rgba(168, 181, 160, 0.1) 0%, transparent 60%);
+  }
+}

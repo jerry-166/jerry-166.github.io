@@ -125,6 +125,37 @@
   .prose-classic strong {
     @apply font-semibold text-ink-dark;
   }
+
+  /* 表格样式 */
+  .prose-classic table {
+    @apply w-full border-collapse my-6 text-sm;
+  }
+
+  .prose-classic thead {
+    @apply bg-mist/30;
+  }
+
+  .prose-classic th {
+    @apply border border-mist px-4 py-2.5 text-left font-medium text-ink-dark;
+  }
+
+  .prose-classic td {
+    @apply border border-mist px-4 py-2.5 text-ink;
+  }
+
+  .prose-classic tbody tr:nth-child(even) {
+    @apply bg-mist/10;
+  }
+
+  .prose-classic tbody tr:hover {
+    @apply bg-mist/20 transition-colors;
+  }
+
+  /* 图片样式 */
+  .prose-classic img {
+    @apply max-w-full h-auto rounded-sm my-6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
 }
 
 @layer components {

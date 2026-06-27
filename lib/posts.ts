@@ -124,8 +124,28 @@ export async function markdownToHtml(markdown: string) {
   const result = await remark()
     .use(remarkRehype)
     .use(rehypeSlug)
+    .use(rehypeExternalLinks)  // 必须在 rehypeStringify 之前
     .use(rehypeHighlight, { detect: true })
     .use(rehypeStringify)
     .process(markdown)
   return result.toString()
+}
+
+// 自定义 rehype 插件：给外部链接添加 target="_blank"
+function rehypeExternalLinks() {
+  return (tree: any) => {
+    function visit(node: any) {
+      if (node.type === 'element' && node.tagName === 'a' && node.properties) {
+        const href = node.properties.href
+        if (typeof href === 'string' && (href.startsWith('http://') || href.startsWith('https://'))) {
+          node.properties.target = '_blank'
+          node.properties.rel = 'noopener noreferrer'
+        }
+      }
+      if (node.children) {
+        node.children.forEach(visit)
+      }
+    }
+    tree.children?.forEach(visit)
+  }
 }

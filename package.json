@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "publish": "python .workbuddy/skills/blog-publish/scripts/publish.py",
+    "publish:dry": "python .workbuddy/skills/blog-publish/scripts/publish.py --dry-run"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

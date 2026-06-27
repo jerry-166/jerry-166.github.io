@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 import { remark } from 'remark'
+import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
@@ -122,6 +123,7 @@ export function estimateReadingTime(content: string): string {
 // 将 Markdown 转换为 HTML（带语法高亮和标题锚点）
 export async function markdownToHtml(markdown: string) {
   const result = await remark()
+    .use(remarkGfm)          // GitHub Flavored Markdown：表格、删除线、任务列表等
     .use(remarkRehype)
     .use(rehypeSlug)
     .use(rehypeExternalLinks)  // 必须在 rehypeStringify 之前

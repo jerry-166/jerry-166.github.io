@@ -139,8 +139,8 @@ export default async function PostPage({ params }: PageProps) {
           </article>
 
           {/* 侧边目录 - 桌面端显示 */}
-          <aside className="hidden lg:block w-56 shrink-0">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto toc-scroll">
+          <aside className="hidden lg:block w-72 shrink-0">
+            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto toc-scroll pr-2">
               <TableOfContents />
             </div>
           </aside>

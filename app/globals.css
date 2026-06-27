@@ -204,18 +204,22 @@
     background: radial-gradient(ellipse at top, rgba(168, 181, 160, 0.1) 0%, transparent 60%);
   }
 
-  /* 目录侧边栏滚动条 */
+  /* 目录侧边栏滚动条 - 极简细线 */
+  .toc-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  }
   .toc-scroll::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
   .toc-scroll::-webkit-scrollbar-track {
     background: transparent;
   }
   .toc-scroll::-webkit-scrollbar-thumb {
-    background: #d4cfc4;
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
   }
   .toc-scroll::-webkit-scrollbar-thumb:hover {
-    background: #b8b0a0;
+    background: rgba(0, 0, 0, 0.22);
   }
 }

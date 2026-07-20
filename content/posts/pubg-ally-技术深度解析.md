@@ -1049,7 +1049,3 @@ Ally的核心竞争力不是Mistral模型，而是**人设设计**——专业�
 - [NVIDIA ACE与Co-Playable Characters革命](https://design-drifter.com/en/posts/2025/10/22/nvidia-ace-co-playable-characters-ai-gaming-revolution-2025/) - Design Drifter - 2025-10-22
 - [NVIDIA ACE for Games产品页](https://developer.nvidia.com/ace-for-games) - NVIDIA官方
 - [Reddit社区讨论](https://www.neogaf.com/threads/from-ai-bosses-to-ai-teammates-nvidia-ace-krafton-introduces-pubg-ally-first-co-playable-character.1679389/) - NeoGAF - 2025-01-08
-
----
-
-> 本内容由 Coze AI 生成，请遵循相关法律法规及《人工智能生成合成内容标识办法》使用与传播。

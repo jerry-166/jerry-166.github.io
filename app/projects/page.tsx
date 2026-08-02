@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: `${siteConfig.author} 的 GitHub 项目作品集`,
 }
 
+// ISR: 每 1 小时自动重新拉取 GitHub 仓库列表，新项目自动同步
+export const revalidate = 3600
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('zh-CN', {
     year: 'numeric',

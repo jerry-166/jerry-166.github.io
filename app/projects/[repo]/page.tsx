@@ -10,6 +10,9 @@ interface ProjectDetailPageProps {
   params: Promise<{ repo: string }>
 }
 
+// ISR: 每 1 小时自动重新拉取 README，仓库内容更新自动同步
+export const revalidate = 3600
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('zh-CN', {
     year: 'numeric',

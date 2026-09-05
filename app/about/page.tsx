@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import Layout from '@/components/Layout'
 import { siteConfig, socialLinks } from '@/lib/config'
 
@@ -29,12 +30,14 @@ export default function AboutPage() {
             <h2 className="text-lg font-medium text-ink-dark mb-4">你好</h2>
             <div className="prose-classic text-base">
               <p>
-                我是 Jerry，目前正在学习 AI 相关技术，主要方向是 RAG（检索增强生成）
-                和 Agent（智能体）开发。
+                我是 Jerry，一名计算机专业在读的学生，主攻
+                <strong>后端开发</strong>与<strong>AI 应用开发</strong>方向，
+                专注于 RAG（检索增强生成）与 Agent（智能体）的工程实践。
               </p>
               <p>
                 这个博客用来记录我的学习笔记、项目经历和思考感悟。
-                如果能对你有一点点帮助，那就再好不过了。
+                我把学习前端时整理的一整套教程手册也放在了这里，
+                希望能对你有一点点帮助。
               </p>
             </div>
           </section>
@@ -42,46 +45,88 @@ export default function AboutPage() {
           {/* 技能 */}
           <section className="card-classic">
             <h2 className="text-lg font-medium text-ink-dark mb-4">技术栈</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                'Python',
-                'LangChain',
-                'RAG',
-                'LLM',
-                'Next.js',
-                'TypeScript',
-                'Pinecone',
-                'Milvus',
-                'FastAPI',
-              ].map((skill) => (
-                <div 
-                  key={skill}
-                  className="px-3 py-2 bg-mist/30 text-sm text-ink/70 rounded-sm text-center"
-                >
-                  {skill}
+            {[
+              {
+                label: '语言与框架',
+                skills: ['Python', 'FastAPI', 'Pydantic', 'Java', 'Spring Boot'],
+              },
+              {
+                label: '数据与中间件',
+                skills: ['MySQL', 'Redis', 'MongoDB', 'Milvus'],
+              },
+              {
+                label: 'AI 应用',
+                skills: ['RAG', 'Agentic RAG', 'LangChain', 'LangGraph', 'Function Calling', 'MCP'],
+              },
+            ].map((group) => (
+              <div key={group.label} className="mb-5 last:mb-0">
+                <h3 className="text-sm text-ink/50 mb-2">{group.label}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {group.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-3 py-1.5 bg-mist/30 text-sm text-ink/70 rounded-sm"
+                    >
+                      {skill}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
+          </section>
+
+          {/* 教程系列 */}
+          <section className="card-classic">
+            <h2 className="text-lg font-medium text-ink-dark mb-4">前端教程系列</h2>
+            <div className="prose-classic text-base">
+              <p>
+                从零开始学前端时，我整理了一套完整的教程手册：
+                学习路线、概念与最小代码手册（三册）、以及 AI 时代知识金字塔，
+                全部支持在线交互演示。
+              </p>
             </div>
+            <Link
+              href="/projects#books"
+              className="btn-classic inline-block mt-4 text-sm"
+            >
+              前往阅读 →
+            </Link>
           </section>
 
           {/* 项目 */}
           <section className="card-classic">
             <h2 className="text-lg font-medium text-ink-dark mb-4">项目经历</h2>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
                 <h3 className="text-base font-medium text-ink-dark mb-1">
-                  Mini-OpenClaw
+                  IntelliKnowledge-RAG · 个人知识库
                 </h3>
                 <p className="text-sm text-ink/70">
-                  一个 AI Agent 项目，集成多种大语言模型能力。
+                  基于 Agentic RAG 的个人知识库系统，支持文档问答与智能检索。
                 </p>
               </div>
               <div>
                 <h3 className="text-base font-medium text-ink-dark mb-1">
-                  RAG 知识库系统
+                  mini-openclew · Agent 基础设施
                 </h3>
                 <p className="text-sm text-ink/70">
-                  基于向量数据库的检索增强生成系统，支持文档问答。
+                  实现 Skill 机制、本地 Session 管理与数据库存储的迷你 Agent 框架。
+                </p>
+              </div>
+              <div>
+                <h3 className="text-base font-medium text-ink-dark mb-1">
+                  chat2work · 智能协作工具
+                </h3>
+                <p className="text-sm text-ink/70">
+                  集成多种大语言模型能力的 AI Agent 应用。
+                </p>
+              </div>
+              <div>
+                <h3 className="text-base font-medium text-ink-dark mb-1">
+                  gold-price-briefing · 每日金价资讯系统
+                </h3>
+                <p className="text-sm text-ink/70">
+                  自动化早报生成、教学内容与价格预警的完整资讯流水线。
                 </p>
               </div>
             </div>
@@ -89,15 +134,15 @@ export default function AboutPage() {
 
           {/* 目标 */}
           <section className="card-classic">
-            <h2 className="text-lg font-medium text-ink-dark mb-4">秋招春招准备</h2>
+            <h2 className="text-lg font-medium text-ink-dark mb-4">秋招准备</h2>
             <div className="prose-classic text-base">
               <p>
-                正在积极准备 2024-2025 年的秋招和春招，目标岗位是 AI 算法工程师、
-                大模型应用开发等方向。
+                正在积极备战秋招，目标岗位是
+                <strong>后端开发工程师</strong>与<strong>大模型应用开发</strong>方向。
               </p>
               <p>
-                学习内容包括：大模型原理、RAG 技术、Agent 设计模式、
-                分布式训练等核心知识。
+                备考主线：计算机基础（数据结构 / 操作系统 / 网络 / MySQL / Redis）、
+                大模型原理、RAG 技术、Agent 设计模式，兼顾项目深挖与八股复盘。
               </p>
             </div>
           </section>

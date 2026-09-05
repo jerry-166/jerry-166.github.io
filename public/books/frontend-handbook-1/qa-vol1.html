@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第一册 · 答疑手册（Vol.1 QA）</title>
+<style>
+/* ================= 字体（与主册共用 _shared 目录） ================= */
+@font-face { font-family: "Outfit"; src: url("./_shared/fonts/Outfit-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Outfit"; src: url("./_shared/fonts/Outfit-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("./_shared/fonts/JetBrainsMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("./_shared/fonts/JetBrainsMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+
+/* ================= 设计变量（与主册一致） ================= */
+:root {
+  --bg: #F7F7FA;
+  --bg2: #FFFFFF;
+  --ink: #17172B;
+  --muted: #63637A;
+  --rule: #E3E3EE;
+  --accent: #4B3FE3;
+  --accent2: #D97706;
+  --green: #0E9F6E;
+  --red: #D93025;
+  --accent-soft: #EFEFFB;
+  --code-bg: #1E1E32;
+  --code-ink: #E8E8F4;
+  --shadow: 0 1px 3px rgba(23,23,43,.05), 0 8px 24px rgba(23,23,43,.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: "Outfit", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-size: 16px; line-height: 1.8; -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+
+/* ================= Hero ================= */
+.hero { padding: 56px 0 8px; }
+.kicker { font-size: 13px; font-weight: 700; letter-spacing: .18em; color: var(--accent); text-transform: uppercase; margin-bottom: 14px; }
+h1 { font-size: clamp(28px, 4.5vw, 42px); font-weight: 700; line-height: 1.25; letter-spacing: -.01em; margin-bottom: 16px; }
+.subtitle { font-size: 16.5px; color: var(--muted); max-width: 780px; margin-bottom: 22px; }
+.meta { font-size: 13px; color: var(--muted); font-family: "JetBrains Mono", monospace; margin: 16px 0 10px; }
+
+nav.toc { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 0 6px; border-top: 1px solid var(--rule); margin-top: 30px; }
+nav.toc a { font-size: 13.5px; color: var(--muted); text-decoration: none; padding: 5px 14px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg2); transition: all .15s; }
+nav.toc a:hover { color: var(--accent); border-color: var(--accent); }
+nav.toc a b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-weight: 700; margin-right: 4px; }
+
+/* ================= 章节 ================= */
+section.chapter { margin-top: 68px; }
+.chapter-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; margin-bottom: 8px; }
+.chapter-head .num { font-family: "JetBrains Mono", monospace; font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: .06em; }
+h2 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+.chapter-lead { font-size: 15.5px; color: var(--muted); margin: 14px 0 22px; max-width: 820px; }
+h3 { font-size: 19px; font-weight: 700; margin: 38px 0 6px; padding-top: 10px; }
+p { margin-bottom: 12px; }
+strong { font-weight: 700; }
+ul.plain { padding-left: 22px; margin-bottom: 12px; }
+ul.plain li { margin-bottom: 6px; }
+p code, li code, td code, h4 code { font-family: "JetBrains Mono", monospace; font-size: .86em; background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; color: var(--accent); }
+
+/* ================= 问题卡 ================= */
+.q { background: var(--bg2); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 10px; padding: 18px 22px; margin: 18px 0; box-shadow: var(--shadow); }
+.q .q-title { font-size: 16.5px; font-weight: 700; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.q .q-quote { font-size: 13.5px; color: var(--muted); background: var(--bg); border: 1px dashed var(--rule); border-radius: 8px; padding: 8px 14px; margin: 10px 0; }
+.q .q-quote::before { content: "你的原话 / 原答"; display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--accent2); margin-bottom: 2px; }
+.q p { margin-bottom: 10px; }
+.q ul { padding-left: 22px; margin-bottom: 10px; }
+.q ul li { margin-bottom: 5px; }
+
+/* 判定章 */
+.v { font-size: 11px; font-weight: 700; border-radius: 5px; padding: 2px 9px; letter-spacing: .04em; white-space: nowrap; }
+.v-ok   { background: #E6F7EF; color: var(--green); }
+.v-no   { background: #FDECEA; color: var(--red); }
+.v-half { background: #FDF4E6; color: #B45309; }
+.v-new  { background: var(--accent-soft); color: var(--accent); }
+
+/* ================= 代码块（与主册一致） ================= */
+.codebox { position: relative; margin: 12px 0 18px; }
+.codebox .cb-head { display: flex; align-items: center; justify-content: space-between; background: #2A2A44; border: 1px solid #3A3A55; border-bottom: none; border-radius: 10px 10px 0 0; padding: 7px 14px; }
+.codebox .cb-label { font-family: "JetBrains Mono", monospace; font-size: 12px; color: #A8A8C8; }
+.codebox .cb-btn { font-family: "JetBrains Mono", monospace; font-size: 11.5px; font-weight: 700; color: #E8E8F4; background: #3A3A55; border: none; border-radius: 6px; padding: 3px 12px; cursor: pointer; transition: background .15s; }
+.codebox .cb-btn:hover { background: var(--accent); }
+.codebox pre { background: var(--code-bg); border: 1px solid #3A3A55; border-radius: 0 0 10px 10px; padding: 16px 18px; overflow-x: auto; }
+.codebox code { font-family: "JetBrains Mono", monospace; font-size: 13.5px; line-height: 1.7; color: var(--code-ink); white-space: pre; }
+.cmt { color: #7C7C9E; }
+.kw { color: #C792EA; }
+.str { color: #C3E88D; }
+.fn { color: #82AAFF; }
+.numc { color: #F78C6C; }
+
+/* ================= 提示框 ================= */
+.tip { background: var(--bg2); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 10px; padding: 13px 20px; margin: 14px 0; box-shadow: var(--shadow); }
+.tip .tip-label { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .14em; margin-bottom: 4px; }
+.tip p { font-size: 14.5px; margin: 0; }
+.tip.warn { border-left-color: var(--accent2); }
+.tip.warn .tip-label { color: var(--accent2); }
+.tip.backend { border-left-color: var(--green); }
+.tip.backend .tip-label { color: var(--green); }
+
+/* ================= 表格 ================= */
+.table-wrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--rule); border-radius: 10px; background: var(--bg2); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 480px; }
+thead th { text-align: left; font-size: 12.5px; letter-spacing: .04em; color: var(--ink); border-bottom: 2px solid var(--ink); padding: 10px 13px; background: var(--bg2); font-weight: 700; white-space: nowrap; }
+tbody td { padding: 9px 13px; border-bottom: 1px solid var(--rule); vertical-align: top; line-height: 1.6; }
+tbody tr:last-child td { border-bottom: none; }
+td .yes { color: var(--green); font-weight: 700; }
+td .no  { color: var(--red); font-weight: 700; }
+
+/* ================= 交互演示面板 ================= */
+.demo { background: var(--bg2); border: 1px solid var(--accent); border-radius: 12px; padding: 16px 20px; margin: 14px 0 20px; box-shadow: var(--shadow); }
+.demo-head { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .06em; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.demo-stage { border: 2px dashed #B9B3F5; border-radius: 10px; padding: 14px; background: var(--bg); }
+.demo-controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 12px 0 4px; font-size: 13.5px; }
+.demo-controls label { display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
+.demo-controls input[type=range] { accent-color: var(--accent); width: 140px; }
+.demo-controls input[type=text] { font-family: "JetBrains Mono", monospace; font-size: 13px; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 8px; width: 110px; }
+.demo-controls select { font-size: 13px; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 8px; background: #fff; }
+.demo-controls .val { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--accent); font-weight: 700; }
+.demo-readout { font-family: "JetBrains Mono", monospace; font-size: 12.5px; background: var(--accent-soft); color: var(--ink); border-radius: 8px; padding: 8px 12px; margin-top: 10px; white-space: pre-wrap; line-height: 1.7; }
+.mini-console { font-family: "JetBrains Mono", monospace; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 10px 14px; min-height: 22px; margin-top: 10px; white-space: pre-wrap; line-height: 1.8; }
+.mini-console .mc-tag { color: #82AAFF; }
+.btn { font-size: 13px; font-weight: 700; color: #fff; background: var(--accent); border: none; border-radius: 7px; padding: 6px 16px; cursor: pointer; transition: background .15s; }
+.btn:hover { background: #3C2ECA; }
+.btn.ghost { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+.btn.ghost:hover { background: var(--accent-soft); }
+.btn.warn { background: var(--accent2); }
+.btn.warn:hover { background: #B45309; }
+
+/* 演示用的通用小盒子 */
+.dbox { background: var(--accent); color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 14px; text-align: center; }
+.dbox.alt { background: var(--accent2); }
+.dbox.gray { background: #63637A; }
+
+/* ============ 事件循环模拟器专用 ============ */
+.ev-wrap { display: grid; grid-template-columns: 1.25fr 1.1fr .85fr; gap: 10px; margin-top: 10px; }
+.ev-col { background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; padding: 10px; }
+.ev-col h5 { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .08em; margin-bottom: 8px; }
+.ev-stack, .ev-queue { min-height: 120px; display: flex; flex-direction: column; gap: 6px; }
+.ev-chip { font-family: "JetBrains Mono", monospace; font-size: 12px; background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 5px 8px; text-align: center; transition: all .2s; }
+.ev-chip.micro { border-color: var(--green); color: var(--green); }
+.ev-chip.macro { border-color: var(--accent2); color: var(--accent2); }
+.ev-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(1.04); }
+.ev-phase { font-size: 13.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 8px 14px; margin-top: 10px; min-height: 20px; }
+.ev-out { font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2; min-height: 120px; }
+.ev-out span { display: inline-block; background: var(--code-bg); color: var(--code-ink); border-radius: 5px; padding: 1px 8px; margin: 2px; }
+.ev-code { font-family: "JetBrains Mono", monospace; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 12px 16px; line-height: 1.9; white-space: pre; overflow-x: auto; }
+.ev-code .hl { background: #3C2ECA; border-radius: 4px; padding: 0 4px; }
+
+/* ============ z-index 演示专用 ============ */
+.zi-stage { position: relative; height: 200px; }
+.zi-card { position: absolute; width: 210px; height: 120px; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #fff; }
+.zi-card h6 { font-size: 13px; margin-bottom: 2px; }
+.zi-card small { font-family: "JetBrains Mono", monospace; font-size: 11px; opacity: .85; display: block; }
+.zi-badge { position: absolute; right: -14px; top: -14px; width: 44px; height: 44px; border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+
+/* ============ 单位演示专用 ============ */
+.unit-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.unit-card { background: #fff; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; }
+.unit-card .uc-label { font-size: 12px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+.unit-card .uc-val { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--accent); font-weight: 700; }
+
+/* ============ 冒泡演示专用 ============ */
+.bub-grand { background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 10px; padding: 18px; cursor: pointer; }
+.bub-parent { background: #FDF4E6; border: 2px solid var(--accent2); border-radius: 8px; padding: 16px; margin-top: 8px; cursor: pointer; }
+.bub-child { background: var(--accent); color: #fff; border-radius: 6px; padding: 10px 22px; display: inline-block; cursor: pointer; border: none; font-size: 14px; font-weight: 700; margin-top: 8px; }
+.bub-tag { font-size: 12px; font-weight: 700; font-family: "JetBrains Mono", monospace; }
+
+/* ============ grid 演示专用 ============ */
+.gd { display: grid; gap: 8px; background: var(--accent-soft); border-radius: 8px; padding: 8px; }
+.gd > div { background: var(--accent); color: #fff; border-radius: 6px; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 700; }
+.gd > div.alt { background: var(--accent2); }
+.gd > div.gray { background: #63637A; }
+
+/* ============ XSS 演示专用 ============ */
+.xss-banner { display: none; background: #FDECEA; border: 1px solid var(--red); color: var(--red); font-weight: 700; border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-top: 10px; }
+.xss-banner.show { display: block; }
+.xss-render { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; min-height: 52px; background: #fff; font-size: 14px; margin-top: 6px; word-break: break-all; }
+.xss-render b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+/* ============ flex 计算器专用 ============ */
+.fx-stage { background: var(--accent-soft); border-radius: 8px; padding: 8px; display: flex; gap: 8px; height: 56px; align-items: stretch; }
+.fx-item { background: var(--accent); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; font-size: 11.5px; flex-direction: column; gap: 2px; overflow: hidden; white-space: nowrap; }
+.fx-item span { font-size: 10px; opacity: .8; }
+.fx-item.b { background: var(--accent2); }
+.fx-item.c { background: #63637A; }
+.fx-steps { font-family: "JetBrains Mono", monospace; font-size: 12px; line-height: 1.9; color: var(--ink); background: #fff; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; margin-top: 10px; white-space: pre-wrap; }
+
+/* ============ 层叠徽章小卡 ============ */
+.ans-line { font-family: "JetBrains Mono", monospace; font-size: 13px; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 10px 14px; margin: 10px 0; white-space: pre-wrap; line-height: 1.9; }
+
+/* ============ inline-block 演示 ============ */
+.ibl-stage { font-size: 18px; line-height: 1.5; background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--rule); }
+.ibl-box { display: inline-block; background: var(--accent); color: #fff; border-radius: 6px; padding: 6px 12px; margin: 0 6px; }
+.ibl-box.sm { background: var(--accent2); padding: 2px 8px; }
+.ibl-box.empty { background: #63637A; width: 60px; height: 30px; }
+
+/* ============ 隐藏方式演示 ============ */
+.hid-row { display: flex; gap: 8px; align-items: stretch; margin: 8px 0; }
+.hid-box { flex: 1; background: var(--accent); color: #fff; border-radius: 8px; padding: 12px; text-align: center; font-size: 13px; cursor: pointer; user-select: none; }
+.hid-box.mid { background: var(--accent2); }
+.hid-box.flash { animation: hidflash .4s; }
+@keyframes hidflash { 0% { outline: 3px solid var(--red); } 100% { outline: 3px solid transparent; } }
+
+/* ============ 数组引用演示（F） ============ */
+.arr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.arr-card { background: #fff; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-family: "JetBrains Mono", monospace; font-size: 12px; line-height: 1.8; word-break: break-all; }
+.arr-card b { display: block; font-family: "Outfit", "PingFang SC", sans-serif; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.arr-card .hit { color: var(--red); font-weight: 700; }
+
+/* ============ 样式排查演示（H · 模拟 DevTools） ============ */
+.sp-wrap { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; margin-top: 8px; }
+.sp-stage { border: 2px dashed #B9B3F5; border-radius: 10px; padding: 14px; background: var(--bg); }
+.sp-panel { background: #202124; border-radius: 8px; overflow: hidden; align-self: start; }
+.sp-tab { background: #292A2D; color: #E8EAED; font-family: "JetBrains Mono", monospace; font-size: 11px; padding: 7px 12px; letter-spacing: .05em; }
+.sp-body { padding: 10px 14px; color: #E8EAED; font-family: "JetBrains Mono", monospace; font-size: 12px; line-height: 2; }
+.sp-rule { padding: 2px 6px; border-radius: 4px; transition: all .2s; }
+.sp-rule.win { outline: 1.5px solid #0E9F6E; background: rgba(14,159,110,.14); }
+.sp-rule.lose .sp-sel, .sp-rule.lose .sp-props { text-decoration: line-through; opacity: .5; }
+.sp-sel { color: #8AB4F8; }
+.sp-props { color: #FDD663; padding-left: 18px; }
+.sp-src { color: #9AA0A6; font-size: 11px; margin-left: 6px; }
+/* bug 现场的真实规则：第二条特异性(0,2,0) > 第一条(0,1,0)，蓝色赢——现场是真的 */
+.bug-box { color: #D93025; font-weight: 700; padding: 12px 16px; background: #fff; border: 1px solid var(--rule); border-radius: 8px; font-size: 14px; }
+.sp-stage .bug-box { color: #1A73E8; }
+.sp-stage .bug-box.fixed { color: #D93025; outline: 2px solid var(--green); }
+
+/* ================= 页脚 ================= */
+footer { margin-top: 72px; border-top: 2px solid var(--ink); padding: 26px 0 56px; }
+footer p.endnote { font-size: 14px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .unit-demo, .ev-wrap, .arr-grid, .sp-wrap { grid-template-columns: 1fr; }
+  h2 { font-size: 20px; }
+  .chapter-head { flex-wrap: wrap; }
+  .zi-stage { height: 340px; }
+  .zi-card { width: 200px; }
+}
+@media print {
+  nav.toc { display: none; }
+  section.chapter { page-break-before: always; }
+  .codebox .cb-btn { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 封面 ================= -->
+<header class="hero">
+  <div class="container">
+    <div class="kicker">Handbook Vol.1 · QA · 审阅反馈逐点解决</div>
+    <h1>第一册 · 答疑手册</h1>
+    <p class="subtitle">这本手册逐条解决你对《前端从 0 到 1 · 概念与最小代码手册（第一册）》的全部疑问：每个问题先给出判定（你答对了 / 记反了 / 需补充），再彻底讲透，能"看到"的一律做成可交互演示——优先级算分、margin 合并、单位、基线对齐、flex 三步分配法、z-index 层叠上下文、grid 二维、BFC、事件冒泡、XSS、事件循环，全部可以在本页直接动手玩。</p>
+
+    <p class="meta">FORMAT: 你的原话引用 → 判定 → 讲透 → 演示/代码 &nbsp;|&nbsp; 配套主册 frontend-handbook-1.html 使用</p>
+
+    <nav class="toc">
+      <a href="#qa2"><b>A</b>第 2 章 · HTML 五问</a>
+      <a href="#qa3"><b>B</b>第 3 章 · CSS 十问</a>
+      <a href="#qa3c"><b>C</b>第 3 章 · 自查批改</a>
+      <a href="#qa4"><b>D</b>第 4 章 · DOM 与事件</a>
+      <a href="#qa5"><b>E</b>第 5 章 · JS 核心</a>
+      <a href="#qa5c"><b>F</b>第 5 章 · 自查批改</a>
+      <a href="#qa6"><b>G</b>第 6 章 · 项目三问</a>
+      <a href="#qa7"><b>H</b>第 7 章 · 过关批改</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+<!-- ================= A 第 2 章 ================= -->
+<section class="chapter" id="qa2">
+  <div class="chapter-head"><span class="num">A</span><h2>第 2 章 · HTML 五问</h2></div>
+  <p class="chapter-lead">你的五道自查题：四道已经拿捏，一道（div vs section）是所有人的共同盲区。先解决它，再把另外四道补上"能加分的一句"。</p>
+
+  <div class="q">
+    <div class="q-title">Q1 · div 和 section 都能当盒子，什么时候用哪个？<span class="v v-new">重点讲透</span></div>
+    <p>主册说 section 是"自带含义的盒子"，行为上和 div 一模一样——所以你的困惑完全合理：<strong>既然长得一样，浏览器又不管，我凭什么要多想一步？</strong>答案是：语义化标签不是写给浏览器看的，是写给三种"读者"看的：<strong>读屏软件</strong>（视障用户靠它念出"这是一个区域标题"）、<strong>搜索引擎</strong>（理解哪些是正文主体）、<strong>半年后的你自己和同事</strong>（扫一眼结构就知道页面骨架）。</p>
+    <p>判定标准就一条，三问定夺：</p>
+    <ul>
+      <li><strong>这块内容有没有一个自己的主题？</strong>有，且通常配得上一个标题（h2/h3）→ 用 <code>section</code>；</li>
+      <li><strong>它是不是一篇"独立成篇、脱离页面也说得通"的内容？</strong>（一篇文章、一条评论、一张商品卡）→ 升级用 <code>article</code>；</li>
+      <li><strong>它只是"为了布局/分组/挂样式"才存在的？</strong>→ 用 <code>div</code>，没有心理负担。</li>
+    </ul>
+    <p>对应到你熟悉的场景：一篇博客的正文是 article，正文里的"评论区""相关推荐"是 section，而"把左边的图和右边的文字排成两栏"的那个壳，什么都不是，就是 div。主册那句"想不出该用什么标签时用 div，绝不算错"的完整含义是：<strong>语义化是加分项，不是纠错项</strong>——用 div 代码照样跑，用对了 section 是对读屏用户和 SEO 的善意。</p>
+    <div class="tip">
+      <div class="tip-label">一句话记忆</div>
+      <p><strong>有主题配标题 → section；独立成篇 → article；纯布局分组 → div。</strong>拿不准就 div，没有人会因此扣分。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q2–Q5 · 你已经答对的四道，各补一句"加分话"</div>
+    <p>你的回答：span 上色、alt 加载失败时显示、radio 靠同名 name 成组、id 唯一而 class 可多选——<span class="v v-ok">全部正确</span>。下面各补一个面试/实战的进阶点：</p>
+    <ul>
+      <li><strong>span 上色：</strong>span 是"行内的无意义盒子"，专门包一小段文字单独上样式。你在段落里写 <code>&lt;p&gt;今天&lt;span style="color:#D93025"&gt;限行尾号 3 和 8&lt;/span&gt;，注意绕行&lt;/p&gt;</code>——span 不打断文字流，这是它和 div（会强制换行感）的本质区别。</li>
+      <li><strong>alt：</strong>除了图挂了显示，它还是<strong>读屏软件念给视障用户听的内容</strong>，所以 alt 应该写"描述图片内容"而不是"图片1"。装饰性图片才允许 <code>alt=""</code>（明确告诉读屏：跳过我）。</li>
+      <li><strong>radio 同 name：</strong>补一个对偶知识点——checkbox 天然允许多选，<strong>不需要</strong>共用 name 也各自独立；radio 必须同名才互斥。表单提交时，被选中的 radio 的 <code>value</code> 会以 <code>name=value</code> 形式提交。</li>
+      <li><strong>id vs class：</strong>再补一层——一个元素可以<strong>同时挂多个 class</strong>（空格分隔：<code>class="card active"</code>），但 id 只能有一个；CSS 里 id 选择器权重 100 远高于 class 的 10（第 3 章展开），所以现代实践反而倾向"样式全挂 class，id 只留给 JS 精确查找"。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= B 第 3 章 ================= -->
+<section class="chapter" id="qa3">
+  <div class="chapter-head"><span class="num">B</span><h2>第 3 章 · CSS 十问</h2></div>
+  <p class="chapter-lead">你的问题集中在三处：优先级的正确心智模型、flex 三剑客（grow/shrink/basis）的分配算法、以及两个"看现象猜不到原理"的机制（inline-block 基线、z-index 层叠上下文）。另外点名了 grid 和 BFC。全部配可玩演示。</p>
+
+  <div class="q">
+    <div class="q-title">Q1 · 优先级：能理解成"从上到下依次覆盖、越接近内容优先级越高"吗？<span class="v v-half">方向对，机制错</span></div>
+    <div class="q-quote">我可不可以理解成它是一个从上到下的依次覆盖，或者说优先级依次变高？越接近这个内容，它的优先级越高……以及那几个规则不太懂，排查口诀我看 style 面板也没有被划掉什么的。</div>
+    <p>你的直觉"内联 &gt; ID &gt; 类"的排序是对的，但<strong>"越接近内容优先级越高"这个因果是错的</strong>——内联样式赢不是因为它"贴得近"，而是因为它<strong>算分高</strong>。机制必须说精确，因为它决定你会不会掉进一个著名陷阱：</p>
+    <ul>
+      <li><strong>规则一（算分）不是十进制加法，是三元组逐位比较。</strong>主册写"内联 1000 / id 100 / class 10 / 元素 1"是速记法，方便日常心算；但真实的比较方式是把一个选择器数成 <code>(id 数, class 数, 元素数)</code>，<strong>从左往右逐位比，左边大的直接赢</strong>。陷阱在这：<code>.a .b .c .d .e .f .g .h .i .j .k</code>（11 个类）vs <code>#one</code>（1 个 id）——按速记算是 110 &gt; 100，类赢？<strong>错！</strong>三元组是 (0,11,0) vs (1,0,0)，第一位 0 &lt; 1，id 赢。多少个 class 都堆不过一个 id，这就是"逐位比较"的含义。</li>
+      <li><strong>规则二（就近）的"近"是指源码顺序，不是距离。</strong>分数相同时，<strong>写在 CSS 文件后面</strong>的那条赢——是"文件的后面"，不是"离元素近"、"嵌套得深"、也不是"选择器里离标签名近"。你说的"从上到下依次覆盖"只在<strong>同分</strong>时才成立；分不同，顺序根本不参与比较（主册"玩起来"那题就是验证这个：p 挪到 .box p 下面，绿色不变）。</li>
+      <li><strong>规则三（!important）</strong>：跳过所有算分直接登顶，代价是"没人能管它了"——除了另一个 !important 再比谁靠后。所以它是调试的核武器、正式代码的坏味道。</li>
+    </ul>
+    <p>完整的一条其实是四级瀑布：<code>!important</code> → 内联 style → 选择器算分（三元组）→ 同分比源码顺序。浏览器对每个属性独立走这条瀑布，赢的那条的值生效，输的才被划掉。</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 1 · 优先级算分器（亲手验证"11 个类打不过 1 个 id"）</div>
+      <div class="demo-controls">
+        <label>选择器 A <input type="text" id="selA" value=".a .b .c .d .e .f .g .h .i .j .k"></label>
+        <label>VS</label>
+        <label>选择器 B <input type="text" id="selB" value="#one"></label>
+        <button class="btn" type="button" id="selGo">算分对比</button>
+      </div>
+      <div class="demo-readout" id="selOut">点「算分对比」看结果</div>
+      <p style="font-size:13.5px; color:var(--muted); margin-top:8px;">支持 #id、.类、标签、伪类 :hover（算 class）、伪元素 ::before（算元素）、[attr]（算 class）、组合符（空格 &gt; + ~）。试试：<code>#a .b p</code> vs <code>.x .y .z .w</code>。</p>
+    </div>
+
+    <p><strong>为什么你在 Styles 面板没看到划掉？</strong>因为划线只在"<strong>同一个元素、同一个属性，被多条规则同时命中</strong>"时才出现。复现步骤（用主册"选择器实验场"那页）：</p>
+    <ul>
+      <li>F12 → Elements → <strong>点选 .box 里面的那个 &lt;p&gt;</strong>（不是外面那个灰色的 p）；</li>
+      <li>Styles 面板会同时列出两条规则：<code>.box p { color: green }</code>（生效）和 <code>p { color: gray }</code>（<strong>被划掉</strong>）——两条都在争夺这个元素的 color，输的被划掉；</li>
+      <li>你之前看不到划线，多半是选中的元素<strong>只有一条规则命中它</strong>（比如外面那个普通 p，只有 p{color:gray} 命中，没有对手，当然没有划线）；</li>
+      <li>另外两种"划掉"很常见：浏览器默认样式（user agent stylesheet）被你的规则划掉——这是你赢了浏览器，正常；以及值写错时的黄色三角警告——那是<strong>非法值被丢弃</strong>，压根不参与打架。</li>
+    </ul>
+    <p>完整的"样式不生效排查路径"在第 H 部分（过关标准批改）里给你一张逐步清单——这是你第 7 章自查里明确说"不知道再看什么"的那条，放在 H 部分结合实战讲。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q2 · margin 上下相遇合并：为什么？<span class="v v-new">机制 + 边界</span></div>
+    <div class="q-quote">盒模型那块的主要问题，就是这个 margin 上下相遇会合并取较大值，然后它俩的间距就是最大值的，这个我测试了一下。</div>
+    <p>你测出的现象是对的：<strong>两个上下相邻的块级元素，上者的 margin-bottom 和下者的 margin-top 不相加，取较大者作为间距</strong>。但"为什么"值得讲透，因为规则有明确边界，知道了边界你才能预测它什么时候不发生：</p>
+    <ul>
+      <li><strong>为什么这么设计：</strong>margin 的语义是"我和别人之间至少保持的距离"，不是"我贡献的间距"。段落 P1 说"我下面要 16px"，P2 说"我上面要 24px"——两个人商量社交距离，取双方要求的较大值 24px，而不是叠成 40px。这是排版系统的传统（印刷排版就叫 margin collapse），CSS 继承了下来。</li>
+      <li><strong>只在三个条件下发生：</strong>① 上下方向（左右永不合并）② 普通文档流的块级盒子之间（<strong>flex/grid 子项之间永不合并</strong>；浮动、绝对定位元素不合并）③ 同一个 BFC 里相邻（下一问 BFC 展开）。</li>
+      <li><strong>三种合并场景：</strong>相邻兄弟（你测的这种，取 max）；<strong>父元素和第一个/最后一个子元素</strong>（子元素的 margin-top 会"穿透"没有边框/内边距的父元素，直接把父元素顶下去——九成"奇怪的间距"其实是这种）；空块自己上下 margin 合并。</li>
+      <li><strong>实用结论：</strong>现代开发里你几乎不用背这些——用了 flex 布局 + gap 就根本不会遇到合并（主册推荐 gap 替代 margin 互挤的原因）。真正要会的是：看到"间距比预期小"，第一反应检查是不是 margin 合并。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 2 · margin 合并实测（拖滑块，看实测间距）</div>
+      <div class="demo-controls">
+        <label>上盒子 margin-bottom <input type="range" id="mgA" min="0" max="60" value="40"> <span class="val" id="mgAv">40px</span></label>
+        <label>下盒子 margin-top <input type="range" id="mgB" min="0" max="60" value="20"> <span class="val" id="mgBv">20px</span></label>
+        <label><input type="checkbox" id="mgFlex"> 容器改成 display:flex（取消合并）</label>
+      </div>
+      <div class="demo-stage" id="mgStage" style="padding:16px;">
+        <div class="dbox" id="mgBox1">上盒子</div>
+        <div class="dbox alt" id="mgBox2">下盒子</div>
+      </div>
+      <div class="demo-readout" id="mgOut"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">勾选 flex 后你会看到间距变成两者<strong>之和</strong>——flex 子项的 margin 不合并。这就是"为什么现代布局遇不到这个问题"的实证。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q3 · 3.5 单位："我太不能理解"<span class="v v-new">换个讲法</span></div>
+    <div class="q-quote">3.5 单位那块我太不能理解。</div>
+    <p>单位难的根源：它们全是<strong>相对单位，但"相对谁"各不相同</strong>。表格记不住是因为没有锚点，下面给每个单位一个"人设"，然后你拖滑块亲眼看：</p>
+    <ul>
+      <li><strong>px · 定海神针</strong>：绝对单位，写多少是多少。边框、图标、小间距用——这些地方你<strong>不希望</strong>它跟着别的什么缩放。</li>
+      <li><strong>% · 看爹单位</strong>：相对<strong>父元素同方向</strong>的尺寸。<code>width: 50%</code> = 父宽度的一半。两个坑：① <code>height: 50%</code> 在父高度是 auto 时直接失效（爹都没有确定高度，50% 无从谈起）；② padding 和 margin 的百分比<strong>一律按父元素的"宽度"算</strong>，哪怕你写的是上下方向的 padding-top——历史遗留，记住即可。</li>
+      <li><strong>rem · 全站音量键</strong>：相对<strong>根元素 html 的字号</strong>（默认 16px），1rem = 16px，1.5rem = 24px。为什么存在：用户在浏览器设置里调大字号（视障用户常干），rem 跟着响应，px 无动于衷。全站缩放 = 只改 html 一个字号。</li>
+      <li><strong>em · 看自己单位</strong>：相对<strong>当前元素的字号</strong>。组件内部用（padding: 0.5em = 半个字的高，字号变大留白自动变大）。经典坑：嵌套时层层累乘——列表里套列表，每层 1.2em，三级就是 16→19.2→23px 越缩越大。</li>
+      <li><strong>vw / vh · 屏幕比例尺</strong>：视口（浏览器可视区域）宽/高的 1%。<code>height: 100vh</code> = 恰好一屏高，全屏首屏标配。</li>
+    </ul>
+    <div class="tip">
+      <div class="tip-label">选择直觉（够用了）</div>
+      <p>正文/间距用 rem（跟用户走）；边框小图标用 px（钉死）；宽度自适应容器用 % 或 fr；一屏高度用 vh。em 知道含义即可，少用。</p>
+    </div>
+
+    <div class="demo">
+      <div class="demo-head">演示 3 · 拖动根字号（html 的 font-size），看谁跟着动</div>
+      <div class="demo-controls">
+        <label>html { font-size: <input type="range" id="unitFs" min="10" max="28" value="16"> <span class="val" id="unitFsV">16px</span> }</label>
+      </div>
+      <div class="unit-demo">
+        <div class="unit-card"><div class="uc-label">font-size: 16px（钉死不动）</div><div id="uPx" style="font-size:16px;">我是 16px 文字</div><div class="uc-val" id="uPxV"></div></div>
+        <div class="unit-card"><div class="uc-label">font-size: 1rem（跟根字号走）</div><div id="uRem" style="font-size:1rem;">我是 1rem 文字</div><div class="uc-val" id="uRemV"></div></div>
+        <div class="unit-card"><div class="uc-label">em 嵌套累乘：1.2em × 3 层</div><div id="uEm"><span style="font-size:1.2em;">一级<span style="font-size:1.2em;">二级<span style="font-size:1.2em;">三级</span></span></span></div><div class="uc-val" id="uEmV"></div></div>
+        <div class="unit-card"><div class="uc-label">width: 30vw（跟屏幕宽走）</div><div id="uVw" style="width:30vw;background:var(--accent-soft);border-radius:6px;padding:4px 8px;font-size:12px;">30vw 宽的条</div><div class="uc-val" id="uVwV"></div></div>
+      </div>
+      <div class="demo-readout" id="unitOut"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">注意：本页其他文字都是 px 写死的，所以只有上面的演示卡片在变——这就是"rem 相对根、px 绝对"的直观版。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q4 · inline-block 同行但一高一低，怎么回事？<span class="v v-new">基线对齐</span></div>
+    <div class="q-quote">3.6 的 inline-block，我看见它可以放在同一行，但是位置又不对齐，一个偏上，一个偏下，这是怎么回事？</div>
+    <p>你撞上的是 inline 世界的一个隐藏规则：<strong>基线对齐（baseline）</strong>。机制一句话：<strong>凡是在一行里排队的东西（inline / inline-block），默认都按"文字基线"对齐</strong>——基线就是你写字时字母"坐"的那条隐形线（x 的底、j 的尾巴穿过它）。问题在于 inline-block 的基线怎么定：</p>
+    <ul>
+      <li>盒子<strong>里面有文字</strong> → 基线 = 最后一行文字的基线（和旁边文字对得很整齐）；</li>
+      <li>盒子<strong>里面没有文字</strong>（比如放图片、或者空盒子）→ 基线 = 盒子的<strong>下边缘</strong>（margin-box 的底）。</li>
+    </ul>
+    <p>于是一个经典错位出现了：同一行里，A 盒子有两行字、B 盒子只有一行字、C 是个空盒子——三个盒子都想把自己的"基线"对到行内那条公共基线上，结果 C 的整个底边贴着基线（看起来飘在半空），A 的第二行文字坐在基线上（第一行顶得很高），B 看起来居中偏上。<strong>不是 bug，是三个盒子在各自履行基线对齐。</strong></p>
+    <p>修复：给 inline-block 元素显式改对齐方式 <code>vertical-align: middle</code>（按中线对齐，最常用）或 <code>top</code>（顶边对齐，做卡片墙最整齐）。另一个现代解法：父容器直接 <code>display: flex; align-items: center</code>——flex 子项默认拉伸对齐，基线问题整个消失（这也是"flex 取代排队规则"的又一实例）。</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 4 · 基线错位与修复（切下面的对齐方式看效果）</div>
+      <div class="demo-controls">
+        <label><input type="radio" name="va" value="baseline" checked> vertical-align: baseline（默认）</label>
+        <label><input type="radio" name="va" value="middle"> middle（修复）</label>
+        <label><input type="radio" name="va" value="top"> top</label>
+        <label><input type="radio" name="va" value="bottom"> bottom</label>
+      </div>
+      <div class="ibl-stage" id="iblStage">
+        参考文字 xjg（x 坐在基线上，j 的尾巴穿过基线）<span class="ibl-box" id="iblA">我是两行<br>的盒子</span><span class="ibl-box sm" id="iblB">一行</span><span class="ibl-box empty" id="iblC"></span>后面的文字 xjg
+      </div>
+      <div class="demo-readout" id="iblOut"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q5 · "flex 开启后，display 的规则就被取代了"是什么意思？<span class="v v-half">要精确化</span></div>
+    <div class="q-quote">还有 Flex，它是自身布局是吧？它开启之后，display 的规则就被取代了？</div>
+    <p>主册这句话容易读出偏差，精确版是：<strong>flex 接管的是"孩子们怎么排队"，不是"孩子们是什么"。</strong>拆开说：</p>
+    <ul>
+      <li>你在父元素上写 <code>display: flex</code>，发生两件事：① 这个父元素自己变成一个块级的 flex 容器；② 它的<strong>所有直接子元素</strong>被强制变成 flex 子项——不管它们原来是 div（block）还是 span（inline）。</li>
+      <li>"取代"指的是：<strong>子项在父容器里怎么排队，不再由子项自己的 display 说了算</strong>。原来 div 独占一行、span 挨着排的"文档流规则"失效，改由 flex 容器的规则统一管理：沿主轴排、可伸可缩、用 gap 间隔。副作用还有一个好东西：flex 子项一律"块化"——<strong>span 做了 flex 子项后也能设宽高了</strong>。</li>
+      <li>但子项<strong>自己内部</strong>的 display 完全不变：一个 div 子项里面再放 p 和 span，p 还是独占一行——flex 只管一层（它的直接孩子），不隔代指挥。</li>
+      <li>"它是自身布局"的理解也要修正：flex 不是"自身布局"，是<strong>"父开关、子生效"</strong>的一套体系——display/flex-direction/justify-content 写在父上（容器属性），grow/shrink/basis/align-self 写在子上（子项属性）。主册 3.7 那张属性卡的分类就是这个用意。</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q6 · flex-basis 是什么？shrink 和 basis 什么关系？flex:1 到底是啥？<span class="v v-new">核心讲透 + 计算器</span></div>
+    <div class="q-quote">3.7 子项属性的 align-self、flex-basis 是什么意思？我看样例里 flex:1 就相当于 shrink 和 grow 为 1、basis 为 0%。看不懂 shrink、basis 的关系。</div>
+    <p>这三个属性（grow / shrink / basis）必须当成<strong>一个算法的三步</strong>来学，单独背必懵。浏览器把一排 flex 子项的宽度算出来，走的是固定的三步流水线：</p>
+    <ul>
+      <li><strong>第一步 · 定基准（basis）：</strong>每个子项先领一个"基准宽度"。flex-basis 就是领基准的指令：<code>200px</code> 就领 200px；<code>auto</code> 就按自己的内容宽度（或 width 值）领；<code>0%</code> 就领 0——<strong>假装自己什么都不需要</strong>。这就是 flex:1 的精髓：basis 归零，起步一无所有，全靠第二步抢空间。</li>
+      <li><strong>第二步 · 算剩余：</strong>剩余空间 = 容器宽 − Σ所有基准 − 所有 gap。<strong>剩余 &gt; 0</strong>（有富余）→ 走第三步 A；<strong>剩余 &lt; 0</strong>（超支了）→ 走第三步 B。</li>
+      <li><strong>第三步 A · 分赃（grow）：</strong>富余空间按 grow 比例分。你 grow=1、我 grow=1，平分；你 2 我 1，你拿 2/3 我拿 1/3。grow=0 的一分不分，保持基准宽。</li>
+      <li><strong>第三步 B · 还债（shrink）：</strong>超支的部分按 shrink 分摊，且<strong>分摊权重 = shrink × 基准宽</strong>（基准大的多还——这就是 shrink 和 basis 的"关系"：它俩相乘才决定谁被压得多）。shrink=0 打死不缩。</li>
+    </ul>
+    <p>所以 <code>flex: 1</code> = <code>1 1 0%</code> 读作："基准为零、有富余全按比例抢、超支了也按比例认压"——它和 <code>flex: auto</code>（= 1 1 auto，"先按内容占位，再分富余"）的行为完全不同：<strong>flex:1 是"绝对平均主义"（大家起点都是 0），flex:auto 是"先富后补"</strong>。侧边栏 <code>flex: 0 0 220px</code> 读作："不抢、不缩、固定 220"。</p>
+    <p><strong>align-self</strong> 是另一条线：容器上的 align-items 给所有子项定交叉轴对齐，align-self 写在某个子项上让它"不服集体安排"，值同 align-items（center / flex-start / flex-end / stretch）。典型场景：一排按钮统一底部对齐，唯独某个要单独居中。</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 5 · flex 三步分配计算器（改参数，看浏览器真实算法）</div>
+      <div class="demo-controls">
+        <label>容器宽 <input type="range" id="fxW" min="160" max="640" value="480"> <span class="val" id="fxWv">480px</span></label>
+        <button class="btn ghost" type="button" data-preset="todo">预设：input + button</button>
+        <button class="btn ghost" type="button" data-preset="side">预设：侧边栏+内容区</button>
+        <button class="btn ghost" type="button" data-preset="even">预设：三等分</button>
+      </div>
+      <div class="demo-controls">
+        <label>A <input type="text" id="fxA" value="1 1 0%"></label>
+        <label>B <input type="text" id="fxB" value="0 1 auto"></label>
+        <label>C <input type="text" id="fxC" value="0 0 120px"></label>
+        <button class="btn" type="button" id="fxGo">重新计算</button>
+      </div>
+      <div class="fx-stage" id="fxStage">
+        <div class="fx-item" id="fxi1">A<span id="fxw1"></span></div>
+        <div class="fx-item b" id="fxi2">B<span id="fxw2"></span></div>
+        <div class="fx-item c" id="fxi3">C<span id="fxw3"></span></div>
+      </div>
+      <div class="fx-steps" id="fxSteps"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">试三件事：① 装载"input + button"预设，把容器宽拖到很窄——看 A 被压缩而 B（shrink=1 但内容撑着）基本不缩，这正是你第 6 章项目问题的答案雏形；② 把 A 改成 <code>1 1 auto</code> 和 <code>1 1 0%</code> 对比基准的差异；③ 三个都填 <code>1 1 0</code> 看三等分。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q7 · static 是什么？为什么父子上 z-index 不生效？<span class="v v-new">层叠上下文</span></div>
+    <div class="q-quote">3.8 定位不懂 static 默认值，还有 z-index 的层叠。我明明给 anchor 以及它内部的 badge 都写了 z-index，但他们还是原来的样子；但是复制两个同级角色改 z-index 可以；父子关系就不行。</div>
+    <p>你的实验做得非常好——"同级可以、父子不行"，这八个字正是<strong>层叠上下文（stacking context）</strong>的全部要害。先讲 static，再讲透这个。</p>
+    <ul>
+      <li><strong>static 的含义是"未定位"：</strong>position 的默认值，元素老老实实在文档流里排队。它带来三个直接后果：① top/right/bottom/left 写了也<strong>完全无效</strong>；② z-index 写了也无效（所以主册说"先加 position，z-index 才生效"——准确说是 z-index 只对定位元素和 flex/grid 子项生效）；③ absolute 的子元素往上找"参照祖先"时会<strong>跳过</strong>它。实践里几乎从不显式写 static，它的存在意义就是"什么都不设"的缺省态。</li>
+      <li><strong>层叠上下文是什么：</strong>一个"独立结算的图层"。浏览器画页面时，谁盖谁本来只看 DOM 顺序和 z-index；但某些元素会<strong>创建出一个新的独立图层</strong>，规则变成：<strong>图层内部的 z-index 只在图层内部比大小；整个图层作为一个整体，再和别的图层比</strong>。类比：楼层里的房间号（内部 z-index）决定不了你这栋楼和隔壁楼谁高——楼的高度（外层 z-index）在楼建好时就定了，房间号再大你也出不了这栋楼。</li>
+      <li><strong>什么会创建图层（常见的五种）：</strong>① 根元素 html；② <strong>position: relative / absolute 且 z-index 不是 auto</strong>（你给 .anchor 设了 z-index，正是这一条！）；③ position: fixed / sticky（自动创建）；④ <strong>flex / grid 的子项设了 z-index</strong>（哪怕 position 是 static）；⑤ opacity &lt; 1、transform 非 none 等。</li>
+    </ul>
+    <p><strong>回到你的实验：</strong>你给 .anchor（父）写了 z-index → .anchor 立即建起一栋"楼"；.badge（子）的 z-index 再大，也只是这栋楼里的房间号，<strong>它永远无法越过 .anchor 这栋楼去和页面上的其他元素比高低</strong>。而你复制两个"同级角色"改 z-index——它们是两栋平行的楼，直接比楼高，当然有效。结论：<strong>子元素的 z-index 出不了父元素的层叠上下文；想让子元素参与全局竞争，父元素就不能创建层叠上下文</strong>（比如 relative 不配 z-index 就是 auto，不建楼，孩子直接上全球榜）。</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 6 · 层叠上下文：子元素出不了父元素的"楼"</div>
+      <div class="demo-controls">
+        <label>卡片1 z-index <select id="ziC1"><option value="auto" selected>auto（不建楼）</option><option value="1">1</option><option value="5">5</option></select></label>
+        <label>卡片2 z-index <select id="ziC2"><option value="auto">auto（不建楼）</option><option value="1" selected>1</option><option value="5">5</option></select></label>
+        <label>红徽章(卡片2的孩子) z-index <select id="ziB2"><option value="1">1</option><option value="99" selected>99</option></select></label>
+      </div>
+      <div class="zi-stage" id="ziStage">
+        <div class="zi-card" id="ziCard1" style="background:#4B3FE3; left:10px; top:14px;">
+          <h6>卡片1</h6><small id="ziC1v">z-index: auto</small>
+          <div style="font-size:12px; margin-top:6px;">我里面没有徽章</div>
+        </div>
+        <div class="zi-card" id="ziCard2" style="background:#D97706; left:150px; top:70px;">
+          <h6>卡片2</h6><small id="ziC2v">z-index: 1</small>
+          <div class="zi-badge" id="ziBadge" style="position:absolute;">99</div>
+          <div style="font-size:12px; margin-top:6px;">红徽章是我的孩子</div>
+        </div>
+      </div>
+      <div class="demo-readout" id="ziOut"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">把卡片1 z-index 调成 1、卡片2 保持 1（比源码顺序，卡片2 后写所以赢）→ 徽章可见。再把卡片1 调成 5 → <strong>卡片1 整栋楼压过卡片2，徽章 z-index 99 也被一起压住</strong>——这就是你实验里"父子不行"的现场复现。主册那句"父元素的层叠上下文会限制子元素"说的就是这件事。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q8 · 想看看 grid 二维布局长什么样<span class="v v-new">四个模板直观对比</span></div>
+    <div class="q-quote">我想去看一下 grid 布局这个二维的是什么样子。</div>
+    <p>一句话区分：<strong>flex 是一维流水线（一次只管一根轴的排布），grid 是二维地契（先把地划成行×列的格子，再把元素填进格子）</strong>。flex 你得想"这排东西怎么挤"；grid 你先想"页面切成几行几列"，然后把 header 放第一行横跨、侧边栏占左列、内容占右列——<strong>结构先行</strong>，这是它俩的本质差别。看代码的心法：</p>
+    <ul>
+      <li><code>grid-template-columns: 1fr 1fr 1fr</code>：把宽度切成三份，<strong>fr = 份额单位</strong>（1fr 2fr 就是 1:2 分）；<code>240px 1fr</code> = 左边固定 240、右边吃剩余——和 flex 的 0 0 240px + flex:1 一个效果，但一行写完。</li>
+      <li><code>grid-template-rows</code> 同理切高度；不写就是行高自动。</li>
+      <li><code>grid-column: span 2</code>：这个元素横跨 2 列——二维的"跨格"，flex 做不到（flex 换行后没法指定谁占两行）。</li>
+      <li><code>grid-template-areas</code>：直接用字符串画布局草图（"head head" "side main" "foot foot"），可读性天花板。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 7 · grid 四个经典模板（点按钮切换）</div>
+      <div class="demo-controls">
+        <button class="btn ghost" type="button" data-grid="cols3">三等分卡片墙</button>
+        <button class="btn ghost" type="button" data-grid="side">侧边栏+内容</button>
+        <button class="btn ghost" type="button" data-grid="areas">头-侧-主-脚（areas）</button>
+        <button class="btn ghost" type="button" data-grid="span">跨列（span 2）</button>
+        <label>gap <input type="range" id="gdGap" min="2" max="20" value="8"> <span class="val" id="gdGapV">8px</span></label>
+      </div>
+      <div class="demo-stage" id="gdStage"></div>
+      <div class="demo-readout" id="gdOut"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">经验法则（主册 3.9 那句"一维用 flex、二维用 grid"的展开）：一行内的排布（导航条、表单行、按钮组）→ flex；整页骨架、图片墙、表格式布局 → grid。真实项目两者混用：外层 grid 划地，格子里面 flex 排。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q9 · BFC 详细讲讲，不要缩写<span class="v v-new">完整拆解</span></div>
+    <div class="q-quote">BFC 你要给我详细讲讲是啥呀？它这个概念是啥呀？你不要缩写。</div>
+    <p>好，不用缩写。<strong>BFC 全称 Block Formatting Context，中文：块级格式化上下文。</strong>逐词拆开：</p>
+    <ul>
+      <li><strong>块级（Block）</strong>：管的是块级盒子（div、p 这种独占一行的）怎么排；</li>
+      <li><strong>格式化（Formatting）</strong>：即排版规则——盒子怎么定位、大小怎么算、 margin 怎么算，都有一套规则；</li>
+      <li><strong>上下文（Context）</strong>：一块<strong>独立结算的排版区域</strong>。</li>
+    </ul>
+    <p>连起来的定义：<strong>页面排版不是一张大桌子上进行，而是被切成一个个独立的"包间"。每个包间内部按自己的规则排版，包间里面的浮动、margin 合并等"内部事务"，一律不出包间的门。</strong>根元素 html 天然是一个大包间；而某些 CSS 属性会让某个元素<strong>自己开一个新包间</strong>，这就是"创建 BFC"。</p>
+    <p><strong>什么操作会开新包间（常见的五种）：</strong></p>
+    <ul>
+      <li>根元素 html（整个页面那个最大的包间）；</li>
+      <li><code>float</code> 不是 none（浮动元素自己开包间）；</li>
+      <li><code>position: absolute / fixed</code>（脱离文档流，自己开包间）；</li>
+      <li><code>overflow</code> 不是 visible（最常用的是 <code>overflow: hidden</code>——经典 hack）；</li>
+      <li><code>display: flow-root</code>（<strong>现代标准做法</strong>：这个值被发明出来就为了干这一件事，没有任何副作用；flex / grid 容器同理自成体系）。</li>
+    </ul>
+    <p><strong>包间规则带来三个可观测的效果（也是它全部的实用价值）：</strong></p>
+    <ul>
+      <li><strong>① 包住内部浮动（最著名）：</strong>子元素全浮动后父元素高度塌陷（父元素只算得到不浮动的孩子）。给父元素开包间（<code>display: flow-root</code>），浮动孩子的高度被算回来——所谓"清除浮动"的原理。</li>
+      <li><strong>② 隔绝 margin 合并：</strong>包间自己的 margin 不和包间里孩子的 margin 合并（Q2 说的"父与子合并"用 <code>overflow: hidden</code> 破掉，就是靠这个）；相邻兄弟想不合并，让其中一个开包间即可。</li>
+      <li><strong>③ 不与旁边浮动重叠：</strong>包间的边界盒会避开旁边的浮动元素——经典"左侧固定浮动图 + 右侧自适应文字不环绕"两栏布局，就是给右侧开包间实现的。</li>
+    </ul>
+    <div class="tip">
+      <div class="tip-label">给后端的类比</div>
+      <p>BFC ≈ 进程的独立地址空间：包间内部怎么折腾（浮动、margin 合并）不影响外部；开一个新包间 ≈ fork 出一个隔离的子进程。主册 3.9 把它标成"遇坑回填"是对的——你现在知道了机制，等真遇到"高度塌陷 / 间距诡异 / 文字环绕"三种坑，回来对症下药：<code>display: flow-root</code> 一行解决。</p>
+    </div>
+
+    <div class="demo">
+      <div class="demo-head">演示 8 · BFC 三个效果实测</div>
+      <div class="demo-controls">
+        <button class="btn ghost" type="button" data-bfc="float">① 高度塌陷 → 开包间</button>
+        <button class="btn ghost" type="button" data-bfc="margin">② 父子 margin 穿透 → 开包间</button>
+        <button class="btn ghost" type="button" data-bfc="wrap">③ 文字环绕浮动 → 开包间</button>
+        <button class="btn warn" type="button" data-bfc="reset">重置</button>
+      </div>
+      <div class="demo-stage" id="bfcStage">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">点上面的按钮看对应场景，再点一次"开包间"（给父元素加 <code>display:flow-root</code>）对比前后差异。</p>
+        <div id="bfcArea"></div>
+      </div>
+      <div class="demo-readout" id="bfcOut">等待操作……</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q10 · 顺带确认：margin 合并你测的结论<span class="v v-ok">实验正确</span></div>
+    <p>你在 Q2 里自己动手验证了"上下 margin 相遇取较大值"，结论正确，验证方法也对（这正是主册"改-刷-看"循环的正确打开方式）。补充唯一一个容易漏的边界：<strong>只有"普通文档流里的块级盒子"才合并</strong>——flex 子项、grid 子项、浮动、绝对定位元素统统不参与合并。所以你以后用 flex + gap 布局时永远不会撞到这个问题，这也是为什么现代教程越来越淡化它，但面试仍然爱考。</p>
+  </div>
+</section>
+
+<!-- ================= C 第 3 章自查批改 ================= -->
+<section class="chapter" id="qa3c">
+  <div class="chapter-head"><span class="num">C</span><h2>第 3 章 · 自查批改</h2></div>
+  <p class="chapter-lead">你答了六道自查题：四对两错。两处错误都是"背的时候顺序错了半格"的类型——恰恰是面试最爱抓的半格。逐条批改：</p>
+
+  <div class="q">
+    <div class="q-title">第 1 题 · 盒模型四层与 border-box<span class="v v-no">关键错误：margin 不算进去</span></div>
+    <div class="q-quote">4 层从里到外分别是 content、内边距、边框和外边距。设置 box-sizing: border-box 后，改变了整体宽度的计算方式，即整体大小等于内边距加外边距加 content 的总和。</div>
+    <p>四层顺序答对了，但 border-box 的公式答错了：<strong>border-box 下 width = content + padding + border，永远不含 margin</strong>。你多写了一个"外边距"。</p>
+    <p>为什么 margin 永远不算？回到几何：width 定义的是<strong>盒子本体的宽度</strong>，而 margin 是<strong>盒子本体外面</strong>的"社交距离"——它根本不是盒子的一部分。四种取值摆在一起看就清晰了：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>box-sizing</th><th>width 的含义</th><th>width: 200px, padding: 20, border: 5 时，content 实际宽</th></tr></thead>
+        <tbody>
+          <tr><td><code>content-box</code>（默认）</td><td>content 的宽</td><td>200px（盒子总宽 = 200 + 20×2 + 5×2 = 250px，"越写越大"）</td></tr>
+          <tr><td><code>border-box</code></td><td>content + padding + border</td><td>200 − 40 − 10 = 150px（总宽就是 200，"设多宽是多宽"）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>margin 在两种模式下都只往外面加，不进入 width 的账本。一句话背法：<strong>border-box 把"盒子里面的东西"（内容+填充+壳）打包计价，社交距离永远另算</strong>。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 2 题 · 样式优先级<span class="v v-ok">正确，补一个升级点</span></div>
+    <div class="q-quote">内联样式 &gt; ID &gt; 类。如果权重分数相同，看谁在最后出现。</div>
+    <p>完全正确。升级点见 B 部分第 1 问：真实比较是三元组逐位比较（多少个类都压不过一个 id），"写在后面赢"只在同分时生效。这两个点你如果能讲出来，这道题就从"过"升级为"加分"。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 3 题 · flex 容器属性 vs 子项属性<span class="v v-half">方向对，表述要换</span></div>
+    <div class="q-quote">(a) 容器属性：包括 display、管理数值排列还是首尾排列、是否居中以及 gap 等。(b) 子项属性：包括 grow、shrink、basis、align-self。(c) 对齐方向：justify-content 管的是横向，align 管的是纵向。</div>
+    <p>分类全对，两处要精确化：</p>
+    <ul>
+      <li><strong>(c) 是最容易在面试翻车的一句：</strong>"justify 管横、align 管纵"只在默认 <code>flex-direction: row</code> 时成立。准确表述是：<strong>justify-content 管主轴，align-items 管交叉轴</strong>；一旦 flex-direction 换成 column，主轴变成纵向，justify 就管起纵向来了。主册 3.7 说"方向变了它们管的轴也跟着变，这是 flex 唯一的绕点"就是这个意思。</li>
+      <li><strong>(a) 的"数值排列还是首尾排列"换成术语：</strong>那是 flex-direction（排列方向）和 justify-content（对齐分布）两码事。容器属性完整名单：display / flex-direction / justify-content / align-items / flex-wrap / gap。</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 4 题 · 水平垂直完全居中<span class="v v-ok">正确</span></div>
+    <div class="q-quote">justify-content: center，然后 align-items: center。</div>
+    <p>正确，这就是标准答案。补一个细节让答案更完整：别忘了前提是父容器 <code>display: flex</code>，且父容器得有确定的高度（比如 height: 100vh 或固定高度），否则"垂直居中"没有参照物。你在第 7 章过关自查里答成了 text-align——那是另一套体系，H 部分细说。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 5 题 · absolute 相对谁定位<span class="v v-ok">正确</span></div>
+    <div class="q-quote">相对于离它最近的非 static 元素。给父亲设锚点的话，就是给那个 div 绑定这个 CSS，绑定了之后，设置 relative 或者其他的非 static 就可以设置了。</div>
+    <p>正确，"最近的非 static 祖先"这个表述已经是教科书级。补一个实战细节：为什么大家习惯给父元素用 <code>relative</code> 而不是 absolute？因为 relative 是<strong>占位不动、只做偏移参照</strong>——父元素还在文档流里好好的；如果父元素用 absolute/fixed，它自己就脱离文档流了，页面结构先乱一半。所以"给父 relative 当锚点、给子 absolute 做偏移"是标准搭配。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 6 题 · display: none 与 visibility 的区别<span class="v v-no">记反了，这是经典面试题</span></div>
+    <div class="q-quote">display: none 是还占位消失，visibility 是不占位消失。</div>
+    <p><strong>正好说反了。</strong>正确版本：</p>
+    <ul>
+      <li><strong><code>display: none</code>：不占位消失。</strong>元素从布局里被整个拿掉——量它的尺寸是 0，后面的元素会顶上来补位。相当于这个元素"不存在了"。</li>
+      <li><strong><code>visibility: hidden</code>：占位隐身。</strong>元素还站在原地占着那块空间（尺寸照常参与布局），只是看不见了。相当于"穿了隐形衣"。</li>
+    </ul>
+    <p>还有个隐藏知识点凑成三兄弟：<code>opacity: 0</code> 也是"占位隐身"，区别是它可以配合 transition 做淡入淡出动画（display/visibility 是开关量，动画生硬；opacity 是连续量）。三者的完整对比，直接玩下面的演示：</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 9 · 三种隐藏方式实测（点中间的盒子试点击事件）</div>
+      <div class="demo-controls">
+        <label><input type="radio" name="hid" value="none"> display: none（不占位）</label>
+        <label><input type="radio" name="hid" value="hidden"> visibility: hidden（占位）</label>
+        <label><input type="radio" name="hid" value="opacity"> opacity: 0（占位+可过渡）</label>
+        <label><input type="radio" name="hid" value="show" checked> 显示</label>
+      </div>
+      <div class="demo-stage">
+        <div class="hid-row">
+          <div class="hid-box">盒子1</div>
+          <div class="hid-box mid" id="hidMid">中间盒子（点我）</div>
+          <div class="hid-box">盒子3</div>
+        </div>
+      </div>
+      <div class="demo-readout" id="hidOut"></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">注意点隐藏后观察：盒子 3 有没有顶上来（占位与否）；再切到 opacity: 0 时试着点中间空位——<strong>透明了但点击事件还在</strong>，这也是它和 visibility 的区别之一（visibility: hidden 不可点击）。</p>
+    <p>最后把三个值放进你第 6 章项目的语境：<code>emptyEl.style.display = todos.length === 0 ? "block" : "none"</code>——空状态提示"没任务时出现、有任务时彻底让位"，正是不占位语义的需求，所以用 display 而不是 visibility。</p>
+  </div>
+</section>
+
+<!-- ================= D 第 4 章 ================= -->
+<section class="chapter" id="qa4">
+  <div class="chapter-head"><span class="num">D</span><h2>第 4 章 · DOM 与事件八问</h2></div>
+  <p class="chapter-lead">这一章你的问题密度很高，而且质量很高——"e.target 不知道"、"默认行为哪里规定的"、"innerHTML 为什么危险"这三个问题问到了 DOM 事件模型的地基。逐个拆。</p>
+
+  <div class="q">
+    <div class="q-title">Q1 · querySelector 和 getElementById 到底返回什么？<span class="v v-half">概念要摆正</span></div>
+    <div class="q-quote">querySelector(div/#id/.类)，getElementById（id）返回selector/element</div>
+    <p>你的表述里"返回 selector/element"把两个东西混在一起了。摆正：<strong>它们都返回"元素"（DOM 节点对象，也就是 Element），区别只在"你用什么写法找到它"：</strong></p>
+    <ul>
+      <li><code>document.querySelector("#msg")</code> —— 参数是<strong>任意 CSS 选择器字符串</strong>（所以要带 # 或 .），返回<strong>第一个</strong>匹配的元素；一个都没有返回 <code>null</code>。弟弟 <code>querySelectorAll(".item")</code> 返回全部（NodeList，可用 forEach 遍历）。</li>
+      <li><code>document.getElementById("msg")</code> —— 参数<strong>只填 id 名，不带 #</strong>（因为它只认 id，不需要选择器语法），返回那一个元素或 null。</li>
+      <li>拿到的东西一模一样：一个 Element 对象，身上挂着 .textContent / .style / .classList / .value 这些属性，随你操作。</li>
+    </ul>
+    <p>所以你的笔记应该改成："<strong>querySelector 按 CSS 选择器找（写法要 # .），getElementById 只按 id 找（不带 #）；两者都返回 Element 元素对象</strong>"。实战用 querySelector 全家桶即可——一个 API 走天下。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q2 · "el.style 不是内联吗，不影响吧？"——为什么推荐 classList？<span class="v v-new">好问题，正面回答</span></div>
+    <div class="q-quote">不知道，el.style不是内联吗，不影响吧？</div>
+    <p>你的直觉完全对：<code>el.style.color = "red"</code> 确实是在给元素加<strong>内联样式</strong>（优先级 1000，压过所有 CSS 规则）。但正因为"它总能赢"，才是问题所在——推荐 classList 不是因为它打不过内联，而是：</p>
+    <ul>
+      <li><strong>① 赢了就下不来台：</strong>一旦 JS 写入内联样式，CSS 里的任何规则都盖不住它了（除了 !important）。你后想在 CSS 里改个主题色、加个响应式覆盖，全被 JS 写死的内联值挡死——<strong>样式被锁死在 JS 代码里</strong>。</li>
+      <li><strong>② CSS 的看家本领全部失效：</strong><code>:hover</code> 伪类、<code>@media</code> 媒体查询、过渡动画，这些只能写在 CSS 规则里。样式全走 el.style，等于放弃了 CSS 一半的能力。</li>
+      <li><strong>③ 一次只能改一个属性，且很难撤销：</strong>改 5 个样式要写 5 行；撤销还得手动 <code>el.style.color = ""</code> 清空。而 classList 一个开关切换一整套样式。</li>
+      <li><strong>④ 分层洁癖（前端第一审美）：</strong>CSS 管外观全貌（<code>.active</code> 长什么样），JS 只管状态（"现在是不是 active"）——<strong>样式写在 CSS 里，JS 只拨开关</strong>。将来改样式去 CSS 找，改逻辑去 JS 找，互不干扰。</li>
+    </ul>
+    <p>el.style 的合理场景只有一种：<strong>运行时才能算出来的动态数值</strong>——拖拽的位置、进度条百分比、随机偏移。这类值没法预先写进 CSS 类，就该 el.style 上。记住分工：<strong>状态切换用 classList，动态数值用 el.style</strong>。</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">代码片段 · 两种方式的对比（粘进任意页面的 Console）</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// ❌ 不推荐：样式被锁死在 JS 里，CSS 管不了它</span>
+el.style.background = "#4B3FE3";
+el.style.color = "#fff";
+el.style.padding = "10px";
+<span class="cmt">// 撤销时要一行行清空，漏一行就翻车</span>
+el.style.background = "";
+
+<span class="cmt">// ✅ 推荐：样式全貌写进 CSS 类，JS 只拨开关</span>
+<span class="cmt">// CSS: .active { background:#4B3FE3; color:#fff; padding:10px; }</span>
+el.classList.add("active");     <span class="cmt">// 开</span>
+el.classList.remove("active");  <span class="cmt">// 关</span>
+el.classList.toggle("active");  <span class="cmt">// 有则删无则加（见 Q7）</span></code></pre>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q3 · input 和 change 的区别<span class="v v-ok">正确，补一个细节</span></div>
+    <div class="q-quote">change是失焦时候判断，input适合实时</div>
+    <p>正确。补充细节让判断更准：change 的语义是"<strong>值被最终确定</strong>时触发"——文本输入框是失焦时（且值真的变了才触发）；但 <strong>select 下拉框、checkbox、radio 是选中那一刻就触发</strong>（它们的"确定"就是点击本身）。所以"实时搜索/字数统计用 input，提交前校验、下拉联动用 change"。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q4 · 事件冒泡：到底是谁触发了几次？怎么处理？<span class="v v-new">机制 + 两种处理姿势</span></div>
+    <div class="q-quote">子元素被点击监听到，会将事件沿着dom树冒泡到父元素的同类监听……点一次触发两次的原因。至于怎么处理，我不太清楚，是内部去做捕获吗？还是说只在外部对信息做接收和处理？</div>
+    <p>你的机制描述正确。先把"触发两次"说精确，再回答"怎么处理"：</p>
+    <ul>
+      <li><strong>冒泡本身不产生"两次"：</strong>事件发生时，浏览器从最深的元素（e.target）开始，沿 DOM 树向上逐层"通知"。每一层要不要有反应，取决于那一层<strong>挂没挂监听器</strong>。所以"点一次触发两次"的精确原因是：<strong>冒泡路径上挂了两个监听器</strong>（比如按钮上一个、父容器上一个），各触发一次——不是事件被触发两次，是两个监听器各自听到了一次。</li>
+      <li><strong>处理姿势一 · 拦截（stopPropagation）：</strong>在子元素的监听里调 <code>e.stopPropagation()</code>，事件到此为止不再上浮。适合"子元素的点击不该惊动父级"（弹窗内点击不该关闭弹窗）。注意它和 preventDefault 是两码事：一个拦"传播"，一个拦"默认行为"（见 Q6）。</li>
+      <li><strong>处理姿势二 · 利用（事件委托）：</strong>反着来——<strong>故意</strong>只在最外层挂一个监听，让所有子元素的点击都冒泡上来统一处理。第 6 章项目里 listEl 只挂一个 click 就是这个姿势：列表有一万项也只挂一个监听器，动态新增的项天然被覆盖（不用再单独绑定）。用 e.target 判断"点的是谁"，用 closest() 找到有意义的祖先。</li>
+      <li><strong>什么时候用哪个：</strong>子元素行为和父元素冲突 → stopPropagation；一堆同类子元素要统一处理 → 委托。你问"是内部做捕获还是外部接收"——两个都存在，就是这两个姿势，按场景选。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 10 · 冒泡路径与两种处理姿势（点最里面的按钮看日志）</div>
+      <div class="demo-controls">
+        <label><input type="checkbox" id="bubStop"> 按钮监听器里调 stopPropagation()（拦住不上浮）</label>
+        <label><input type="checkbox" id="bubDele" checked> 只在祖父层挂监听（事件委托模式）</label>
+        <button class="btn ghost" type="button" id="bubClear">清空日志</button>
+      </div>
+      <div class="demo-stage">
+        <div class="bub-grand" id="bubGrand"><span class="bub-tag">grandparent（祖父）</span>
+          <div class="bub-parent" id="bubParent"><span class="bub-tag">parent（父）</span><br>
+            <button class="bub-child" id="bubChild">点我（child）</button>
+          </div>
+        </div>
+      </div>
+      <div class="mini-console" id="bubLog">（点上面的按钮试试）</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q5 · e.target 是什么？和挂监听的元素什么关系？<span class="v v-new">配对概念一次讲清</span></div>
+    <div class="q-quote">e.target不知道，组织默认行为？不懂……怎么默认，哪里规定默认</div>
+    <p>事件对象 e 里最重要的就是这一对，必须成对记：</p>
+    <ul>
+      <li><strong>e.target = 事件真正发生的地方</strong>（最深、最具体的那个元素）。你点了按钮里的文字，target 就是那个按钮（或文字节点所在的按钮）。</li>
+      <li><strong>e.currentTarget = 监听器挂在谁身上</strong>（处理函数运行时，这个值永远等于你 addEventListener 的那个元素）。</li>
+      <li><strong>两者的关系就是委托的全部原理：</strong>监听挂在 ul 上（currentTarget 永远是 ul），但点击发生在 li 的删除按钮上（target 是那个 button）——于是外层监听既能收到通知，又能通过 target 知道"实际点的是谁"。第 6 章项目里 <code>e.target.closest("li")</code> 就是从实际点击处向上找回 li 的标准动作。</li>
+    </ul>
+    <p>类比后端：target 是"请求真正的发起者"，currentTarget 是"当前处理这一层的中间件"——请求（事件）一层层往上传，发起者不变，当前处理层在变。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q6 · preventDefault："默认行为"是谁规定的？"不刷新"是啥意思？<span class="v v-new">两张默认行为清单</span></div>
+    <div class="q-quote">preventDefault，就是保持原来的样子吗？"不刷新"是啥意思？</div>
+    <p>先纠正方向：preventDefault <strong>不是"保持原来的样子"，是"取消浏览器准备做的动作"</strong>。拆开讲：</p>
+    <ul>
+      <li><strong>"默认行为"是谁规定的？——HTML 规范 + 浏览器实现。</strong>某些事件发生时，浏览器除了"通知你的监听器"，还自带一套<strong>内置反应</strong>：表单 submit → 浏览器把表单数据打包、跳转到 action 地址（没写 action 就刷新当前页）；点击 &lt;a&gt; → 跳转 href；右键 → 弹出浏览器菜单；在输入框按键 → 字符被打进输入框；勾选 checkbox → 打上勾。这些内置反应写死在浏览器里，<strong>和你的 JS 无关、也不需要你写一行代码</strong>——这就是"哪里规定的"的答案。</li>
+      <li><strong>preventDefault 做的事：告诉浏览器"你的内置反应取消，这件事改由我的 JS 全权接管"。</strong>提交表单默认要刷新页面，preventDefault 之后不刷了，数据由 fetch 发给后端；点链接默认要跳转，preventDefault 之后改由前端路由接管。</li>
+      <li><strong>"不刷新"的完整含义：</strong>form 的 submit 默认动作 = 浏览器发起一次页面导航（整页重新加载）。整页一刷新，JS 加的所有 DOM、内存里的所有变量<strong>全部清零重来</strong>——你在待办清单里加的十条任务瞬间蒸发。所以任何"用 JS 接管表单"的代码，第一行必须是 e.preventDefault()，这是主册第 6 章注释里写"阻止页面刷新"的确切含义。</li>
+      <li><strong>两个易混点：</strong>① preventDefault 只拦"默认动作"，不拦"事件传播"（传播归 stopPropagation 管，见 Q4）；② 不是所有事件都可拦（e.cancelable 为 false 的拦不动，比如内存耗尽这种系统事件）。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 11 · 同一个表单：preventDefault 开与关的真实差异（在下方小窗里操作）</div>
+      <div class="demo-controls">
+        <button class="btn ghost" type="button" id="pdReload">重新装载小窗（被默认行为重载后点我）</button>
+      </div>
+      <iframe id="pdFrame" style="width:100%; height:230px; border:1px solid var(--rule); border-radius:10px; background:#fff;" title="preventDefault 对比演示"></iframe>
+      <div class="demo-readout" id="pdOut">在小窗里：先直接点「提交」——观察小窗整页被浏览器接管（表单数据跳转，页面变白/丢失）；再勾选「阻止默认行为」输入内容点提交——页面不刷新，任务被 JS 加进列表。</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q7 · el.innerHTML 为什么有 XSS 危险？classList.toggle 是干嘛的？<span class="v v-new">一个安全 + 一个工具</span></div>
+    <div class="q-quote">el.innerHTML 为什么会有 XSS 的危害？el.classList.toggle 是做什么用的？</div>
+    <p><strong>先说 toggle（简单的那个）：</strong>classList.toggle("类名") = <strong>有这个类就删掉、没有就加上</strong>（开关切换），返回切换后的状态（true/false）。它就是为"状态切换"而生的：深色模式开关、待办完成态（li 加/去 done 类）、折叠展开。还支持第二参数强制模式：toggle("on", 条件)——条件为 true 只加不减、false 只减不加。</p>
+    <p><strong>再说 innerHTML 的 XSS（Cross-Site Scripting，跨站脚本攻击）：</strong>核心机制一句话——<strong>textContent 把字符串当"纯文字"放进页面，innerHTML 把字符串当"HTML 代码"解析后放进页面</strong>。当这个字符串里混进了用户输入，用户输入的就不是文字，而是<strong>可执行的代码</strong>：</p>
+    <ul>
+      <li>攻击载荷长这样：用户在输入框里提交 <code>&lt;img src=x onerror="偷数据的代码()"&gt;</code>。它被存进数据库；你的页面用 innerHTML 渲染它时，浏览器按 HTML 解析——img 标签真被创建，src 无效触发 onerror，<strong>攻击者的 JS 在所有浏览这个页面的用户浏览器里执行</strong>：偷 cookie、伪造操作、钓鱼。</li>
+      <li>注：直接 innerHTML 插入 <code>&lt;script&gt;</code> 标签不会执行（浏览器历史决策），但 <code>onerror / onload / onclick</code> 这类事件属性照样执行——所以攻击者从不写 script 标签。</li>
+      <li><strong>你的第 6 章项目里就有这个洞：</strong><code>listEl.innerHTML = todos.map(t =&gt; \`...&lt;span&gt;${t.text}&lt;/span&gt;...\`)</code>——t.text 是用户输入，原样拼进 innerHTML。现在你可以自己验证（下面演示的默认载荷就是无害版攻击代码）。</li>
+      <li><strong>修法三选：</strong>① 展示纯文字场景一律 textContent（自动转义）；② 必须拼 HTML 时先转义（把 &lt; &gt; 换成 &amp;lt; &amp;gt;）；③ 真实项目用框架——React 的 {} 插值默认转义，这正是"框架帮你兜底"的一例。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 12 · 同一段"用户输入"，两种渲染方式的天壤之别（安全无害版）</div>
+      <div class="demo-controls">
+        <label>模拟用户输入 <input type="text" id="xssIn" style="width:340px;" value='&lt;img src=x onerror="xssFired()"&gt;'></label>
+        <button class="btn" type="button" id="xssRender">渲染到下面两个盒子</button>
+        <button class="btn ghost" type="button" id="xssReset">重置</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+        <div class="xss-render"><b>① innerHTML 渲染（危险）</b><div id="xssHtml">（待渲染）</div></div>
+        <div class="xss-render"><b>② textContent 渲染（安全）</b><div id="xssText">（待渲染）</div></div>
+      </div>
+      <div class="xss-banner" id="xssBanner">⚠ onerror 里的代码被执行了！——这就是 XSS：用户输入变成了可执行代码（本演示只改了本页一个小元素的样式，真实攻击可以偷 cookie、发请求）。</div>
+      <div class="demo-readout" id="xssOut">点「渲染」对比两种方式的输出。</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q8 · 顺带确认：你答对的部分<span class="v v-ok">确认</span></div>
+    <p>事件冒泡的机制描述（"子元素触发的事件沿 DOM 树冒泡到父元素的同类监听"）正确；change/input 的场景选择正确；"可以通过类、标签、ID 去查找，然后 classList.add/remove 切换样式"——querySelector + classList 的组合拳描述正确，正是主册 4.2 的推荐姿势。这章你的掌握度其实不差，缺的是 e.target / preventDefault 这两个概念的名字和边界，现在都补上了。</p>
+  </div>
+</section>
+
+<!-- ================= E 第 5 章 ================= -->
+<section class="chapter" id="qa5">
+  <div class="chapter-head"><span class="num">E</span><h2>第 5 章 · JS 核心八问</h2></div>
+  <p class="chapter-lead">你的疑问集中在四条线：Console 报错的真相、浮点与"缩写"这类反直觉语法、闭包与内存、以及 async/await + 事件循环这条最硬的骨头。八问逐个拆，事件循环配了一个可以逐步推演的模拟器。</p>
+
+  <div class="q">
+    <div class="q-title">Q1 · Console 报错：Identifier 'count' has already been declared<span class="v v-new">报错本身就是知识点</span></div>
+    <div class="q-quote">VM142:4 Uncaught SyntaxError: Identifier 'count' has already been declared</div>
+    <p>这个报错和主册代码的对错无关，是 <strong>Console 的使用方式</strong>触发的：你把 5.1 那段代码<strong>粘贴运行了第二次</strong>。机制拆开：</p>
+    <ul>
+      <li>第一遍运行时，<code>let count = 0</code> 在全局作用域声明了 count，它一直活着；</li>
+      <li>第二遍粘贴，又执行 <code>let count = 0</code>——JS 规定 <strong>let / const 在同一作用域里不允许重复声明</strong>（var 允许，这正是 var 的坑之一），于是抛 SyntaxError。语法错误发生在<strong>执行之前</strong>，所以整段代码一行都不会跑；</li>
+      <li>为什么页面里跑脚本没这问题：页面刷新 = 全新全局作用域；而 Console 是同一个页面里反复执行，前一遍声明的变量全都还活着。</li>
+    </ul>
+    <p>解决办法（按推荐排序）：① <strong>用花括号把整段代码包起来</strong>再回车——let/const 是<strong>块级作用域</strong>，每个 {} 都是一个新块，块里的声明不污染全局，想跑几遍跑几遍；② 刷新页面再开 Console；③ 换变量名或改用 var——不推荐，等于绕开规则而不是理解规则。</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">Console 片段 · 同一段代码想反复跑：包进块作用域</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// Console 里想反复运行同一段代码：用块作用域 {} 包起来</span>
+{
+  const name = "小明";
+  let count = 0;          <span class="cmt">// 声明在 {} 这个块里，块执行完就销毁，不留全局</span>
+  console.log(count);     <span class="cmt">// 想跑几遍跑几遍，互不干扰</span>
+}</code></pre>
+    </div>
+    <p>顺带记住这个报错的正面意义：<strong>let/const 帮你拦住了"重复声明"这种手滑</strong>——var 时代它静默通过，变量被悄悄覆盖，出了 bug 都不知道从哪来。F 部分自查第 1 题会正面讲 var 的三个坑。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q2 · 0.1 + 0.2 ≠ 0.3：能做精确判断吗？<span class="v v-new">三招修法</span></div>
+    <div class="q-quote">我知道浮点数有误差，比如 0.1 + 0.2 ≠ 0.3，那么能不能做一个精确的判断</div>
+    <p>先说透"为什么"，再给三招。原因：JS 的 number 底层是 <strong>IEEE 754 双精度浮点（64 位二进制）</strong>。二进制表示 1/10，就像十进制表示 1/3——无限循环，存不下只能截断，误差就此埋下。你熟悉的后端一模一样：Python 的 <code>0.1 + 0.2 == 0.3</code> 同样是 False（同为 IEEE 754）；Python 的解药 decimal.Decimal 在 JS 里没有内置等价物，所以前端要靠下面三招：</p>
+    <ul>
+      <li><strong>招 1 · 容差比较（判断相等的标准答案）：</strong>不问"是否恰好相等"，问"差值是否小到可以忽略"——<code>Math.abs(a + b - target) &lt; 1e-9</code>。容忍度怎么定：一般业务 1e-9（九位小数内视为相等，金额场景绰绰有余）；理论工具 <code>Number.EPSILON</code>（≈2.22e-16，"1 和它最近的浮点邻居的距离"，是浮点误差的最小刻度）。<strong>铁律：浮点运算结果永远不要用 === 直接判等</strong>。</li>
+      <li><strong>招 2 · 整数化（钱的正解，后端人最熟）：</strong>金额以"分"为单位存整数，运算全程整数零误差，只在展示时 /100。这就是数据库 DECIMAL / Java BigDecimal 的同一思路：<strong>钱不过浮点</strong>。</li>
+      <li><strong>招 3 · toFixed（只管展示，不参与比较运算）：</strong><code>(0.1+0.2).toFixed(2)</code> 得 "0.30"——它是格式化显示工具。两个坑：返回<strong>字符串</strong>（拿去比较会踩 '5'===5 的坑）；有自己的舍入怪癖（1.005.toFixed(2) 是 "1.00" 不是 "1.01"）。</li>
+    </ul>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">Console 片段 · 三招一次跑</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// 招 1 · 容差比较：判断"是否相等"的标准答案</span>
+const sum = 0.1 + 0.2;                   <span class="cmt">// 0.30000000000000004</span>
+Math.abs(sum - 0.3) &lt; 1e-9;              <span class="cmt">// true  —— 差 5.55e-17，远小于容忍度</span>
+sum === 0.3;                             <span class="cmt">// false —— 浮点和直接判等，永远别这么写</span>
+
+<span class="cmt">// 招 2 · 整数化：以「分」为单位运算，全程整数零误差</span>
+(199 + 201) / 100 === 4;                 <span class="cmt">// true —— 整数相加无误差，最后只除一次</span>
+
+<span class="cmt">// 招 3 · toFixed：只管展示。注意返回字符串 + 舍入怪癖</span>
+(0.1 + 0.2).toFixed(2);                  <span class="cmt">// "0.30"（字符串！比较要小心）</span>
+(1.005).toFixed(2);                      <span class="cmt">// "1.00" —— 不是 "1.01"，别拿它做运算</span></code></pre>
+    </div>
+    <div class="tip backend">
+      <div class="tip-label">后端对照</div>
+      <p>Python：<code>Decimal("0.1") + Decimal("0.2") == Decimal("0.3")</code> 为 True——十进制精确运算。JS 没有内置 Decimal（BigInt 只管整数）。实务分工：钱的计算放后端（Decimal/DECIMAL），算好把结果<strong>以字符串传给前端</strong>，前端只渲染不算账——这也是"浮点判断"在前端大多只需要招 1 的原因。</p>
+    </div>
+
+    <div class="demo">
+      <div class="demo-head">演示 13 · 浮点误差实测与三招修法（改数字试试）</div>
+      <div class="demo-controls">
+        <label>a <input type="text" id="fpA" value="0.1" style="width:80px;"></label>
+        <label>+ b <input type="text" id="fpB" value="0.2" style="width:80px;"></label>
+        <label>期望 target <input type="text" id="fpT" value="0.3" style="width:80px;"></label>
+        <button class="btn" type="button" id="fpGo">重新计算</button>
+        <button class="btn ghost" type="button" data-fp="classic">经典题 0.1+0.2</button>
+        <button class="btn ghost" type="button" data-fp="power">0.25+0.5（2 的幂，无误差）</button>
+      </div>
+      <div class="demo-readout" id="fpOut" style="min-height:150px;">点「重新计算」看结果</div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">第二个预设按钮是彩蛋：<strong>0.25、0.5 是 2 的负幂次，二进制能精确表示，加出来分毫不差</strong>——浮点误差只发生在"二进制除不尽"的数上，这解释了为什么有的小数运算 mysteriously 精确、有的飘。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q3 · 5.3 的"常用缩写"看不懂，还有别的吗？<span class="v v-half">你的直觉是对的：它们确实"读"不出来</span></div>
+    <div class="q-quote">常用缩写有点反直觉，我感觉看不出来那个意思。还有别的吗？我感觉可能不能靠普通理解去理解它。</div>
+    <p>先给你定性：<strong>你的直觉完全正确</strong>。这些东西不是"缩写"（abbreviation），是<strong>操作符的复用</strong>——设计者把已有符号借去表达新语义，字面上根本看不出来。所以"不能靠普通理解去理解"不是你的问题，是所有人的处境：<strong>正确学法是"记场景"，不是"读符号"</strong>——想干什么的时候查表，用三次就长在手感里了。</p>
+    <p>先把主册 5.3 出现的两个讲透，再补齐整个家族。它们能这么用的共同底层原因只有一个：<strong>JS 的逻辑运算符是短路求值、且返回操作数本身（不是布尔值）</strong>——<code>a || b</code> 返回的就是 a 或 b 其中的一个，这才是它能当默认值的全部原理：</p>
+    <ul>
+      <li><strong><code>||</code> 默认值：</strong><code>inputSize || 20</code> 读作"inputSize 是假值就拿 20"。缺陷：<strong>0 和 "" 也是假值</strong>——用户想查第 0 页，<code>page || 1</code> 会偷偷给他改成第 1 页。于是有了更精准的 ??。</li>
+      <li><strong><code>??</code> 空值合并（|| 的精准版，天天用）：</strong><code>page ?? 1</code> 读作"只有 null / undefined 才拿 1"——0、""、false 原样保留，不再误伤。</li>
+      <li><strong><code>?.</code> 可选链：</strong><code>user?.address?.city</code> 读作"一路问过去，哪一环是 null/undefined，整个表达式就地得 undefined，不报错"。它治的是前端最高频报错 <em>Cannot read properties of undefined</em>——后端接口字段缺失时的保命符。</li>
+      <li><strong><code>&amp;&amp;</code> 守卫：</strong><code>cond &amp;&amp; fn()</code> 读作"cond 为真才执行右边"。第二册 React 里的条件渲染 <code>{isLoading &amp;&amp; &lt;Spinner/&gt;}</code> 全靠它。</li>
+      <li><strong>三元 <code>cond ? x : y</code>：</strong>表达式版的 if-else（JS 里没有 Python 的 <code>x if c else y</code> 写法，三元就是它的对应物）。</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>你想要</th><th>写法</th><th>一句话语义</th><th>频率</th></tr></thead>
+        <tbody>
+          <tr><td>默认值（宽松）</td><td><code>a || b</code></td><td>a 是假值（0/""/null/undefined/NaN/false）就取 b</td><td>高</td></tr>
+          <tr><td>默认值（精准）</td><td><code>a ?? b</code></td><td>a 是 null/undefined <strong>才</strong>取 b</td><td>高（优先用它）</td></tr>
+          <tr><td>安全取深处的值</td><td><code>a?.b?.c</code></td><td>任何一环空 → 整个表达式 undefined，不炸</td><td>高</td></tr>
+          <tr><td>真才执行</td><td><code>cond &amp;&amp; fn()</code></td><td>左边假，右边根本不执行（短路）</td><td>高</td></tr>
+          <tr><td>条件二选一</td><td><code>cond ? x : y</code></td><td>表达式版 if-else</td><td>高</td></tr>
+          <tr><td>存在才调用</td><td><code>obj.fn?.()</code></td><td>fn 存在才调用（可选调用）</td><td>中</td></tr>
+          <tr><td>有值就赋值</td><td><code>a ??= b</code></td><td>a 是 null/undefined 才执行赋值</td><td>低（认得即可）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip backend">
+      <div class="tip-label">后端对照 · 这对你根本不是新知识</div>
+      <p>Python 的 <code>or / and</code> 和 JS 的 <code>|| / &amp;&amp;</code> 行为<strong>一模一样</strong>：短路求值 + 返回操作数本身——<code>"小明" or "默认"</code> 返回 "小明"，<code>[] or [1]</code> 返回 [1]。可选链 ≈ <code>getattr(user, "address", None)</code> 的链式版；<code>a ?? b</code> ≈ <code>a if a is not None else b</code>。你已经有肌肉记忆，只是换了符号。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q4 · 展开运算符 ...：抽象记不住？<span class="v v-new">一个动作 + Python 全对照</span></div>
+    <div class="q-quote">对象操作的展开运算符，… 会有抽象概念，不太好理解记忆</div>
+    <p>别把它当"运算符"背，把它当一个<strong>动作</strong>：<strong>把容器里的东西倒出来</strong>。三个 <code>.</code> 就是"哗啦"一下倒——倒到哪儿，由它出现的位置决定：</p>
+    <ul>
+      <li><strong>倒进数组字面量：</strong><code>[...a, ...b, 0]</code> = 把 a 的元素哗啦倒进新数组，再把 b 的倒进来，再放个 0——合并/拷贝数组一步到位；</li>
+      <li><strong>倒进对象字面量（你最常用）：</strong><code>{ ...user, age: 19 }</code> = 把 user 的所有字段哗啦倒进新对象，<strong>然后</strong> age: 19 后写，把倒进来的 age 盖掉——"后倒的盖先倒的"，这就是"复制并改一个字段"的全部原理；</li>
+      <li><strong>倒进函数调用：</strong><code>f(...arr)</code> = 把数组哗啦摊开成一个个参数。反方向是 rest 参数 <code>function f(...args)</code>——把散落的参数收集回数组（一倒一收，方向相反）。</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>用途</th><th>JS 写法</th><th>Python 等价</th></tr></thead>
+        <tbody>
+          <tr><td>数组合并 / 拷贝</td><td><code>[...a, ...b]</code></td><td><code>[*a, *b]</code></td></tr>
+          <tr><td>对象合并 / 覆盖字段</td><td><code>{...u, age: 19}</code></td><td><code>{**u, "age": 19}</code></td></tr>
+          <tr><td>调用时摊开参数</td><td><code>f(*args)</code> 对应 <code>f(...args)</code></td><td><code>f(*args)</code></td></tr>
+          <tr><td>收集剩余参数</td><td><code>function f(...rest)</code></td><td><code>def f(*args)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>对照表想告诉你的是：<strong>ES6 展开运算符的设计就是借鉴了 Python 的星号语法</strong>——语义逐条对应，你缺的不是理解，只是符号的换装。第 6 章项目里那行 <code>{ ...t, done: !t.done }</code> 现在可以完整读出："原样倒出这个任务的所有字段，最后用翻转后的 done 盖掉旧的"——这就是第二册 React 更新 state 的固定套路，提前长在手上了。</p>
+    <p>一个必须知道的边界：<strong>这是浅拷贝</strong>。<code>{...user}</code> 只复制第一层字段；如果 user 里嵌套了 <code>tags: ["a"]</code>，新对象里的 tags 和旧的是<strong>同一个数组引用</strong>——改它会两边一起变。深拷贝需要 <code>structuredClone(user)</code>（现代内置）或 JSON 序列化土法。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q5 · 闭包持有大对象不放 → 内存泄漏：前端和 Python 各怎么处理？<span class="v v-new">机制 + 两端对策</span></div>
+    <div class="q-quote">5.7 闭包持有大对象不放手，存在潜在内存泄露怎么办？这个问题在 Python 里面应该也有，Python 中怎么处理？前端怎么处理？</div>
+    <p>先把泄漏的<strong>责任链</strong>说准：闭包本身没错，错的是"本该死掉的函数还被人引用着"。链条是：<strong>函数活着 → 它的闭包环境（捕获的变量）就活着 → 环境里那个 4MB 的大数组也跟着活着</strong>。谁在引用函数？九成是这三样：挂在定时器上、挂在事件监听器上、存进了全局变量/缓存。前端处理就三招：</p>
+    <ul>
+      <li><strong>招 1 · 清理挂载点：</strong><code>clearInterval(id)</code>、<code>removeEventListener(同参数)</code>——把"还在引用函数的那只手"松开。SPA（单页应用）最常见的泄漏就是"组件删了，它挂的定时器和监听器还在"——React 的 <code>useEffect</code> 要求你 return 一个清理函数，就是把这个动作<strong>制度化</strong>了；</li>
+      <li><strong>招 2 · 解除引用：</strong>用完把变量置 <code>null</code>（<code>leak = null</code>）——引用没了，下一轮 GC 就能回收函数连同它携带的环境；</li>
+      <li><strong>招 3 · 弱引用：</strong><code>WeakMap / WeakSet</code>（键是弱引用，不阻止回收）——适合"缓存有最好、被回收了也无所谓"的场景，框架内部（Vue 的响应式、DOM 节点关联表）全在用。</li>
+    </ul>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">代码片段 · 泄漏现场与修法（结构示意）</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// 泄漏现场：闭包捕获大数组，定时器一直引用着闭包函数</span>
+function start() {
+  const bigCache = new Array(1e6).fill("数据");   <span class="cmt">// MB 级大对象</span>
+  return () =&gt; bigCache.length;                  <span class="cmt">// 闭包函数引用着 bigCache</span>
+}
+let leak = start();                              <span class="cmt">// 只要 leak 活着，bigCache 就永远活着</span>
+const timer = setInterval(leak, 1000);           <span class="cmt">// 挂在定时器上 → 想死都死不了</span>
+
+<span class="cmt">// 修法：① 清理挂载点 ② 解除引用 —— 两步之后，GC 下一轮就能回收</span>
+clearInterval(timer);    <span class="cmt">// 定时器不再引用闭包函数</span>
+leak = null;             <span class="cmt">// 全局引用解除 → 函数可回收 → bigCache 随之可回收</span></code></pre>
+    </div>
+    <div class="tip backend">
+      <div class="tip-label">Python 对照 · 两套 GC，同一种泄漏</div>
+      <p>Python 闭包同样捕获变量（存在 <code>__closure__</code> 的 cell 里），同样"函数活着环境就活着"——机制无差，差别在回收策略：<strong>CPython 主要靠引用计数</strong>（引用归零<strong>立刻</strong>回收，比浏览器"定期标记-清除"更及时），但引用计数搞不定<strong>循环引用</strong>，所以补了 <code>gc</code> 模块做分代扫描——这也是 Python 面试常考的"引用计数 vs 分代 GC"。对策一一对应：Python 的 <code>del x</code> = 前端的"解除引用"（都只是减引用，不是立即释放）；<code>weakref.ref(obj) / weakref.WeakValueDictionary</code> = 前端的 WeakRef / WeakMap；Python 里"定时器/监听器忘清理"对应"atexit、线程、信号处理器忘注销"。两边的教训是同一句话：<strong>泄漏的根源从来不是闭包，是忘记解除引用</strong>。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q6 · async/await："把 Promise 写成同步样子"到底是啥意思？<span class="v v-new">三段演进 + 时间线实测</span></div>
+    <div class="q-quote">async 和 await，是把 Promise 写成同步样子的语法糖。这个"写成同步样子"需要你再去解释。</div>
+    <p>看同一段逻辑的三种写法，盯着一个问题：<strong>"结果还没到时，后续动作登记在哪"</strong>：</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">代码片段 · 同一件事的三种写法</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// ① 回调时代：先把"拿到结果后干什么"作为函数交出去 —— 步骤一多就嵌套成地狱</span>
+getUser(1, (user) =&gt; {
+  getOrders(user.id, (orders) =&gt; {
+    render(orders);                 <span class="cmt">// 想按顺序做 3 件事，就得嵌 3 层</span>
+  });
+});
+
+<span class="cmt">// ② Promise 链：把"登记后续"标准化成管道 —— 但读代码是"顺着管道读"，先到的先接</span>
+getUser(1)
+  .then(user =&gt; getOrders(user.id))     <span class="cmt">// .then = 登记"成功之后干什么"</span>
+  .then(orders =&gt; render(orders));
+
+<span class="cmt">// ③ async/await：写法恢复"从上往下"——await 那行等结果，拿到再走下一行</span>
+<span class="cmt">// 底层和 ② 完全一样：编译器把 await 之后的代码，登记成 .then 回调（一个微任务）</span>
+async function load() {
+  const user = await getUser(1);            <span class="cmt">// 挂起点 1：函数暂停，控制权交还主线程</span>
+  const orders = await getOrders(user.id);  <span class="cmt">// 挂起点 2</span>
+  render(orders);                           <span class="cmt">// 恢复后继续 —— 这就是"同步的样子"</span>
+}</code></pre>
+    </div>
+    <p>"同步样子"的精确含义是两层：<strong>① 读写顺序一致</strong>——函数内部代码从上往下线性排列，await 行"等"到结果再继续，人类的阅读顺序 = 执行顺序，不再需要脑内画管道；<strong>② 错误处理回到同步语法</strong>——用普通的 try/catch（见下一问）。而底下那层<strong>机制完全没变</strong>：遇到未完成的 Promise，await 把函数挂起（恢复点登记为微任务），<strong>立刻把控制权还给主线程</strong>——它只是让编译器替你写 .then，这就是"语法糖"三个字的分量。</p>
+    <p>所以还有后半句你必须焊死：<strong>"同步样子" ≠ "同步行为"</strong>。挂起期间主线程该干嘛干嘛——点按钮、渲染、跑别的任务，一个不耽误。点下面按钮亲眼看：</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 14 · await 挂起的是函数，不是线程（点按钮看真实时间线）</div>
+      <div class="demo-controls">
+        <button class="btn" type="button" id="tlRun">运行：async/await 版</button>
+        <button class="btn ghost" type="button" id="tlRun2">运行：等价 Promise 链版</button>
+        <button class="btn ghost" type="button" id="tlClear">清空</button>
+      </div>
+      <div class="mini-console" id="tlLog" style="min-height:150px;">（点上面的按钮，盯着每行开头的时间戳看）</div>
+      <div class="demo-readout" id="tlOut">看点：③④ 在 ② 之后立刻出现（同一毫秒）——await 一挂起，主线程马上接管去干别的；800ms 后 ⑥⑦ 才出现——函数从暂停点恢复。两个版本的时间线一模一样：async/await 只换了写法，调度机制没变。</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q7 · "try-catch 包住 await ≈ 异常传播"——我自己处理了，异常不就传播不了了吗？<span class="v v-half">你的质疑是对的，主册那句话另有所指</span></div>
+    <div class="q-quote">用 try-catch 包住 await 约等于异常传播。这个不是传播不了吗？自己做了处理之后，那个异常不就是传播不了了吗？</div>
+    <p>你的质疑本身<strong>完全正确</strong>：catch 到之后异常就"到此为止"了——这是所有语言的通则，Python 的 except 接住后同样不再上抛。主册那句话的本意不是讲"传播"，而是在讲<strong>await 的一件神奇的事：把"未来的、异步的错误"搬运到"现在"，变成同步的异常，让普通 try-catch 终于抓得到它</strong>。没有 await 的世界里，try-catch 对异步错误是瞎的：</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">代码片段 · 为什么必须 await 才能被 try-catch 抓到</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">// ✗ 没有 await：fetch 立刻返回 Promise，try 块瞬间走完</span>
+try {
+  fetch("/api");            <span class="cmt">// 错误发生在"未来"（网络层），此时 try 已经结束了</span>
+} catch (e) {               <span class="cmt">// 永远等不到 —— 异步错误对同步 try-catch 是隐形的</span>
+  console.log("抓不到我");
+}
+
+<span class="cmt">// ✓ await 一个 rejected 的 Promise：会在 await 处"同步地"抛出异常</span>
+try {
+  const res = await fetch("/api");   <span class="cmt">// 错误被搬运到这一行，以 throw 的形式出现</span>
+} catch (e) {                        <span class="cmt">// ✓ 抓到了 —— 这就是"约等于异常传播"的确切含义</span>
+  console.log("抓到：", e.message);
+}
+
+<span class="cmt">// 抓到之后，异常何去何从由你决定（三选一，和 Python 的 except 完全同构）：</span>
+<span class="cmt">// A. 吞掉：catch 里不 throw —— 到此为止，外面无感知（慎用）</span>
+<span class="cmt">// B. 记录再抛：console.error(e); throw e; —— 最常用的兜底姿势</span>
+<span class="cmt">// C. 转成兜底值：return 默认值 —— 把异常翻译成一个"正常结果"</span></code></pre>
+    </div>
+    <p>连起来读："≈ 异常传播"说的是<strong>前半程</strong>：Promise 的 reject 沿着链路传播，到 await 处被翻译成同步异常——于是 try-catch 这种同步工具终于接得住异步世界的错误。"自己处理了就不传播"说的是<strong>后半程</strong>：接住之后 throw 不 throw 由你。两句话并不矛盾。第 6 章项目里的 catch 用的是姿势 A（吞掉 + 显示"加载失败"）——因为 UI 层是错误处理的终点站，必须给用户一个交代，不能再往上抛了。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q8 · 事件循环大讲透：宏任务是啥？为什么"宏任务执行完还有微任务"？循环到底怎么转？<span class="v v-new">重头戏 + 模拟器</span></div>
+    <div class="q-quote">微任务也就是 Promise，是有 IO 的对吧？……宏任务是啥？为什么宏任务执行完了，还有微任务？这怎么是个循环呢？太看不懂了。</div>
+    <p>你这段话里有两个模型性错误，先纠正，再正面重建：</p>
+    <ul>
+      <li><strong>纠错 1 ·"微任务 = 有 IO 的任务"——不对。</strong>微任务/宏任务不是按"干什么活"分类的，是按<strong>排在哪个队列</strong>分类的：排在微任务队列的就是微任务，排在宏任务队列的就是宏任务。同一个回调函数，用 <code>.then()</code> 登记就进微任务队列，用 <code>setTimeout(fn, 0)</code> 登记就进宏任务队列——函数本身没有任何标签。而且恰好相反：<strong>IO（网络、定时器）的完成通知是宏任务</strong>；微任务全是"纯 JS 的事"：Promise 的 then/catch 回调、await 的恢复、queueMicrotask。</li>
+      <li><strong>纠错 2 ·"微任务 = 协程"——不是。</strong>协程是"可暂停恢复的执行体"。JS 里唯一像协程的东西是 async 函数（await 挂起、微任务恢复），但主线程本身<strong>从不让出</strong>——它只是在任务之间调度。Python 的 asyncio 是"整个世界都是协程"，JS 是"只有主线程一个工人 + 两个任务队列"，模型不同。</li>
+    </ul>
+    <p>正面重建。事件循环的本体，就是浏览器主线程里一个永不停歇的调度循环：</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">伪代码 · 浏览器主线程的一生（事件循环的本体就是这个 while）</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code>while (true) {
+  const task = 宏任务队列.dequeue();   <span class="cmt">// ① 取一个宏任务（队列空就阻塞等待：点击/到点/网络到达都会唤醒它）</span>
+  task();                              <span class="cmt">// ② 同步地执行完它（执行中可能又注册新的微任务/宏任务）</span>
+  while (微任务队列.notEmpty()) {      <span class="cmt">// ③ 清空微任务队列——中途新产生的也要清完，一个不留</span>
+    微任务队列.dequeue()();
+  }
+  maybeRender();                       <span class="cmt">// ④ 可能渲染页面（约每 16.7ms 一次，60fps）</span>
+}
+<span class="cmt">// 你问的"循环"就是 ①→②→③→④ 永远转圈；</span>
+<span class="cmt">// "宏任务执行完还有微任务"就是 ②→③ 的必然：刚跑完的宏任务里可能写了 .then，又注册了新微任务</span></code></pre>
+    </div>
+    <p>两个队列的完整户口：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>宏任务队列（一等公民，排队走）</th><th>微任务队列（插队通道）</th></tr></thead>
+        <tbody>
+          <tr><td><strong>成员</strong></td><td>setTimeout / setInterval 到点、网络与文件 IO 完成通知、用户点击/键盘事件、页面渲染</td><td>Promise 的 then/catch/finally 回调、<strong>await 的恢复</strong>、queueMicrotask</td></tr>
+          <tr><td><strong>调度规则</strong></td><td><strong>一轮只取一个</strong>，人人排队</td><td>每个宏任务之后<strong>全部清空</strong>，新产生的也清</td></tr>
+          <tr><td><strong>设计意图</strong></td><td>公平：点击不会被海量定时器饿死；给渲染留机会</td><td>及时：Promise 状态一变，"后续"立刻执行，不等下一轮</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>现在逐条回答你的三连问：<strong>"宏任务是啥"</strong>——上表左列那些"真实世界的事"（到点、网络回来、用户动手），它们的回调排进宏任务队列轮流执行；<strong>"为什么宏任务执行完还有微任务"</strong>——因为刚执行的那个宏任务自己又注册了微任务（比如定时器回调里写了 <code>.then</code>），规则要求每个宏任务之后把微任务清到空为止，所以永远出现"宏→一串微→宏→一串微"的节奏；<strong>"怎么是个循环"</strong>——主线程干完一轮（一个宏任务 + 清微任务 + 可能渲染）就立刻取下一个，没有任务就阻塞等待被唤醒，while(true) 转到页面关闭为止——循环的是<strong>调度</strong>，不是"同步-微-宏-同步"绕圈。</p>
+    <p><strong>做题五步法</strong>（第 7 章过关标准最后一条的解题器）：① 从上往下扫：同步行立刻执行，顺手记输出；② 遇到 setTimeout/点击监听 → 登记"宏：××"；③ 遇到 .then / await 恢复点 → 登记"微：××"（注意：await <strong>右边</strong>的代码是同步先执行的，挂起后<strong>恢复点</strong>才是微任务）；④ 同步代码跑完 → 按注册顺序清空全部微任务；⑤ 取最早注册的宏任务执行 → 再清微任务 → 直到两队列全空。下面把一道经典题做成模拟器，一步一步走：</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 15 · 事件循环模拟器（逐步推演：嵌套宏任务 + 微任务）</div>
+      <div class="demo-controls">
+        <button class="btn" type="button" id="evNext">下一步 →</button>
+        <button class="btn ghost" type="button" id="evPrev">← 上一步</button>
+        <button class="btn ghost" type="button" id="evReset">重置</button>
+        <span class="val" id="evStepNo">第 0 / 13 步</span>
+      </div>
+      <div class="ev-wrap">
+        <div class="ev-col">
+          <h5>题目代码</h5>
+          <div class="ev-code" id="evCode"><div data-n="1">console.log("A 同步");</div><div data-n="2">setTimeout(() =&gt; {</div><div data-n="3">  console.log("D 宏任务");</div><div data-n="4">  Promise.resolve().then(() =&gt; console.log("E 宏任务里注册的微任务"));</div><div data-n="5">}, 0);</div><div data-n="6">Promise.resolve().then(() =&gt; console.log("C 微任务"));</div><div data-n="7">console.log("B 同步");</div></div>
+        </div>
+        <div class="ev-col">
+          <h5>调用栈（正在执行）</h5>
+          <div class="ev-stack" id="evStack"></div>
+          <h5 style="margin-top:10px;">微任务队列</h5>
+          <div class="ev-queue" id="evMicro"></div>
+          <h5 style="margin-top:10px;">宏任务队列</h5>
+          <div class="ev-queue" id="evMacro"></div>
+        </div>
+        <div class="ev-col">
+          <h5>输出（console.log）</h5>
+          <div class="ev-out" id="evOut"></div>
+        </div>
+      </div>
+      <div class="ev-phase" id="evPhase">点「下一步」开始：浏览器主线程开始执行这整段脚本——它本身就是一个宏任务</div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">最终输出顺序：A → B → C → D → E。其中 D→E 这一步正是你困惑的现场：<strong>定时器回调（宏任务）执行时又注册了微任务，所以"宏任务执行完还有微任务"不是错觉，是规则本身</strong>。把模拟器走完，这道题就焊死了。</p>
+  </div>
+</section>
+
+<!-- ================= F 第 5 章自查批改 ================= -->
+<section class="chapter" id="qa5c">
+  <div class="chapter-head"><span class="num">F</span><h2>第 5 章 · 自查批改</h2></div>
+  <p class="chapter-lead">六道自查题：三道全对，两道"方向对但表述松"，一道有概念混淆（闭包那题混进了"高阶函数"）。批改如下：</p>
+
+  <div class="q">
+    <div class="q-title">第 1 题 · const 和 let 怎么选？为什么不用 var？<span class="v v-half">选择策略要倒过来背</span></div>
+    <div class="q-quote">const 是先定义，定义完了想要改的话使用 let。let 好像也能赋值，不太清楚为什么不用 var，因为 var 是老代码里面的，现在不太用了。</div>
+    <p>你的策略说反了主次：<strong>不是"先 const、想改再换 let"，而是"默认 const，只有确需重新赋值才用 let"</strong>——const 是常态，let 是例外。为什么这么设计：const 声明时就向读代码的人承诺"这个绑定不会再变"，整个文件里凡是 count 出现的地方都可信；一旦看到 let，读者立刻警觉"这货后面会变"。这是<strong>用声明方式传递信息</strong>，和 Python 的命名约定（全大写=常量）异曲同工，但 JS 用语法强制了它。注意一个易混点：const 锁的是<strong>绑定</strong>（不能再指向别的东西），不锁内容——<code>const list = []</code> 照样能 push，只是不能 <code>list = 别的数组</code>。</p>
+    <p>"var 是老代码"只是表象，本质是它有三个被 let/const 逐一修复的坑：</p>
+    <ul>
+      <li><strong>坑 1 · 没有块级作用域：</strong>var 只有函数作用域——<code>if (x) { var a = 1 }</code> 之后 a 在 if 外面照样活着，泄漏到整个函数；let/const 的 {} 块即牢笼；</li>
+      <li><strong>坑 2 · 允许重复声明：</strong><code>var a = 1; var a = 2;</code> 静默通过、悄悄覆盖——就是你 E 部分那个 Console 报错拦住的事故，let/const 直接报错；</li>
+      <li><strong>坑 3 · 提升行为怪异：</strong>var 声明被"提升"到函数顶部并初始化为 undefined——<code>console.log(a); var a = 1;</code> 不报错、打印 undefined（坑死人）；let/const 也提升但处于"暂时性死区"，提前访问直接 ReferenceError——错误越早炸越好修。</li>
+    </ul>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 2 题 · map/filter/reduce/find 各返回什么？哪个改原数组？<span class="v v-half">四个答案都要再精确一格</span></div>
+    <div class="q-quote">(a) map：返回对数组操作后收集起来的东西。(b) filter：返回满足条件的元素。(c) reduce：返回的是一个类似于累加器返回的数值吧。(d) find：返回对应的值……应该是原数组的内容。(e) map、filter、reduce、find 都不会修改原数组，只有 forEach 可以修改原数组。</div>
+    <p>方向都对，但四个表述都差"最后一格精度"，面试就抓这一格：</p>
+    <ul>
+      <li><strong>map → 新数组</strong>，长度与原数组<strong>相同</strong>，每个元素 = 回调的返回值（一对一变形）。"收集起来的东西"太虚，说"等长新数组"。</li>
+      <li><strong>filter → 新数组</strong>，长度 ≤ 原数组，元素是<strong>原数组里满足条件的那些元素</strong>（不是"变形后的"）。</li>
+      <li><strong>reduce → 你说了算的任意值</strong>：回调返回什么它就是什么——数字（求和）、数组（扁平化）、对象（分组统计）都行。"数值"说窄了，它是最通用的聚合器。</li>
+      <li><strong>find → 原数组里的那个元素本身（引用）</strong>，找不到返回 undefined。你答"原数组的内容"正确，加分句是"只找第一个满足的就停，和 filter 找全部是一对"。</li>
+      <li><strong>(e) 半对半错，是最值得展开的一处：</strong>"都不修改原数组"对了一半——<strong>数组结构</strong>确实不动（不增删元素、不换位置），但如果元素是对象，新数组里装的仍是<strong>原对象的引用</strong>——通过引用改属性，原数组照样遭殃。而"forEach 可以修改原数组"的说法也不准：forEach 只是"纯遍历"，修改是你在回调里自己动手干的（<code>arr.forEach(u =&gt; u.age++)</code> 里动手的是你写的 u.age++）。真正<strong>直接改原数组结构</strong>的是另一家人：push/pop/splice/sort。这个"新数组 ≠ 新对象"的引用陷阱，玩一遍就焊死：</li>
+    </ul>
+
+    <div class="demo">
+      <div class="demo-head">演示 16 · "返回新数组" ≠ "返回新对象"（引用陷阱实测，点按钮对比）</div>
+      <div class="demo-controls">
+        <button class="btn ghost" type="button" id="arReset">重置数据</button>
+        <button class="btn" type="button" id="arA">① 改 map 结果元素的属性（不拷贝）</button>
+        <button class="btn" type="button" id="arB">② 改 {...u} 拷贝后元素的属性</button>
+        <button class="btn" type="button" id="arC">③ 替换 map 结果的元素本身</button>
+      </div>
+      <div class="arr-grid">
+        <div class="arr-card"><b>原数组 users（唯一数据源）</b><div id="arOrig"></div></div>
+        <div class="arr-card"><b>copied = users.map(...)（返回的"新数组"）</b><div id="arCopy"></div></div>
+      </div>
+      <div class="demo-readout" id="arOut">每次点击会自动重置再执行该操作。看点：① 点完后左边原数组也跟着变了——map 拷贝的是"数组的壳"，元素还是原来那些对象；② 加了 {...u} 才是完整隔离；③ 替换元素改的只是新数组自己的槽位。</div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);">这个演示解释了第 6 章项目为什么写 <code>{ ...t, done: !t.done }</code> 而不是直接 <code>t.done = !t.done</code>：map 只保证"新数组"，不保证"新对象"——想做到真正的不可变更新，两层的"新"都要自己造。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 3 题 · '5' === 5 与 ==<span class="v v-ok">完全正确</span></div>
+    <div class="q-quote">因为两个等于会进行类型转换，应该用三个等于。</div>
+    <p>正确，判定和结论都对。补一个让你答得更漂亮的细节：== 的转换规则叫<strong>抽象相等</strong>，方向是"数字优先"——字符串转数字（'5'→5）、布尔转数字（true→1，所以 <code>true == 2</code> 是 false 而 <code>true == 1</code> 是 true）、null 与 undefined 互相放过（<code>null == undefined</code> 是 true 这个特例值得单独记）。规则琐碎到没人背——这就是"永远用 ==="这条铁律的由来：不是 === 更正确，是 == 的规则<strong>不值得记</strong>。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 4 题 · 用 makeCounter 讲闭包<span class="v v-no">混入了另一个概念：高阶函数</span></div>
+    <div class="q-quote">闭包就是一个函数接收了一等公民函数作为参数，这个函数内部会有一个变量以及一个函数……</div>
+    <p>你的描述把<strong>闭包</strong>和<strong>高阶函数</strong>两个概念焊在了一起。"函数接收一等公民函数作为参数"是<strong>高阶函数</strong>（higher-order function）——函数当参数传/当返回值，5.4 的 run(fn) 是它；而 makeCounter <strong>没有接收任何函数参数</strong>，它靠的是闭包，这是两件独立的事（可以同时发生，但互不依赖）。</p>
+    <p>用 makeCounter 讲闭包的标准口头版，三句话：</p>
+    <ul>
+      <li><strong>现象：</strong>count 是 makeCounter 的局部变量，按理函数返回时它就该销毁；但返回的那个箭头函数身上<strong>引用着 count</strong>（词法作用域：内层函数生来就看得见外层的变量）——于是 count 被这个函数"随身带走"了，makeCounter 早就返回了，count 还活着；</li>
+      <li><strong>定义：</strong>函数 + 它记住的那个变量环境，合起来叫闭包。不是什么语法，是"函数记住出生地"的机制；</li>
+      <li><strong>旁证（面试加分）：</strong>counter 和 counter2 互不干扰——因为<strong>每次调用 makeCounter 都创建一套全新的 count</strong>，两个闭包各带各的；counter 连调三次得 1/2/3——因为同一个闭包里 count 是同一个。</li>
+    </ul>
+    <p>用途收尾一句：计数器/缓存只是入门示例，真正的工业级用途是"模块私有变量"（外界拿不到 count，只能通过函数操作）和 React hooks 的地基（useState 的状态就是靠闭包记住的）。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 5 题 · await 阻塞的到底是谁<span class="v v-ok">正确，表述微调</span></div>
+    <div class="q-quote">它在处理 IO 密集型任务时，在 IO 任务执行期间会出让控制权，去执行别的任务；真正阻塞的是 CPU 密集型的任务。</div>
+    <p>判断完全正确，只把主语说得更准：<strong>await 挂起的是"当前这个 async 函数"，从头到尾没有阻塞过主线程</strong>——主线程在函数挂起期间继续跑别的任务（E 部分演示 14 的时间线就是这句话的可视化）。CPU 密集的那半句也对：JS 主线程只有一个，同步的大循环一跑，渲染、点击全卡死（页面"未响应"）——这就是"JS 适合 IO 密集、不适合 CPU 密集"的原因，也是将来遇到 Web Worker 的伏笔。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 6 题 · 事件循环顺序题<span class="v v-new">机制已讲透，这里给练习和口诀</span></div>
+    <div class="q-quote">同步、微任务、宏任务、微任务、同步这样的循环。这里不太懂。</div>
+    <p>机制版答案在 E 部分第 8 问（两个模型纠错 + while 本体 + 队列户口表 + 演示 15 模拟器），先把那条走完。这里补一道<strong>含 async/await 的进阶练习</strong>，你先自己做，再对推演：</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">Console 片段 · 进阶练习：先自己写出输出顺序，再跑</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code>console.log("1");
+async function foo() {
+  console.log("2");            <span class="cmt">// foo() 被调用的瞬间，函数体是同步执行的</span>
+  await null;                  <span class="cmt">// await：挂起点 —— 第 3 行之后的内容被登记成一个微任务</span>
+  console.log("3");            <span class="cmt">// 它在微任务里执行</span>
+}
+foo();                         <span class="cmt">// 调用：同步跑 2，到 await 挂起，立刻返回</span>
+Promise.resolve().then(() =&gt; console.log("4"));
+setTimeout(() =&gt; console.log("5"), 0);
+console.log("6");
+<span class="cmt">// 输出顺序：？</span></code></pre>
+    </div>
+    <div class="ans-line">推演：同步段 1 → 2 → 6（foo 到 await 挂起）｜微任务队列此刻有 [3 的恢复, 4]（先注册的恢复在前）→ 清空输出 3 → 4｜然后宏任务 → 5。
+最终：1 2 6 3 4 5 —— 口诀「同步跑完 → 微任务清空 → 才轮到宏任务」，await 的恢复排在注册它的那个时刻的微任务队尾。</div>
+  </div>
+</section>
+
+<!-- ================= G 第 6 章 项目三问 ================= -->
+<section class="chapter" id="qa6">
+  <div class="chapter-head"><span class="num">G</span><h2>第 6 章 · 项目三问</h2></div>
+  <p class="chapter-lead">三问里只有第一问是真问题（flex 分配算法在真实项目里的落地），另外两问你其实已经摸到答案了，做确认和收尾。顺带说一句：你自己的 total-book1.html 已经把主册的三个进阶练习全做了（localStorage 持久化、未完成统计、三按钮筛选）——这个"自己加需求自己实现"的劲头正是实践阶段最值钱的东西。</p>
+
+  <div class="q">
+    <div class="q-title">Q1 · input 写了 flex:1，button 不会被挤掉吗？<span class="v v-new">三步算法的实战落地</span></div>
+    <div class="q-quote">怎么确保 input 和 button 在同一行横排？input 不是 flex: 1 吗？那 button 不是被挤掉了吗？</div>
+    <p>不会挤掉——因为 flex 的分配顺序是<strong>「先保基准、再分剩余」</strong>，这正是 B 部分演示 5 那套三步算法在真实项目里的样子。把项目里的 CSS 逐条翻译成算法语言：</p>
+    <ul>
+      <li><strong>第一步 · 定基准：</strong>input 写了 <code>flex: 1</code>（= 1 1 0%）→ 基准 0；button 什么都没写 → 用默认值 <code>0 1 auto</code> → 基准 = 内容宽（"添加"两个字 + 内边距，约 70px）。<strong>button 的 70px 是先入账的</strong>；</li>
+      <li><strong>第二步 · 算剩余：</strong>容器宽（比如 388px）− 70 − 8（gap）= 310px 富余；</li>
+      <li><strong>第三步 A · 分赃：</strong>grow 总和只有 input 的 1（button 是 0，一分不抢）→ 310px 全部归 input。结果：input ≈ 310px、button 稳稳 70px，同一行。</li>
+    </ul>
+    <p>所以"flex:1 抢走一切"抢的是<strong>剩余空间</strong>，不是别人的基准。button 被挤掉只会发生在一种情况：<strong>容器窄到连基准都放不下</strong>（进入第三步 B 还债模式）。而这里还有个更隐蔽的真实行为：flex 子项默认 <code>min-width: auto</code>（最小宽 = 内容宽）——input 的默认内容宽约 170px，窗口极窄时 input 拒绝缩到 170px 以下，反而是它把 button 挤变形。实战解法一行：<code>input { min-width: 0 }</code>（允许我缩到 0）。这个 min-width:auto 的坑是 flex 布局最著名的坑之一，现在你知道它的名字了。</p>
+    <p style="font-size:13.5px;color:var(--muted);">动手验证：回到 B 部分演示 5，点「预设：input + button」，把容器宽拖到最左——亲眼看 button 被压、input 卡在最小宽；这就是"容器窄到基准都放不下"的现场。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q2 · emptyEl.style.display = "block" / "none"：none 是没有，block 是换行吗？<span class="v v-half">后半句要换个说法</span></div>
+    <div class="q-quote">展示为 none 的话就是没有，是吧？展示为 block 的话是进行换行，对吧？</div>
+    <p>前半句对：<strong>none = 从布局里整个拿掉</strong>（不占位、量尺寸是 0、点不到、事件也不触发）。后半句换个更准的说法：block 不是"换行"这个动作，是一种<strong>显示类型</strong>——"块级显示：独占一行、可设宽高"。"换行"是这个类型的<strong>效果</strong>，不是它本身。这么较真的原因是：display 的值是一个类型系统（block / inline / inline-block / flex / grid / none），记"类型"才能举一反三，记"换行"只能答这一题。</p>
+    <p>放到这行代码的语境里还有一个细节：<code>&lt;p id="empty"&gt;</code> 本来就是 block，为什么还要显式写回 "block"？因为之前被设成 "none" 了——<code>el.style.display = "block"</code> 在这里的语义是<strong>"恢复默认身份"</strong>。整个三元表达式的业务含义："没有任务 → 空状态提示出场；有任务 → 彻底让位"。这正是 C 部分演示 9 讲过的"display:none 不占位"语义的落地，也是为什么这里用 display 而不是 visibility——空状态提示不能占着位置挡列表。</p>
+    <p>最后补一个体系上的呼应（这是你没问但值得点破的一处）：D 部分讲过"状态切换用 classList、动态数值用 el.style"——严格按这个原则，显示/隐藏这种状态切换应该用 classList（CSS 里写 .hidden { display: none }）。主册选 el.style 是教学取舍：两行搞定、不用先建一个 CSS 类。真实项目两种都常见，原则是方向性的，微型示例允许最短路径——知道这个权衡存在，你就同时掌握了两种姿势。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">Q3 · 事件委托 else 块的 map：确认你的理解<span class="v v-ok">确认 + 连上展开运算符</span></div>
+    <div class="q-quote">else 块里 map t.id === ID 的时候去做这样一个操作，否则的话去获得 t……对对对，懂了懂了。</div>
+    <p>确认你的理解是对的，再把它钉成一句能脱稿说的话：<strong>map 负责生成新数组，对每个任务做判断——id 匹配的那个，用 { ...t, done: !t.done } 造一个"只翻转 done 的新对象"；不匹配的原样返回 t。旧数组、旧对象一个字节不动，这就是"不可变更新"。</strong></p>
+    <p>它和 E 部分第 4 问的展开运算符正好接上：<code>{ ...t, done: !t.done }</code> = 把 t 的字段全部倒进新对象，最后用翻转后的 done 盖掉旧的（后倒的盖先倒的）；而 F 部分演示 16 从反面证明了为什么不能直接 <code>t.done = !t.done</code>——那只改了对象、没换数组，且污染了原数据。三层结构串起来：<strong>map 换数组（第一层新）→ 展开换对象（第二层新）→ 原 data 原封不动</strong>。第二册 React 的 setState 你将天天写这个套路，到时候它已经是你的肌肉记忆了。</p>
+  </div>
+</section>
+
+<!-- ================= H 第 7 章过关批改 ================= -->
+<section class="chapter" id="qa7">
+  <div class="chapter-head"><span class="num">H</span><h2>第 7 章 · 过关批改</h2></div>
+  <p class="chapter-lead">十条过关标准你答了八条、弃权两条。先给结论：<strong>10 条里 7 条达标，进入实践阶段绰绰有余</strong>。三处硬伤（UL 认错、border-box 第二次写错、水平垂直居中这次答错）都批在下面，最后一条"排查路径"做成演示 17 完整教你。</p>
+
+  <div class="q">
+    <div class="q-title">第 1 条 · 三件套分工与语法结构<span class="v v-ok">达标，换两个词更专业</span></div>
+    <div class="q-quote">HTML、CSS、JS 分别负责页面结构、UI 样式和调用逻辑。(a) HTML 的标签与结构是：标签名、属性、内容。(b) CSS 是：选择器、属性、值。</div>
+    <p>结构对。两个升级用词：① JS 那格说"行为 / 交互"——行业标准三词是<strong>结构（HTML）、表现（CSS）、行为（JS）</strong>，"调用逻辑"会让面试官愣一下；② CSS 那格的完整说法是"<strong>规则 = 选择器 + 声明块</strong>，声明块里是一条条 属性: 值;"——"选择器、属性、值"三个词都对，但把"声明块"这个容器说出来，就显得你见过全貌。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 2 条 · 拿到设计稿选标签<span class="v v-no">一处硬伤：UL 不是 label</span></div>
+    <div class="q-quote">我主要讲了一下 DIV，它是无含义标签，是 block 类型……Header 是头部，UL 是 label。</div>
+    <p><strong>"UL 是 label"是硬伤，两个东西八竿子打不着：</strong></p>
+    <ul>
+      <li><code>&lt;ul&gt;</code> = <strong>Unordered List，无序列表</strong>——和 <code>&lt;li&gt;</code>（list item，列表项）成对出现：菜单、待办列表、商品卡片墙，凡是"一堆并列的东西"都是它俩；有序的（排行榜、步骤条）用 <code>&lt;ol&gt;</code>。</li>
+      <li><code>&lt;label&gt;</code> = <strong>表单标签</strong>——给 input 配的说明文字，专属表单：<code>&lt;label for="ipt"&gt;要做什么？&lt;/label&gt;&lt;input id="ipt"&gt;</code>——点了文字也能聚焦输入框，读屏软件靠它念出"这个框是干嘛的"。</li>
+    </ul>
+    <p>div 的描述（无含义、block）正确；div/section 的取舍在 A 部分第 1 问（三问定夺：有主题配标题→section，独立成篇→article，纯布局→div）。补一张语义标签速记表，过关标准这条要的就是"拿到设计稿能对号入座"：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>标签</th><th>一句话</th><th>设计稿对应物</th></tr></thead>
+        <tbody>
+          <tr><td><code>header</code></td><td>页头/区块头</td><td>顶部导航、logo 区</td></tr>
+          <tr><td><code>nav</code></td><td>导航链接组</td><td>菜单栏、面包屑</td></tr>
+          <tr><td><code>main</code></td><td>页面主体（一页一个）</td><td>正文容器</td></tr>
+          <tr><td><code>article</code></td><td>独立成篇的内容</td><td>一篇文章、一条评论、一张商品卡</td></tr>
+          <tr><td><code>section</code></td><td>有主题的内容分区</td><td>评论区、相关推荐、章节</td></tr>
+          <tr><td><code>aside</code></td><td>与主体弱相关的侧栏</td><td>侧边广告、推荐位</td></tr>
+          <tr><td><code>footer</code></td><td>页脚/区块脚</td><td>版权信息、联系方式</td></tr>
+          <tr><td><code>ul + li</code></td><td>无序列表 + 列表项</td><td>菜单、待办、卡片墙</td></tr>
+          <tr><td><code>label + input</code></td><td>表单说明 + 输入控件</td><td>搜索框、登录表单</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 3 条 · 盒模型 + 两个 flex 布局<span class="v v-no">border-box 第二次写错 + 居中这次答错，两处都要钉死</span></div>
+    <div class="q-quote">(a) border-box 改的是：宽度 = 内容 + 内边距 + 外边距。(b) 水平垂直居中：是 text-align 和另一个属性，都是 center。(c) 侧边栏和内容区：给 DIV 设置 display: flex，去设置侧边栏，对内容区进行 flex: 1。</div>
+    <p><strong>(a) border-box 你第二次把 margin 算进去了（C 部分批改过一次）。</strong>最后钉一次：<strong>border-box 下 width = content + padding + border，margin 永远、永远不算</strong>。记忆锚点：width 定义的是"盒子本体"的宽，margin 是本体之外的社交距离——量房子面积不会把楼间距量进去。这是面试高频题，同一个坑不能再有第三次。</p>
+    <p><strong>(b) 水平垂直居中这次答错了（text-align），而你在 C 部分自查时答的是对的（justify-content + align-items）。</strong>时对时错说明还没焊死，给你一个一劳永逸的分辨法：<strong>text-align 管的是"盒子里面的字"，flex 双 center 管的是"盒子本身"</strong>。text-align: center 只能把元素<strong>内部的行内内容</strong>（文字、inline 元素）水平居中，垂直方向完全无能为力；要让<strong>元素本身</strong>在容器里水平垂直居中，标准答案是：</p>
+    <div class="codebox">
+      <div class="cb-head"><span class="cb-label">代码片段 · 水平垂直居中的标准答案（背下来）</span><button class="cb-btn" type="button">复制</button></div>
+<pre><code><span class="cmt">/* 父容器：flex + 两个 center（父必须有确定高度，否则没有"垂直"可言） */</span>
+.parent {
+  display: flex;
+  justify-content: center;   <span class="cmt">主轴（默认横）居中 → 水平</span>
+  align-items: center;       <span class="cmt">交叉轴（默认纵）居中 → 垂直</span>
+  height: 300px;             <span class="cmt">前提：父有高度，孩子才有"居中"的参照物</span>
+}</code></pre>
+    </div>
+    <p><strong>(c) 侧边栏 + 内容区达标</strong>（display: flex + 内容区 flex: 1）。补齐术语让答案满分：侧边栏写 <code>flex: 0 0 220px</code>（或固定 width）——不抢、不缩、钉死宽度；内容区 <code>flex: 1</code>——吃掉全部剩余。G 部分第 1 问的三步算法就是这个布局的底层原理。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 4 条 · 样式不生效的排查路径<span class="v v-new">你说"不知道再看什么"——这一条做成演示 17 教会你</span></div>
+    <div class="q-quote">不太懂怎么排查。我只知道去 F12 看 style，以及为什么内容会被划掉，再怎么看我不知道。</div>
+    <p>你已经会第一步的一半（打开 Styles、认识划线），缺的是<strong>把"看"变成"判定"的完整流程</strong>。排查的本质是回答一串问题：我的规则<strong>命中了吗</strong>（没命中：选择器/文件/拼写问题）→ 命中了<strong>赢了吗</strong>（被划掉：优先级/顺序问题）→ 赢了<strong>是它吗</strong>（Computed 最终值：继承/初始值/单位问题）。下面的演示把一个真实现场和模拟 Styles 面板放在一起，五步走完：</p>
+
+    <div class="demo">
+      <div class="demo-head">演示 17 · 样式不生效排查五步（左边是真实现场，右边是模拟 Styles 面板）</div>
+      <div class="demo-controls">
+        <button class="btn ghost" type="button" data-sp="1">1 确认元素</button>
+        <button class="btn ghost" type="button" data-sp="2">2 找你的规则</button>
+        <button class="btn ghost" type="button" data-sp="3">3 找赢家</button>
+        <button class="btn ghost" type="button" data-sp="4">4 Computed 验证</button>
+        <button class="btn ghost" type="button" data-sp="5">5 修复</button>
+        <button class="btn" type="button" id="spFix">应用修复</button>
+      </div>
+      <div class="sp-wrap">
+        <div class="sp-stage" id="spStageEl">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">现场：盒子在 CSS 里写了 color: red，实际却显示蓝色</p>
+          <div class="bug-box" id="spBug">我是故障盒子：CSS 里明明写了 color: red，为什么我是蓝色的？</div>
+        </div>
+        <div class="sp-panel">
+          <div class="sp-tab">Styles ▸ .bug-box</div>
+          <div class="sp-body">
+            <div class="sp-rule" id="spr1"><span class="sp-sel">.bug-box</span> { <span class="sp-props">color: #D93025;</span> } <span class="sp-src">styles.css:12</span></div>
+            <div class="sp-rule" id="spr2"><span class="sp-sel">.sp-stage .bug-box</span> { <span class="sp-props">color: #1A73E8;</span> } <span class="sp-src">styles.css:31</span></div>
+            <div class="sp-rule" id="spr3"><span class="sp-sel">div</span> { <span class="sp-props">display: block; color: black;</span> } <span class="sp-src">user agent stylesheet</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-readout" id="spOut">点 1–5 步按钮，跟着走一遍完整排查（左边的盒子和右边面板里的规则都是真实生效的，不是截图）。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-label">五步口诀（背这个）</div>
+      <p>① <strong>选对人</strong>：Elements 里点中的元素对不对（点一下会闪烁）；② <strong>规则在吗</strong>：Styles 里找不到你的规则 → 选择器写错 / CSS 文件没引入 / 属性名拼错（旁边有黄色警告 = 非法值被丢弃）；③ <strong>谁赢了</strong>：规则在但被划掉 → 没被划的那条是赢家，比一下它俩的优先级（三元组）和源码顺序；④ <strong>终值对吗</strong>：切到 Computed 面板看最终生效值，点值能跳回来源规则——继承来的值会标注 Inherited；⑤ <strong>修</strong>：提高自己规则的特异性或删掉冲突规则——别用 !important 硬压（那是给调试用的核武器，见 B 部分第 1 问）。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 5 条 · querySelector + classList + 事件实现"点击切换样式"<span class="v v-ok">达标</span></div>
+    <div class="q-quote">可以通过类、标签、ID 等去查找，然后通过 classList.add/remove 去进行样式的切换、新增和删除。</div>
+    <p>达标。完整链路补一个动词：查找（querySelector）→ 监听（addEventListener）→ 切换（classList.toggle）——toggle 就是"点击切换样式"的那个开关。细节在 D 部分第 1、2 问，不重复。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 6 条 · 事件冒泡与"点一次触发两次"<span class="v v-ok">前半达标，处理方式在 D 部分</span></div>
+    <div class="q-quote">是指子元素触发的点击等事件，会冒泡到父元素上，也就是点一次触发两次的原因。至于怎么处理，我不太清楚。</div>
+    <p>机制和"两次"的归因（冒泡路径上挂了两个监听器）都达标。处理方式的完整答案在 D 部分第 4 问的两种姿势：<strong>拦截</strong>（子元素监听里调 e.stopPropagation()，事件不上浮）和<strong>利用</strong>（事件委托：故意只在外层挂一个监听，靠 e.target 判断点击的是谁——第 6 章项目用的就是它）。口诀：冲突就拦，批量就用。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 7 条 · map/filter/reduce/find 返回值类型<span class="v v-half">方向全对，措辞升级一格</span></div>
+    <div class="q-quote">Map 和 filter 返回的是新对象，reduce 返回的是新值，find 返回的是原值。</div>
+    <p>三个判断的方向都对，面试措辞各升一格：<strong>map/filter 返回"新数组"</strong>（不是"新对象"——虽然数组也算对象，但面试官要听"新数组"这个精确类型，且要能补一句"元素还是原引用"，见 F 部分演示 16）；<strong>reduce 返回"回调累计的结果，类型由你决定"</strong>（数字、数组、对象都行）；<strong>find 返回"原数组里第一个满足条件的元素（引用），没有则 undefined"</strong>——"原值"对了，补上"第一个"和"undefined"就满分。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 8 条 · 三态取数函数<span class="v v-half">框架对，但少了一态——是"四态"</span></div>
+    <div class="q-quote">(a) 空状态处理：空的时候去展示内容。(b) 接口调用：使用 try-catch 去调用，用 await 等待结果。(c) 状态响应：在 catch 里面对异常做处理之后，再对状态进行响应。</div>
+    <p>骨架对，但你漏了最容易漏、用户感知最强的一态：<strong>加载中（loading）</strong>。你说的"中状态"应该就是它——完整版是<strong>四态</strong>，对着主册 5.8 那段代码数一遍：请求发出去的<strong>那一刻</strong>就是 loading（"加载中..."）→ 成功有数据（渲染列表）→ 成功但空（"没有数据"）→ 失败（"加载失败：" + 错误信息）。四态各自的 UI 对应物：loading 显示文案或骨架屏 / 成功渲染数据 / 空数据给空状态插画或提示 / 失败给错误信息 + 重试按钮。面试官问"三态"通常指 loading / 空 / 错误，但你的函数代码里一定是四分支（成功渲染是默认分支）。你项目里的 emptyEl 切换就是"空态"的那一行——现在你能说出它在四态里的位置了。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">第 9、10 条 · 事件循环顺序题<span class="v v-new">你说"看不懂"——完整的答案已经备好</span></div>
+    <div class="q-quote">最后一个事件循环顺序题：看不懂。</div>
+    <p>这一条在前面的批改里已经打完收工，串一下索引：<strong>机制</strong>（宏/微任务是什么、循环怎么转）在 E 部分第 8 问——两个模型纠错、while 伪代码、两张户口表；<strong>动手</strong>在演示 15——13 步逐步推演经典题；<strong>进阶练习</strong>（含 async/await 的版本）在 F 部分第 6 题，带完整推演和口诀。按顺序走完这三站，"看不懂"会变成"这题就两种队列来回倒"。过关标准的最后一条，从此划掉。</p>
+  </div>
+
+  <div class="q">
+    <div class="q-title">终评 · 全册过关结论<span class="v v-ok">7 / 10 达标，可以进入实践</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>过关标准</th><th>判定</th><th>补救位置</th></tr></thead>
+        <tbody>
+          <tr><td>1 三件套分工</td><td class="yes">达标</td><td>本部分第 1 条（换两个词）</td></tr>
+          <tr><td>2 标签选用</td><td class="no">差一处</td><td>本部分第 2 条（ul ≠ label + 速记表）</td></tr>
+          <tr><td>3 盒模型 + 两个布局</td><td class="no">两处硬伤</td><td>本部分第 3 条（border-box 钉死 + 居中重背）</td></tr>
+          <tr><td>4 排查路径</td><td class="no">此前不会</td><td>本部分第 4 条（演示 17 五步口诀）</td></tr>
+          <tr><td>5 querySelector 组合拳</td><td class="yes">达标</td><td>—</td></tr>
+          <tr><td>6 事件冒泡</td><td class="yes">达标</td><td>D 部分第 4 问（处理姿势）</td></tr>
+          <tr><td>7 四个数组方法</td><td class="yes">达标</td><td>本部分第 7 条（措辞升级）</td></tr>
+          <tr><td>8 三态取数</td><td class="yes">达标</td><td>本部分第 8 条（补成四态）</td></tr>
+          <tr><td>9 async/await 取数函数</td><td class="yes">达标</td><td>你的项目已实现</td></tr>
+          <tr><td>10 事件循环顺序题</td><td class="no">此前不会</td><td>E 部分 Q8 + 演示 15 + F 部分练习</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>主册的过关门槛是"达成任意 8 条即可进入实践"，你达标 7 条、其余 3 条的补救材料都在这本手册里——<strong>把第 3 条的两个硬伤背掉、演示 17 的五步口诀过一遍、演示 15 走一遍，就是 10/10</strong>。更重要的是过程评价：这本手册里你的提问质量（"父子 z-index 不行为什么同级可以"、"处理了异常不就传播不了了吗"）说明你不是在背知识，而是在<strong>建模</strong>——被你问出来的这几处，恰好都是面试官最爱深挖的机制层。按主册的节奏：进入实践（路线图 Stage 0-2 的产出物任务），第二册 React 见。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <p class="endnote">第一册 · 答疑手册 · 逐条对应《前端从 0 到 1 · 概念与最小代码手册（第一册）》第 2–7 章 · 所有演示可直接在本页交互验证</p>
+  </div>
+</footer>
+
+<!-- REQUIRED: app logic（复用主册的复制按钮逻辑） -->
+<script src="assets/app.js"></script>
+<!-- 17 个交互演示的全部逻辑（优先级算分 / margin / 单位 / 基线 / flex 算法 / z-index / grid / BFC / 隐藏 / 冒泡 / preventDefault / XSS / 浮点 / 时间线 / 事件循环 / 引用陷阱 / 排查五步） -->
+<script src="assets/qa-vol1.js"></script>
+
+<!-- 访问量统计（不蒜子 busuanzi，异步加载，不影响页面主体） -->
+<div style="text-align:center;padding:16px;font-size:13px;opacity:.6;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;border-top:1px solid rgba(0,0,0,.08);margin-top:36px;letter-spacing:.02em">
+  本书已被阅读 <span id="busuanzi_page_pv">…</span> 次 · 本站总访问 <span id="busuanzi_site_pv">…</span> 次 · 访客 <span id="busuanzi_site_uv">…</span> 人
+</div>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></body>
+</html>

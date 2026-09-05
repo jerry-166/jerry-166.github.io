@@ -84,6 +84,47 @@ export default function Home() {
           )}
         </section>
 
+        {/* 前端教程系列入口 */}
+        <section className="mt-16 md:mt-20">
+          <div className="card-classic relative overflow-hidden">
+            {/* 右侧装饰水印 */}
+            <span className="absolute -right-4 -bottom-6 text-8xl font-zhserif text-ink/5 select-none pointer-events-none" aria-hidden>
+              典
+            </span>
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="max-w-xl">
+                <h2 className="text-lg md:text-xl font-medium text-ink-dark mb-3">
+                  前端教程系列
+                </h2>
+                <p className="text-sm md:text-base text-ink/70 leading-relaxed">
+                  从零基础路线图到 React 手册，再到 AI 时代知识金字塔——
+                  一整套支持在线交互演示的前端学习手册，全部免费阅读。
+                </p>
+              </div>
+              <Link
+                href="/projects#books"
+                className="btn-classic inline-flex items-center gap-2 shrink-0 self-start md:self-center"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.247m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.247"
+                  />
+                </svg>
+                进入书房
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* 关于简介 */}
         <section className="mt-16 md:mt-20">
           <div className="divider">
@@ -95,8 +136,8 @@ export default function Home() {
               关于我
             </h2>
             <p className="text-sm md:text-base text-ink/70 leading-relaxed mb-6">
-              一名正在学习 AI 技术的学生，专注于 RAG 和 Agent 开发。
-              热爱技术，享受探索的过程。
+              计算机专业在读，主攻后端与 AI 应用开发，
+              专注 RAG 与 Agent 的工程实践。热爱技术，享受探索的过程。
             </p>
             <Link 
               href="/about" 

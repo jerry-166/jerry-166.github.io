@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Script from 'next/script'
 import { socialLinks, siteConfig } from '@/lib/config'
 
 export default function Footer() {
@@ -20,6 +21,12 @@ export default function Footer() {
             </p>
             <p className="text-xs text-ink/40 mt-2">
               © {currentYear} {siteConfig.author}. 用心记录每一天.
+            </p>
+            {/* 访问量统计：不蒜子会在脚本加载后自动填充 span 内容 */}
+            <p className="text-xs text-ink/40 mt-2">
+              总访问量 <span id="busuanzi_site_pv" className="text-ink/60">…</span> 次
+              <span className="mx-2">·</span>
+              访客数 <span id="busuanzi_site_uv" className="text-ink/60">…</span> 人
             </p>
           </div>
 
@@ -57,6 +64,13 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* 不蒜子统计脚本：afterInteractive 不阻塞首屏渲染 */}
+      <Script
+        async
+        src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+        strategy="afterInteractive"
+      />
     </footer>
   )
 }

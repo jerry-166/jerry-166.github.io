@@ -10,7 +10,7 @@ export const siteConfig = {
   url: 'https://jerry-166-github-io-juuy.vercel.app',
 }
 
-// 前端教程系列（静态 HTML 手册，部署在 /public/books 下）
+// 教程手册系列（静态 HTML 手册，部署在 /public/books 下：前端系列 + 后端手册）
 export interface TutorialBook {
   title: string
   volume: string
@@ -65,6 +65,15 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-knowledge-pyramid/frontend-knowledge-pyramid.html',
     tags: ['知识体系', '架构'],
     accent: '#b5705c',
+  },
+  {
+    title: 'MySQL 架构逻辑链',
+    volume: '后端',
+    description:
+      '从 0 到 1 串讲 MySQL 架构的完整逻辑链：四层框架 → InnoDB 内存 / 磁盘两翼深挖 → 一条 update SQL 收束。含 9 张 SVG 图解、纠错卡片与面试口播稿。',
+    href: '/books/mysql-arch-logic/mysql-arch-logic.html',
+    tags: ['MySQL', 'InnoDB', '面试串讲'],
+    accent: '#6d63c9',
   },
 ]
 

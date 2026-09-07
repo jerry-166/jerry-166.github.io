@@ -84,7 +84,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* 前端教程系列入口 */}
+        {/* 教程手册入口 */}
         <section className="mt-16 md:mt-20">
           <div className="card-classic relative overflow-hidden">
             {/* 右侧装饰水印 */}
@@ -95,11 +95,12 @@ export default function Home() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="max-w-xl">
                 <h2 className="text-lg md:text-xl font-medium text-ink-dark mb-3">
-                  前端教程系列
+                  教程手册
                 </h2>
                 <p className="text-sm md:text-base text-ink/70 leading-relaxed">
-                  从零基础路线图到 React 手册，再到 AI 时代知识金字塔——
-                  一整套支持在线交互演示的前端学习手册，全部免费阅读。
+                  从前端零基础路线图、React 手册、AI 时代知识金字塔，
+                  到 MySQL 架构逻辑链——
+                  一整套支持在线交互演示的自研学习手册，全部免费阅读。
                 </p>
               </div>
               <Link

@@ -36,7 +36,8 @@ export default function AboutPage() {
               </p>
               <p>
                 这个博客用来记录我的学习笔记、项目经历和思考感悟。
-                我把学习前端时整理的一整套教程手册也放在了这里，
+                我把学习过程中整理的一整套教程手册（前端系列、MySQL
+                架构串讲等）也放在了这里，
                 希望能对你有一点点帮助。
               </p>
             </div>
@@ -77,11 +78,12 @@ export default function AboutPage() {
 
           {/* 教程系列 */}
           <section className="card-classic">
-            <h2 className="text-lg font-medium text-ink-dark mb-4">前端教程系列</h2>
+            <h2 className="text-lg font-medium text-ink-dark mb-4">教程手册</h2>
             <div className="prose-classic text-base">
               <p>
                 从零开始学前端时，我整理了一套完整的教程手册：
-                学习路线、概念与最小代码手册（三册）、以及 AI 时代知识金字塔，
+                学习路线、概念与最小代码手册（三册）、以及 AI 时代知识金字塔；
+                备战秋招时又编写了 MySQL 架构逻辑链串讲笔记，
                 全部支持在线交互演示。
               </p>
             </div>

@@ -257,6 +257,9 @@ footer p.endnote { font-size: 14px; color: var(--muted); }
 
     <p class="meta">FORMAT: 你的原话引用 → 判定 → 讲透 → 演示/代码 &nbsp;|&nbsp; 配套主册 frontend-handbook-1.html 使用</p>
 
+    <!-- 访问量统计（不蒜子 busuanzi）：显示于头部，脚本加载后自动展示，离线打开时保持隐藏 -->
+    <p class="meta" id="busuanzi_container_page_pv" style="display:none">📖 本书被读 <span id="busuanzi_value_page_pv"></span> 次 &nbsp;|&nbsp; 本站总访问 <span id="busuanzi_value_site_pv"></span> 次 &nbsp;|&nbsp; 访客 <span id="busuanzi_value_site_uv"></span> 人</p>
+
     <nav class="toc">
       <a href="#qa2"><b>A</b>第 2 章 · HTML 五问</a>
       <a href="#qa3"><b>B</b>第 3 章 · CSS 十问</a>
@@ -1396,9 +1399,5 @@ console.log("6");
 <!-- 17 个交互演示的全部逻辑（优先级算分 / margin / 单位 / 基线 / flex 算法 / z-index / grid / BFC / 隐藏 / 冒泡 / preventDefault / XSS / 浮点 / 时间线 / 事件循环 / 引用陷阱 / 排查五步） -->
 <script src="assets/qa-vol1.js"></script>
 
-<!-- 访问量统计（不蒜子 busuanzi，异步加载，不影响页面主体） -->
-<div style="text-align:center;padding:16px;font-size:13px;opacity:.6;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;border-top:1px solid rgba(0,0,0,.08);margin-top:36px;letter-spacing:.02em">
-  本书已被阅读 <span id="busuanzi_page_pv">…</span> 次 · 本站总访问 <span id="busuanzi_site_pv">…</span> 次 · 访客 <span id="busuanzi_site_uv">…</span> 人
-</div>
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></body>
 </html>

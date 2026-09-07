@@ -22,6 +22,15 @@ export default function Header() {
             <span className="text-xs text-ink/50 tracking-widest hidden sm:block">
               {siteConfig.motto}
             </span>
+            {/* 整站访问量：不蒜子统计，脚本全局加载（见 app/layout.tsx），
+                数据返回前 display:none，脚本加载失败时保持隐藏，不显示 "undefined" */}
+            <span
+              id="busuanzi_container_site_pv"
+              className="text-xs text-ink/50 tracking-widest"
+              style={{ display: 'none' }}
+            >
+              访问量 <span id="busuanzi_value_site_pv" /> 次
+            </span>
           </Link>
 
           {/* 导航 */}

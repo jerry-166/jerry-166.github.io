@@ -6,7 +6,7 @@ import { siteConfig, tutorialBooks, TutorialBook } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: `项目展示 - ${siteConfig.title}`,
-  description: `${siteConfig.author} 的前端教程系列与 GitHub 项目作品集`,
+  description: `${siteConfig.author} 的自研教程手册与 GitHub 项目作品集`,
 }
 
 // ISR: 每 1 小时自动重新拉取 GitHub 仓库列表，新项目自动同步
@@ -168,18 +168,18 @@ export default async function ProjectsPage() {
             项目展示
           </h1>
           <p className="text-base text-ink/70 max-w-2xl mx-auto leading-relaxed">
-            这里汇集了我编写的前端教程系列，以及 GitHub 上的开源项目。
+            这里汇集了我编写的教程手册系列，以及 GitHub 上的开源项目。
           </p>
           <div className="divider mt-8">
             <span className="divider-text">✦</span>
           </div>
         </section>
 
-        {/* 教程系列专区 */}
+        {/* 教程系列专区：前端系列 + MySQL 后端手册，书籍配置见 lib/config.ts tutorialBooks */}
         <section id="books" className="mb-16 md:mb-20 scroll-mt-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-lg md:text-xl font-medium text-ink-dark">
-              前端教程系列
+              教程手册
             </h2>
             <span className="text-xs text-ink/50">
               共 {tutorialBooks.length} 册 · 持续更新

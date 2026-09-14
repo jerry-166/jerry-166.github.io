@@ -15,6 +15,21 @@
 - ⚡ **Next.js 14**：使用 App Router，最新技术栈
 - 📝 **Markdown 写作**：使用 Markdown 格式写文章
 
+## 页面展示
+
+| 首页（杂志式布局） | 文章列表（搜索 + 标签筛选） |
+|:---:|:---:|
+| ![首页](public/images/showcase/home.jpg) | ![文章列表](public/images/showcase/posts.jpg) |
+
+| 项目展示（教程手册 + GitHub 开源项目） | 关于页（技术栈 / 项目经历） |
+|:---:|:---:|
+| ![项目展示](public/images/showcase/projects.jpg) | ![关于页](public/images/showcase/about.jpg) |
+
+- **首页**：特色文章大卡片 + 双列文章布局，教程手册与个人简介分区呈现
+- **文章列表**：支持标题 / 描述 / 标签实时搜索，多标签聚合筛选
+- **项目展示**：自研教程手册（书籍装帧卡片）+ GitHub 仓库自动同步（ISR 每小时刷新），README 在线渲染
+- **关于页**：技术栈、项目经历与联系方式
+
 ## 快速开始
 
 ### 1. 安装依赖

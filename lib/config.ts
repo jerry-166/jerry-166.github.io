@@ -77,6 +77,71 @@ export const tutorialBooks: TutorialBook[] = [
   },
 ]
 
+// 作品精选轮播（项目展示页顶部，图片位于 public/showcase/）
+export interface ShowcaseItem {
+  src: string
+  title: string
+  subtitle: string
+}
+
+export const showcaseItems: ShowcaseItem[] = [
+  {
+    src: '/showcase/rag_pipeline.jpg',
+    title: 'RAGFlow 智能知识库',
+    subtitle: '文档处理流水线：PDF 解析 → 分块 → 子问题/摘要 → 向量化导入 Milvus，全流程可视化',
+  },
+  {
+    src: '/showcase/rag_retrieval.jpg',
+    title: 'RAGFlow 智能知识库',
+    subtitle: '向量 / BM25 / 混合（RRF + Rerank）多策略检索，检索管道逐级可视化',
+  },
+  {
+    src: '/showcase/rag_agent.jpg',
+    title: 'RAGFlow 智能知识库',
+    subtitle: 'AI Agent 问答带引用来源与相似度评分，SSE 流式输出',
+  },
+  {
+    src: '/showcase/rag_agent_compare.jpg',
+    title: 'RAGFlow 智能知识库',
+    subtitle: '多 Agent 对比模式：Simple / Advanced / Claw 并行回答同一问题',
+  },
+  {
+    src: '/showcase/liyuan_menu.jpg',
+    title: '梨园生死',
+    subtitle: 'AI Agent 驱动的 2D 开放探索叙事游戏，每一局都是独一无二的故事',
+  },
+  {
+    src: '/showcase/liyuan_stage.jpg',
+    title: '梨园生死',
+    subtitle: '江南小镇六大子场景实机画面：破败戏台、祠堂、茶馆、码头……',
+  },
+  {
+    src: '/showcase/liyuan_ending.jpg',
+    title: '梨园生死',
+    subtitle: '结局由整局关系累积塑造，每个 NPC 获得专属终章',
+  },
+  {
+    src: '/showcase/gold_home.jpg',
+    title: '每日金价早报',
+    subtitle: '自动化金价资讯系统：今日金价 + 昨夜大事，大白话解读',
+  },
+  {
+    src: '/showcase/gold_trend.jpg',
+    title: '每日金价早报',
+    subtitle: '伦敦金走势与关键事件一一对应，看清每次涨跌背后的宏观逻辑',
+  },
+  {
+    src: '/showcase/blog_home.jpg',
+    title: '墨染秋毫（本站）',
+    subtitle: '古风淡雅的 Next.js 14 博客，杂志式首页布局',
+  },
+  {
+    src: '/showcase/blog_projects.jpg',
+    title: '墨染秋毫（本站）',
+    subtitle: '教程手册 + GitHub 开源项目自动同步展示',
+  },
+]
+
 // 导航链接
 export const navLinks = [
   { href: '/', label: '首页' },

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
+import ShowcaseCarousel from '@/components/ShowcaseCarousel'
 import { getUserRepos, getLanguageColor, GitHubRepo } from '@/lib/github'
-import { siteConfig, tutorialBooks, TutorialBook } from '@/lib/config'
+import { siteConfig, tutorialBooks, TutorialBook, showcaseItems } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: `项目展示 - ${siteConfig.title}`,
@@ -173,6 +174,19 @@ export default async function ProjectsPage() {
           <div className="divider mt-8">
             <span className="divider-text">✦</span>
           </div>
+        </section>
+
+        {/* 作品精选：关键画面层级轮播，居中完整展示、两侧遮盖、左右按钮切换 */}
+        <section className="mb-16 md:mb-20">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-lg md:text-xl font-medium text-ink-dark">
+              作品精选
+            </h2>
+            <span className="text-xs text-ink/50">
+              共 {showcaseItems.length} 幅关键画面 · 点击两侧或按钮切换
+            </span>
+          </div>
+          <ShowcaseCarousel items={showcaseItems} />
         </section>
 
         {/* 教程系列专区：前端系列 + MySQL 后端手册，书籍配置见 lib/config.ts tutorialBooks */}

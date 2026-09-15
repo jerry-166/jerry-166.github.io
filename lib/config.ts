@@ -10,7 +10,9 @@ export const siteConfig = {
   url: 'https://jerry-166-github-io-juuy.vercel.app',
 }
 
-// 教程手册系列（静态 HTML 手册，部署在 /public/books 下：前端系列 + 后端手册）
+// 教程手册系列（静态 HTML 手册，部署在 /public/books 下，按 category 分组展示）
+export type BookCategory = 'frontend' | 'backend'
+
 export interface TutorialBook {
   title: string
   volume: string
@@ -18,7 +20,14 @@ export interface TutorialBook {
   href: string
   tags: string[]
   accent: string // 卡片左侧强调色（水墨风低饱和色）
+  category: BookCategory
 }
+
+// 手册分类分组（项目页按此顺序渲染成多个专栏）
+export const bookCategories: { key: BookCategory; label: string }[] = [
+  { key: 'frontend', label: '前端系列' },
+  { key: 'backend', label: 'Python / 后端系列' },
+]
 
 export const tutorialBooks: TutorialBook[] = [
   {
@@ -29,6 +38,7 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-roadmap/frontend-roadmap.html',
     tags: ['路线图', '学习规划'],
     accent: '#7d9a76',
+    category: 'frontend',
   },
   {
     title: '概念与最小代码手册 · 第一册',
@@ -38,6 +48,7 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-handbook-1/frontend-handbook-1.html',
     tags: ['HTML', 'CSS', 'JavaScript'],
     accent: '#a8823c',
+    category: 'frontend',
   },
   {
     title: '第一册 · 答疑手册',
@@ -47,6 +58,7 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-handbook-1/qa-vol1.html',
     tags: ['答疑', '交互演示'],
     accent: '#8b6ea8',
+    category: 'frontend',
   },
   {
     title: 'React 概念手册 · 第二册',
@@ -56,6 +68,7 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-handbook-2/frontend-handbook-2.html',
     tags: ['React', '组件化'],
     accent: '#4a8bb5',
+    category: 'frontend',
   },
   {
     title: 'AI 时代前端知识金字塔',
@@ -65,6 +78,7 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/frontend-knowledge-pyramid/frontend-knowledge-pyramid.html',
     tags: ['知识体系', '架构'],
     accent: '#b5705c',
+    category: 'frontend',
   },
   {
     title: 'MySQL 架构逻辑链',
@@ -74,6 +88,17 @@ export const tutorialBooks: TutorialBook[] = [
     href: '/books/mysql-arch-logic/mysql-arch-logic.html',
     tags: ['MySQL', 'InnoDB', '面试串讲'],
     accent: '#6d63c9',
+    category: 'backend',
+  },
+  {
+    title: 'FastAPI 从 0 到 1 · 原理与面试全解',
+    volume: '后端',
+    description:
+      '从原理到使用完整串讲 FastAPI：ASGI/WSGI 契约、选型对比、请求生命周期、依赖注入双阶段、async/def 双模陷阱、性能四大件与 Rust 重写、多进程 worker 模型，附 trace_id 审计实战（rag-for-qw 源码级核实）与 Spring Boot 逐维度对比。',
+    href: '/books/fastapi-interview-notes/fastapi_interview_notes.html',
+    tags: ['FastAPI', 'Python', '面试', 'Spring Boot'],
+    accent: '#0E9F74',
+    category: 'backend',
   },
 ]
 

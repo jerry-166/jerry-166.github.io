@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Layout from '@/components/Layout'
 import ShowcaseCarousel from '@/components/ShowcaseCarousel'
 import { getUserRepos, getLanguageColor, GitHubRepo } from '@/lib/github'
-import { siteConfig, tutorialBooks, TutorialBook, showcaseItems } from '@/lib/config'
+import { siteConfig, tutorialBooks, TutorialBook, bookCategories, showcaseItems } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: `项目展示 - ${siteConfig.title}`,
@@ -189,7 +189,7 @@ export default async function ProjectsPage() {
           <ShowcaseCarousel items={showcaseItems} />
         </section>
 
-        {/* 教程系列专区：前端系列 + MySQL 后端手册，书籍配置见 lib/config.ts tutorialBooks */}
+        {/* 教程系列专区：按分类分组展示（前端系列 / Python 后端系列），配置见 lib/config.ts */}
         <section id="books" className="mb-16 md:mb-20 scroll-mt-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-lg md:text-xl font-medium text-ink-dark">
@@ -199,11 +199,33 @@ export default async function ProjectsPage() {
               共 {tutorialBooks.length} 册 · 持续更新
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {tutorialBooks.map((book, index) => (
-              <BookCard key={book.href} book={book} index={index} />
-            ))}
-          </div>
+
+          {/* 分类专栏：全局书脊编号连续递增 */}
+          {bookCategories.map((cat) => {
+            const books = tutorialBooks.filter((b) => b.category === cat.key)
+            if (books.length === 0) return null
+            const offset = tutorialBooks.filter(
+              (b) => bookCategories.findIndex((c) => c.key === b.category) <
+                bookCategories.findIndex((c) => c.key === cat.key)
+            ).length
+            return (
+              <div key={cat.key} className="mb-10 last:mb-0">
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-base font-medium text-ink-dark">
+                    {cat.label}
+                  </h3>
+                  <span className="flex-1 h-px bg-mist/50" aria-hidden />
+                  <span className="text-xs text-ink/40">{books.length} 册</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {books.map((book, i) => (
+                    <BookCard key={book.href} book={book} index={offset + i} />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+
           <p className="mt-6 text-center text-xs text-ink/40 leading-relaxed">
             所有教程均为自包含静态页面，手机/平板/电脑均可流畅阅读，支持直接交互演示。
           </p>

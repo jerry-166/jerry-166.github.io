@@ -100,6 +100,16 @@ export const tutorialBooks: TutorialBook[] = [
     accent: '#0E9F74',
     category: 'backend',
   },
+  {
+    title: 'Python 内存泄漏排查 · LeakLab 实战',
+    volume: '后端',
+    description:
+      '一个被 OOM 杀过 7 次的靶场服务，从 0 到 1 走完「发现泄漏 → 分流定性 → 定位到代码行 → memray 抓到现行 → 事故复盘」全链路：5 种泄漏形态、Docker 一键搭建、Prometheus/Grafana 面板判读、tracemalloc 预埋与线上 attach 取证，全部来自真实运行数据，配套开源仓库可复现。',
+    href: '/books/python-memory-leak-lab/tutorial.html',
+    tags: ['Python', '内存泄漏', 'Docker', '可观测性'],
+    accent: '#8a3b3b',
+    category: 'backend',
+  },
 ]
 
 // 作品精选轮播（项目展示页顶部，图片位于 public/showcase/）

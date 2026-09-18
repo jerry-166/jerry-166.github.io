@@ -25,14 +25,31 @@
        与边栏并排同屏 —— 看批注不打断阅读；窄屏仍为悬浮覆盖（保证正文可读宽度）
      · 引入前可设置 window.ANNO_PAGE='书名/页面名' 自定义存储键：
        多本教程书批量接入时防止同名页面（如都有 index.html）串数据
+
+   v3.2 变更（多书接入自动适配）：
+     · 新增统一配置 window.ANNO_CONFIG = { page, api, root }（均可选），
+       兼容旧变量 ANNO_PAGE / ANNO_API —— 目标：任何书接入只引一行 <script>，零代码改动
+     · 正文容器三级自动探测：① 显式配置 root → ② 约定链（main/article/[role=main]/
+       常见 class，命中需正文>200字防误配）→ ③ 启发式兜底（body 下文本量最大的子元素），
+       不同结构的教程书无需各写适配代码
    ================================================================== */
 (function () {
   'use strict';
 
-  /* ==================== 配置 ==================== */
-  // 存储键 = 批注归属页面。默认取 URL 文件名（本地打开与线上打开同键，云端同一份数据）；
-  // 多本书接入时若可能出现同名文件，在引入本脚本前设 window.ANNO_PAGE 显式指定键名
-  var PAGE = (window.ANNO_PAGE != null) ? String(window.ANNO_PAGE)
+  /* ==================== 配置（v3.2：统一配置对象） ====================
+     页面在引入本脚本前，可选地设置（全部字段可缺省）：
+       window.ANNO_CONFIG = {
+         page: 'fastapi/ch2',     // ① 存储键：不同书存在同名页面（如都叫 index.html）时必须设，防串数据
+         api:  'https://…',       // ② 批注 API 基址：默认自动推断，一般不用设
+         root: '.book-content',   // ③ 正文容器选择器：默认自动探测，一般不用设
+       };
+     设计取向 = 约定优于配置：符合约定（正文在 <main> 里）的书零配置即可用；
+     偏离约定的书加一行配置即可，anno.js 源码不动（开闭原则）。 */
+  var CFG = window.ANNO_CONFIG || {};
+
+  // ① 存储键：默认取 URL 文件名 —— 本地打开与线上打开同键，云端同一份数据
+  var PAGE = (CFG.page != null) ? String(CFG.page)
+    : (window.ANNO_PAGE != null) ? String(window.ANNO_PAGE)
     : decodeURIComponent(location.pathname.split('/').pop() || 'index');
   var KEY = 'anno:' + PAGE;
   var MTIME_KEY = KEY + ':mtime';   // 本地最后一次修改时间（用于重启后判断有无未推送数据）
@@ -42,14 +59,12 @@
   var COLORS = { y: '#ffe58a', g: '#a7f3d0', r: '#fecaca' };
   var COLOR_LABEL = { y: '重点', g: '已掌握', r: '疑问' };
 
-  /* ---- 云端同步配置 ----
-     API 基址选择规则（优先级从高到低）：
-       1. 页面里显式配置 window.ANNO_API（想强制指向别的服务时用）
-       2. 本地打开（file:// 或 localhost 调试）→ 直连 blog 线上 API（服务端 CORS 已放开 *）
-       3. 页面本身部署在 blog 域名下 → 同域相对路径（最稳、无跨域）
-     这样同一份 HTML 本地看和线上看，批注都是同一份云端数据               */
+  /* ② 云端 API 基址：优先级 CFG.api > 旧变量 ANNO_API > 自动推断。
+     自动推断：本地打开（file:// 或 localhost 调试）→ 直连 blog 线上 API
+     （服务端 CORS 已放开 *）；页面部署在 blog 域名下 → 同域相对路径（最稳） */
   var REMOTE_ORIGIN = 'https://jerry-166-github-io-juuy.vercel.app';
-  var API_BASE = (window.ANNO_API != null) ? String(window.ANNO_API)
+  var API_BASE = (CFG.api != null) ? String(CFG.api)
+    : (window.ANNO_API != null) ? String(window.ANNO_API)
     : (location.protocol === 'file:' || /^(localhost|127\.|0\.0\.0\.0$)/.test(location.hostname))
       ? REMOTE_ORIGIN : '';
   var API = API_BASE + '/api/annotations';
@@ -455,6 +470,36 @@
     document.head.appendChild(s);
   }
 
+  /* ==================== 正文容器自动探测（v3.2 核心，适配器角色） ====================
+     所有"划线只能落在正文里"的判断都依赖正文容器。不同教程书的页面结构不一：
+     有的用 <main>，有的用 <article>，有的用自定义 class —— 这里三级探测归一化：
+       ① 页面显式配置 CFG.root（差异已知时一行直达，优先级最高）
+       ② 约定探测链：main → article → [role=main] → 常见 class；
+          命中条件 = 容器内正文文本 >200 字（防止误配页面角落的小元素，如评论区 <article>）
+       ③ 启发式兜底：body 直接子元素中文本量最大者（>500 字才算数，否则退回 body 全域）
+     探测结果缓存：容器在一次会话内不会结构性变化，避免每次划线重复探测 */
+  var _rootEl = null;
+  function rootOf() {
+    if (_rootEl) return _rootEl;
+    if (CFG.root) {                                   // ① 显式配置优先
+      var n = document.querySelector(CFG.root);
+      if (n) { _rootEl = n; return n; }
+    }
+    var chain = ['main', 'article', '[role="main"]', // ② 约定链：最语义化 → 最常见
+      '#content', '.content', '.post-content', '.markdown-body'];
+    for (var i = 0; i < chain.length; i++) {
+      var m = document.querySelector(chain[i]);
+      if (m && (m.textContent || '').trim().length > 200) { _rootEl = m; return m; }
+    }
+    var best = null, bestLen = 0;                     // ③ 启发式兜底
+    Array.prototype.forEach.call(document.body.children, function (c) {
+      var len = (c.textContent || '').trim().length;
+      if (len > bestLen) { bestLen = len; best = c; }
+    });
+    _rootEl = bestLen > 500 ? best : document.body;
+    return _rootEl;
+  }
+
   /* ==================== XPath 定位 ==================== */
   function xpathOf(node) {
     var parts = [], n = node;
@@ -489,16 +534,16 @@
       if (r.collapsed) return null;
       var c = r.commonAncestorContainer;
       var ce = c.nodeType === 1 ? c : c.parentNode;
-      var main = document.querySelector('main');
-      if (!main || !main.contains(ce)) return null;
+      var root = rootOf();                 // 批注位置必须落在正文容器内（自动探测，见 rootOf）
+      if (!root || !root.contains(ce)) return null;
       return r;
     } catch (e) { return null; }
   }
   function findByText(text) {
     if (!text || text.length < 4) return null;
-    var main = document.querySelector('main');
-    if (!main) return null;
-    var w = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, null);
+    var root = rootOf();
+    if (!root) return null;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
     while (w.nextNode()) {
       var n = w.currentNode;
       var i = n.nodeValue.indexOf(text);
@@ -514,10 +559,10 @@
 
   /* ==================== 划线的施加与清除 ==================== */
   function unmarkAll() {
-    var main = document.querySelector('main');
-    if (!main) return;
-    main.querySelectorAll('.anno-chip').forEach(function (c) { c.remove(); });
-    main.querySelectorAll('.anno-hl').forEach(function (mk) {
+    var root = rootOf();
+    if (!root) return;
+    root.querySelectorAll('.anno-chip').forEach(function (c) { c.remove(); });
+    root.querySelectorAll('.anno-hl').forEach(function (mk) {
       var p = mk.parentNode;
       while (mk.firstChild) p.insertBefore(mk.firstChild, mk);
       mk.remove();
@@ -572,11 +617,12 @@
   }
 
   /* ==================== 选区处理 ==================== */
-  function clampToMain(range) {
-    var main = document.querySelector('main');
-    if (!main) return null;
+  /** 把用户选区裁剪到正文容器内（划页面导航、侧栏文字不允许划线） */
+  function clampToRoot(range) {
+    var root = rootOf();
+    if (!root) return null;
     var mr = document.createRange();
-    mr.selectNodeContents(main);
+    mr.selectNodeContents(root);
     var r = range.cloneRange();
     if (r.compareBoundaryPoints(Range.START_TO_START, mr) < 0) r.setStart(mr.startContainer, mr.startOffset);
     if (r.compareBoundaryPoints(Range.END_TO_END, mr) > 0) r.setEnd(mr.endContainer, mr.endOffset);
@@ -585,7 +631,7 @@
   function currentRange() {
     var sel = window.getSelection();
     if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
-    var r = clampToMain(sel.getRangeAt(0));
+    var r = clampToRoot(sel.getRangeAt(0));
     if (!r || !r.toString().trim()) return null;
     return r;
   }

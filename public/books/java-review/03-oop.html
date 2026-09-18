@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块3：面向对象</title>
+<style>
+:root {
+  --bg: #f4f6fa; --card: #ffffff; --ink: #1e293b; --ink-2: #475569; --ink-3: #64748b;
+  --line: #e2e8f0; --primary: #2456d6; --primary-soft: #eef3ff;
+  --high: #dc2626; --high-bg: #fef2f2; --hard: #7c3aed; --hard-bg: #f5f3ff;
+  --trap: #c2410c; --trap-bg: #fff7ed; --py: #0f766e; --py-bg: #f0fdfa;
+  --code-bg: #0f172a; --code-ink: #cbd5e1; --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+.hero { background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%); border-bottom: 1px solid #d4e0f7; color: var(--ink); padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 33.3%; background: linear-gradient(90deg, #2456d6, #4f7df9); border-radius: 4px; }
+
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a, .mod-nav span { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button { width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none; }
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 3 / 9</div>
+  <h1>面向对象</h1>
+  <div class="sub">
+    三大特性 → <b>类初始化顺序全链路</b> → this/super → <b>重载 vs 重写</b> → 多态与动态绑定 → 接口 vs 抽象类 → <b>equals/hashCode 分桶图（讲透"只重写一半"的后果）</b> → 内部类四兄弟 → 组合 vs 继承。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法</a>
+  <span class="cur">3 面向对象</span>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <span>6 并发编程</span>
+  <span>7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 三大特性总览</a>
+    <a href="#s2">02 初始化顺序全链路</a>
+    <a href="#s3">03 this 与 super</a>
+    <a href="#s4">04 重载 vs 重写</a>
+    <a href="#s5">05 多态与动态绑定</a>
+    <a href="#s6">06 接口 vs 抽象类</a>
+    <a href="#s7">07 equals 与 hashCode（分桶图）</a>
+    <a href="#s8">08 内部类四兄弟</a>
+    <a href="#s9">09 组合 vs 继承</a>
+    <a href="#s10">10 高频面试题速查</a>
+    <a href="#s11">11 模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部面试答案</button>
+      <button id="btn-collapse" style="margin-top:6px">收起全部</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 01 三大特性 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>三大特性总览</h2></div>
+
+    <div class="depcard">
+      <div class="dep"><b>⬅ 前置依赖</b>模块 1：对象在堆、引用在栈；new 的五步过程（第 5 步"执行构造器"正是本模块要展开的）。模块 2：final 与 static。</div>
+      <div class="dep"><b>➡ 后续去向</b>equals/hashCode 分桶 → 模块 4 HashMap；接口 → 模块 7 函数式接口；匿名内部类 → 模块 7 Lambda 的前身。</div>
+    </div>
+
+    <table>
+      <tr><th>特性</th><th>一句话</th><th>实现手段</th><th>面试问法</th></tr>
+      <tr><td><b>封装</b></td><td>隐藏内部细节，只暴露必要操作</td><td><code>private</code> 字段 + public getter/setter</td><td>好处是什么？（降低耦合、可校验、改实现不影响外部）</td></tr>
+      <tr><td><b>继承</b></td><td>子类复用父类的字段和方法</td><td><code>extends</code>，单继承</td><td>构造器/初始化顺序、super 语义</td></tr>
+      <tr><td><b>多态</b></td><td>同一个调用，运行时表现不同行为</td><td>父类引用 + 子类对象 + 方法重写</td><td>动态绑定原理、字段有没有多态（没有！）</td></tr>
+    </table>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>多态的最小完整示例</span><span>Java</span></div>
+      <pre><code>class Animal {
+    public void sound() { System.out.println("某种叫声"); }
+}
+class Dog extends Animal {
+    @Override
+    public void sound() { System.out.println("汪汪"); }   // 重写
+}
+class Cat extends Animal {
+    @Override
+    public void sound() { System.out.println("喵喵"); }
+}
+
+Animal a = new Dog();    // 父类引用 指向 子类对象（向上转型，自动）
+a.sound();               // "汪汪" —— 编译时看 Animal 有没有 sound()，
+                         //            运行时执行的是 Dog 的实现（动态绑定）
+
+// 三要素缺一不可：继承/实现 + 重写 + 父类引用指向子类对象</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的多态是<b>鸭子类型</b>："会 sound 就能调用"，不需要继承同一父类。Java 是<b>名义类型</b>：必须先"是"Animal 才能用 Animal 的引用接住。Python 支持多继承（MRO 解决冲突），Java 单继承 + 多接口实现——接口就是 Java 对"多继承"需求的官方答案。</p>
+    </div>
+  </section>
+
+  <!-- ================= 02 初始化顺序 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>类初始化顺序全链路</h2></div>
+
+    <h3 class="kp">2.1 结论模板（背熟）<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>含继承链的完整顺序</span><span>结构</span></div>
+      <pre class="diagram"><code>new Child() 触发的完整初始化链：
+
+ ① 父类静态变量 + 父类静态代码块   ┐ 按源码书写顺序执行
+ ② 子类静态变量 + 子类静态代码块   ┘ 【类加载时执行，整个进程只一次】
+
+ ③ 父类实例变量赋值 + 父类构造代码块 ┐ 按源码书写顺序执行
+ ④ 父类构造方法体                    ┘【每次 new 都执行】
+
+ ⑤ 子类实例变量赋值 + 子类构造代码块 ┐
+ ⑥ 子类构造方法体                    ┘
+
+口诀：静态优先、父类优先、变量/代码块 先于 构造器
+本质：保证"父类完全初始化完，才轮到子类"——子类可能用到父类的字段</code></pre>
+    </div>
+
+    <h3 class="kp">2.2 经典真题逐行推演<span class="badge b-high">超高频</span><span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>先自己算输出，再看注释</span><span>Java</span></div>
+      <pre><code>class Parent {
+    static { System.out.println("1 父类静态块"); }
+    { System.out.println("3 父类构造块"); }
+    Parent() { System.out.println("4 父类构造器"); }
+}
+class Child extends Parent {
+    static { System.out.println("2 子类静态块"); }
+    { System.out.println("5 子类构造块"); }
+    Child() { System.out.println("6 子类构造器"); }
+}
+
+new Child();
+System.out.println("---第二次 new---");
+new Child();
+
+// 输出：
+// 1 父类静态块     ← 类加载阶段，只一次
+// 2 子类静态块     ← 类加载阶段，只一次
+// 3 父类构造块
+// 4 父类构造器
+// 5 子类构造块
+// 6 子类构造器
+// ---第二次 new---
+// 3 父类构造块     ← 静态的部分不再执行！
+// 4 父类构造器
+// 5 子类构造块
+// 6 子类构造器</code></pre>
+    </div>
+
+    <h3 class="kp">2.3 两个高频变体陷阱<span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>① 构造器里调用被重写的方法</span><span>Java</span></div>
+      <pre><code>class Parent {
+    Parent() {
+        show();                    // 父类构造器调用被子类重写的方法 → 多态！
+    }
+    void show() { System.out.println("Parent.show"); }
+}
+class Child extends Parent {
+    int num = 42;                  // ⑤ 实例变量赋值发生在父类构造器【之后】
+    @Override
+    void show() { System.out.println("Child.show, num=" + num); }
+}
+new Child();
+// 输出：Child.show, num=0   ← 不是 42！
+// 原因：执行到 show() 时（第④步），子类的实例变量还没赋值（第⑤步才赋），
+//       num 是堆零值初始化的 0（回看模块 1 的 new 过程：③ 零值 → ⑤ 构造器）
+// 启示：构造器里永远别调用可被重写的方法（Effective Java 第 19 条）</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>② main 所在类自身的初始化</span><span>Java</span></div>
+      <pre><code>public class Test {
+    static int x = print("静态变量", 1);      // 类初始化时执行
+    public static void main(String[] args) {
+        System.out.println("main 执行");
+    }
+    static int print(String tag, int v) { System.out.println(tag); return v; }
+}
+// 输出顺序：静态变量 → main 执行
+// main 是静态方法，调用前必须先完成本类的类初始化（&lt;clinit&gt;）
+// 这就是"main 之前还能跑代码"的原因：静态变量/静态块都在 main 前执行</code></pre>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">💡 &lt;clinit&gt; 与 &lt;init&gt;（衔接模块 5 类加载）</div>
+      <p>编译器把"静态变量赋值 + 静态块"收集成 <code>&lt;clinit&gt;</code>（类初始化方法，首次使用类时执行一次，JVM 保证线程安全——这是"静态内部类单例"线程安全的原理）；把"实例变量赋值 + 构造块 + 构造器"收集成 <code>&lt;init&gt;</code>（每次 new 执行）。记住这两个名字，模块 5 类加载会回收此伏笔。</p>
+    </div>
+  </section>
+
+  <!-- ================= 03 this super ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>this 与 super</h2></div>
+
+    <h3 class="kp">3.1 this：当前对象的引用<span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>this 的四种用法</span><span>Java</span></div>
+      <pre><code>class User {
+    private String name;
+    User() { this("默认名"); }          // ① 调用本类其他构造器，必须在第一行
+    User(String name) {
+        this.name = name;               // ② 区分成员变量与参数（最常见）
+    }
+    User self() { return this; }        // ③ 返回当前对象（链式调用：builder 模式的根基）
+    void hello() {
+        System.out.println(this.name);  // ④ this.成员 等价直接写 name（隐式 this）
+    }
+}
+// 衔接模块 1：实例方法的局部变量表第 0 号槽就是 this ——
+// this 存的是当前对象的【地址】，所以能在方法内拿到对象本身</code></pre>
+    </div>
+
+    <h3 class="kp">3.2 super：父类部分的引用<span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>super 的三种用法 + 隐式规则</span><span>Java</span></div>
+      <pre><code>class Parent { Parent(int x) {} }
+class Child extends Parent {
+    Child() {
+        super(1);          // ① 调用父类构造器，必须在第一行 → this(...) 与 super(...) 互斥
+    }
+    void show() {
+        super.toString();  // ② 调用父类被重写的方法（往上跳一层）
+        // super.x         // ③ 访问被子类遮蔽（shadowing）的父类字段
+    }
+}
+
+// ⚠ 隐式规则：构造器第一行不写任何 this/super 调用时，编译器自动补 super()（无参）
+// 推论 1：父类只有带参构造器时，子类构造器必须显式 super(xxx)，否则编译错误
+// 推论 2：Object 的构造器是这条调用链的终点（所有类的最终父类）</code></pre>
+    </div>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 工程事故高发点</div>
+      <p>自定义类一旦写了带参构造器，<b>无参构造器就消失了</b>——而 MyBatis、Jackson、Spring 反射创建对象默认调无参构造器，直接炸出 <code>NoSuchMethodException</code>。规矩：实体类要么全不写构造器，要么把无参构造器一起写上。</p>
+    </div>
+  </section>
+
+  <!-- ================= 04 重载 vs 重写 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>重载 vs 重写（详细版）</h2></div>
+
+    <h3 class="kp">4.1 先立地基：方法签名<span class="badge b-hard">难点</span><span class="stars">★★</span></h3>
+    <p><b>方法签名 = 方法名 + 参数类型列表（按顺序）</b>。注意<b>不含返回值</b>——为什么？如果只靠返回值区分两个方法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>返回值为什么不能参与签名</span><span>Java</span></div>
+      <pre><code>int get()   { ... }
+String get() { ... }     // 假设允许（实际编译错误）
+
+// 调用方只写 get(); 不接返回值时 —— 编译器无法确定你调的是哪一个！
+// JVM 方法表里方法用"类名+方法名+参数描述符"唯一定位，返回值也在描述符里，
+// 但【编译期的重载判定】必须保证调用点无歧义，所以语言层面签名不含返回值</code></pre>
+    </div>
+
+    <h3 class="kp">4.2 核心对比表<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tr><th></th><th>重载 Overload</th><th>重写 Override</th></tr>
+      <tr><td>发生范围</td><td><b>同一个类</b>中（或继承来的方法与本类新方法）</td><td><b>父子类</b>之间</td></tr>
+      <tr><td>参数列表</td><td><b>必须不同</b>（个数/类型/顺序）</td><td><b>必须相同</b></td></tr>
+      <tr><td>返回类型</td><td>随意（仅返回值不同 ≠ 重载，是编译错误）</td><td>相同 <b>或协变</b>（子类返回父类返回类型的子类型，如 Object → String）</td></tr>
+      <tr><td>访问修饰符</td><td>随意</td><td>只能<b>放大</b>不能缩小：protected → public ✅，public → protected ❌</td></tr>
+      <tr><td>抛出异常</td><td>随意</td><td>只能<b>缩小</b>：不能抛出比父类更宽的<b>受检异常</b>（非受检异常随意）</td></tr>
+      <tr><td>绑定时机</td><td><b>编译期</b>静态绑定（按声明类型选方法）</td><td><b>运行期</b>动态绑定（按实际对象类型选实现）</td></tr>
+      <tr><td>多态性</td><td>与多态无关（静态多态/编译时多态）</td><td>多态的核心（动态多态）</td></tr>
+    </table>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>一张代码看清两者</span><span>Java</span></div>
+      <pre><code>class Calculator {
+    // ---- 重载：同类、同名、参数不同 ----
+    int add(int a, int b) { return a + b; }
+    double add(double a, double b) { return a + b; }
+    int add(int a, int b, int c) { return a + b + c; }
+}
+class SuperCalc extends Calculator {
+    // ---- 重写：父子、同名、参数相同 ----
+    @Override                          // 注解：让编译器校验"你真的在重写"
+    int add(int a, int b) { return a + b + 1; }
+    // 若手滑写成 add(int a, int b, int c) —— 参数不同，是重载不是重写！
+    // 加了 @Override 编译器立刻报错 → 这就是它存在的意义
+}</code></pre>
+    </div>
+
+    <h3 class="kp">4.3 重写的边界：哪些方法重写不了<span class="badge b-trap">易错</span><span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>static / final / private</span><span>Java</span></div>
+      <pre><code>class P {
+    static void s() {}
+    final void f() {}
+    private void p() {}
+    void n() {}
+}
+class C extends P {
+    static void s() {}        // ⚠ 不是重写，是【隐藏 hiding】！
+                              // 静态方法按"声明类型"静态绑定：
+                              // P p = new C(); p.s(); 调的是 P 的 s()
+                              // 加 @Override 会直接编译错误——编译器明确告诉你这不是重写
+
+    // final void f() {}      // ❌ 编译错误：final 方法禁止重写（模块 2 讲过）
+
+    private void p() {}       // ⚠ 父类 private 对子类不可见，这只是个"恰好同名的新方法"
+                              // 同样不是重写（多态对它无效）
+
+    @Override void n() {}     // ✅ 这才是真重写
+}</code></pre>
+    </div>
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>重载是同类中"同名不同参"的多个方法，编译期按参数静态选定；重写是子类对父类"同名同参"方法重新实现，运行期按对象实际类型动态选定。重写受五条规则约束：参数相同、返回值协变、权限只放大、受检异常只缩小、非 static/final/private。</p>
+    </div>
+
+    <details class="qa">
+      <summary>追问：重载方法的匹配优先级？（byte 实参依次匹配什么？）</summary>
+      <div class="qa-body">
+        <p>编译器按"最具体"原则匹配：<b>① 精确匹配 → ② 自动拓宽（byte→short→int→long→float→double）→ ③ 装箱（int→Integer）→ ④ 变长参数（int...）</b>。例：<code>f(byte)</code> 存在就精确命中；不存在则找 <code>f(int)</code>，再不行 <code>f(long)</code>…装箱和变长是最后手段。这也解释了模块 2 的"二元数值提升"——运算符就是按这套规则找"运算方法"的。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 05 多态 ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>多态与动态绑定</h2></div>
+
+    <h3 class="kp">5.1 方法看实际类型，字段看声明类型<span class="badge b-high">高频</span><span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>字段没有多态！</span><span>Java</span></div>
+      <pre><code>class Parent { int x = 1; int get() { return 1; } }
+class Child extends Parent { int x = 2; int get() { return 2; } }
+
+Parent p = new Child();
+p.get();   // 2  ← 方法：运行期看实际类型 Child（动态绑定）
+p.x;       // 1  ← 字段：编译期看声明类型 Parent（字段访问不发生动态绑定！）
+
+// 为什么：字段访问在编译期就编译成"直接取偏移量"指令（快），
+// 方法调用走方法表查找（慢一点但支持多态）
+// 这就是"字段遮蔽(shadowing)"而非"字段重写"—— Java 根本没有字段重写的概念</code></pre>
+    </div>
+
+    <h3 class="kp">5.2 动态绑定的原理：方法表<span class="badge b-hard">难点</span><span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>invokevirtual 的查找过程</span><span>结构</span></div>
+      <pre class="diagram"><code>方法表（vtable）示意 —— 每个类一张，子类表复制父类表后覆盖被重写的槽位：
+
+Animal 的方法表            Dog 的方法表（继承 + 重写）
+┌─────────────────┐       ┌─────────────────┐
+│ Object.hashCode │       │ Object.hashCode │  ← 没动
+│ Object.equals   │       │ Object.equals   │
+│ Animal.sound    │       │ Dog.sound       │  ← 重写：槽位被替换！
+│ Animal.eat      │       │ Animal.eat      │  ← 继承：原样复制
+└─────────────────┘       │ Dog.fetch       │  ← 新方法：追加在尾部
+                          └─────────────────┘
+
+Animal a = new Dog();
+a.sound();
+→ 字节码 invokevirtual Animal.sound
+→ 运行时发现 a 的实际类型是 Dog → 查 Dog 的方法表 → sound 槽位里是 Dog.sound → 执行
+
+关键：重写方法在表中【占据父类同签名方法的槽位】，
+     所以"父类引用调用"总能命中"子类的实现" —— 这就是多态的实现机制
+衔接模块 1：对象头里的类型指针 → 指向方法区中 Dog 的类信息 → 类信息里挂着方法表</code></pre>
+    </div>
+
+    <h3 class="kp">5.3 向上/向下转型<span class="badge b-trap">易错</span><span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>转型规则</span><span>Java</span></div>
+      <pre><code>Animal a = new Dog();        // 向上转型：自动、永远安全（Dog 必"是"Animal）
+Dog d = (Dog) a;             // 向下转型：必须强转，运行时校验实际类型
+Cat c = (Cat) a;             // ❌ 编译通过，运行时 ClassCastException（a 实际是 Dog）
+
+// 安全姿势：转之前用 instanceof 先验（模块 2 讲过 JDK16 模式匹配）
+if (a instanceof Dog dog) { dog.fetch(); }</code></pre>
+    </div>
+  </section>
+
+  <!-- ================= 06 接口 vs 抽象类 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>接口 vs 抽象类</h2></div>
+
+    <h3 class="kp">6.1 对比表<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tr><th></th><th>抽象类 abstract class</th><th>接口 interface</th></tr>
+      <tr><td>语义</td><td><b>is-a</b>：本质是什么（Dog is an Animal）</td><td><b>can-do</b>：能做什么（Comparable = 可比较）</td></tr>
+      <tr><td>继承</td><td>单继承（一个类只能 extends 一个）</td><td>多实现（一个类可 implements 多个）</td></tr>
+      <tr><td>成员变量</td><td>任意（可有实例状态）</td><td>只能是 <code>public static final</code> 常量</td></tr>
+      <tr><td>方法</td><td>抽象 + 具体（普通方法）皆可</td><td>JDK7：全抽象；JDK8+：default / static 方法；JDK9+：private 方法</td></tr>
+      <tr><td>构造器</td><td>有（供子类 super 调用，不能自身 new）</td><td>无</td></tr>
+      <tr><td>典型用途</td><td>模板方法模式：骨架复用（AbstractList）</td><td>能力契约/解耦（List、Runnable、Comparable）</td></tr>
+    </table>
+
+    <h3 class="kp">6.2 JDK 8 的 default 方法：为什么引入<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>default 与 static 方法</span><span>Java</span></div>
+      <pre><code>interface Log {
+    void info(String msg);                       // 抽象方法：实现类必须实现
+
+    default void error(String msg) {             // default：给接口一个【默认实现】
+        info("[ERROR] " + msg);                  // 实现类不重写也能用，想改也行
+    }
+    static Log console() {                       // static：接口的静态工厂
+        return msg -&gt; System.out.println(msg);   // （返回 lambda，模块 7 预告）
+    }
+}
+
+// 为什么引入 default？—— 为了 Lambda 改造集合 API：
+// 想给 Collection 加个 forEach 方法，如果是抽象方法，
+// 全世界所有自定义集合类一夜之间全编译失败（接口只能加不能改的魔咒）
+// default 让"接口进化"不破坏已有实现 → 这是语言兼容性的经典设计</code></pre>
+    </div>
+    <div class="tipbox tb-hard">
+      <div class="tb-title">🧩 加分点：菱形冲突</div>
+      <p>两个接口有同名 default 方法，类同时实现两者 → 编译错误，必须<b>显式重写</b>，并可用 <code>InterfaceA.super.method()</code> 指定调用某个接口的版本。追问"接口为什么不能代替抽象类"：接口无实例状态、无构造器，表达"行为"；抽象类表达"模板 + 状态"，二者是配合关系不是替代关系。</p>
+    </div>
+  </section>
+
+  <!-- ================= 07 equals hashCode ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>equals 与 hashCode：分桶图讲透</h2></div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 衔接模块 1</div>
+      <p>模块 1 讲过：equals 默认就是 ==（比地址），String/Integer 重写后比内容。本节回答两个遗留问题：<b>① 为什么重写 equals 必须同时重写 hashCode？② 只重写一个分别会发生什么？</b>答案全在哈希容器的工作方式里。</p>
+    </div>
+
+    <h3 class="kp">7.1 前置：HashSet/HashMap 是怎么存东西的<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>哈希容器的两层结构</span><span>结构</span></div>
+      <pre class="diagram"><code>HashSet 底层 = HashMap（元素当 key，value 是固定占位对象）
+HashMap 底层 = 数组 + 链表/红黑树（模块 4 详讲）
+
+                table 数组（桶 bucket）
+              ┌────┬────┬────┬────┬────┬────┐
+              │ 0  │ 1  │ 2  │ 3  │ 4  │... │
+              └──┬─┴────┴────┴─┬──┴────┴────┘
+                 │             │
+                 ↓             ↓
+             ┌──────┐      ┌──────┐
+             │ 元素A │      │ 元素C │
+             └──┬───┘      └──┬───┘      一个桶挂一条链表
+                ↓             ↓
+             ┌──────┐      ┌──────┐
+             │ 元素B │      │ 元素D │
+             └──────┘      └──────┘
+
+存/查一个元素的两步：
+  第一步【分桶】：hash & (n-1) 算出落在哪个桶 → 用 hashCode！
+  第二步【桶内精确比对】：桶内链表逐个 equals → 用 equals！
+
+设计动机：hash 算得快但会冲突（只能"缩小范围"），
+         equals 精确但慢（不能全表扫）—— 两步走 = 快 + 准</code></pre>
+    </div>
+
+    <h3 class="kp">7.2 官方约定（JDK 文档原文）<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <ol>
+      <li><b>equals 相等的两个对象，hashCode 必须相等</b> ← 违反它，哈希容器直接逻辑崩坏</li>
+      <li>hashCode 相等的两个对象，equals 不要求相等（这叫<b>哈希冲突</b>，合法，只影响性能）</li>
+      <li>equals 满足：自反 / 对称 / 传递 / 一致 / 非空（x.equals(null) == false）</li>
+    </ol>
+
+    <h3 class="kp">7.3 只重写 equals，不重写 hashCode → 容器"失忆"<span class="badge b-high">超高频</span><span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>事故现场 + 分桶图</span><span>Java</span></div>
+      <pre><code>class Bad {
+    String name;
+    Bad(String name) { this.name = name; }
+    @Override
+    public boolean equals(Object o) {            // 只重写了 equals
+        return o instanceof Bad b &amp;&amp; b.name.equals(name);
+    }
+    // hashCode 没重写 → 用 Object 默认实现：
+    // "把对象地址换算成一个整数" —— 两个不同地址的对象，哈希值几乎必然不同！
+}
+
+Set&lt;Bad&gt; set = new HashSet&lt;&gt;();
+set.add(new Bad("a"));                    // 对象1：地址哈希(如 1024) → 落进桶 X
+set.contains(new Bad("a"));               // 对象2：地址哈希(如 3777) → 落进桶 Y
+// 结果 false！内容相等的对象"失联"了
+
+// 分桶图（假设 table 16 个桶，hash%16 简化）：
+//   1024 % 16 = 0                       3777 % 16 = 1
+//   ┌──0──┐                             ┌──1──┐
+//   │Bad(a)│ ← 对象1在这                  │Bad(a)│ ← 对象2被分到这
+//   └──────┘                             └──────┘
+// contains 的执行路径：hash(对象2) → 定位到 1 号桶 → 桶里没有元素，
+//                     【直接返回 false】—— 根本走不到 equals 那一步！
+//
+// 一句话：equals 说"我们相等"，hashCode 却说"我们住不同小区"——
+//         查找只按门牌号走，永远碰不上面</code></pre>
+    </div>
+
+    <h3 class="kp">7.4 只重写 hashCode，不重写 equals → 去重失效/性能塌方<span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>两种坏法</span><span>Java</span></div>
+      <pre><code>class Bad2 {
+    String name;
+    Bad2(String name) { this.name = name; }
+    @Override
+    public int hashCode() { return name.hashCode(); }   // 只重写了 hashCode
+    // equals 没重写 → 用 Object 默认 = 比地址（==）
+}
+
+Set&lt;Bad2&gt; set = new HashSet&lt;&gt;();
+set.add(new Bad2("a"));
+set.add(new Bad2("a"));     // 两次 add 都成功！set.size() == 2
+// 分桶图：两个对象 hashCode 相同（都按 name 算）→ 落进【同一个桶】✅第一步没问题
+//   ┌───── 桶 5 ─────┐
+//   │ Bad2("a") → Bad2("a") │   ← 链表上挂了两个！
+//   └────────────────┘
+// 第二步坏在：桶内逐个 equals 判重 → 默认 equals 比地址 → 两个不同地址
+//            → 判定"不重复" → 照样插入 → Set 去重功能报废
+//
+// 更极端的面试变体：hashCode 写死 return 1;
+// → 所有元素挤进同一个桶 → HashSet 退化成"单链表" → 查找 O(n)
+// → 编译不报错、逻辑"合法"（约定只要求 hashCode 一致），纯性能灾难</code></pre>
+    </div>
+
+    <h3 class="kp">7.5 正确姿势：equals 与 hashCode 成对重写<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>标准模板（IDEA 生成，看懂每一步）</span><span>Java</span></div>
+      <pre><code>class User {
+    String name;
+    int age;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;                   // ① 快捷路径：同一对象直接 true
+        if (o == null || getClass() != o.getClass())  // ② 非空 + 精确同类型
+            return false;                             //   （getClass 严格；instanceof 允许子类，二选一）
+        User user = (User) o;
+        return age == user.age                        // ③ 基本类型 ==，引用类型 Objects.equals
+            &amp;&amp; Objects.equals(name, user.name);        //   （防 name 为 null 抛 NPE）
+    }
+
+    @Override
+    public int hashCode() {                           // ④ 参与运算的字段必须与 equals 一致！
+        return Objects.hash(name, age);               //    equals 用了 name+age，这里也用 name+age
+    }                                                 //    少算一个字段 → 7.3 的桶错位；多算 → 冲突变多
+}
+
+// Objects.hash 内部：31*x + y 的组合哈希（和 String 同款思路，模块 2 讲过 31）
+// 偷懒可用 lombok @EqualsAndHashCode / record 类（JDK16+ 自动生成 equals+hashCode）</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>哈希容器先按 hashCode 分桶、再在桶内用 equals 精确比对。equals 相等但 hashCode 不同 → 相等对象落不同桶，查找失灵；hashCode 相同但 equals 是默认地址比较 → 桶对了但判重失效，Set 报废。所以两者必须成对、基于同一组字段重写。</p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的 <code>__eq__</code> / <code>__hash__</code> 同理：只定义 <code>__eq__</code> 不定义 <code>__hash__</code>，对象直接<b>不可哈希</b>（进 set 报 TypeError）——Python 用"禁用"防止你犯错，Java 用"约定"靠自觉。dataclass 的 <code>@dataclass(eq=True)</code> 自动成对生成，等价于 record。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">重写 equals 为什么必须重写 hashCode？</div><div class="ca">约定要求 equals 相等 → hashCode 相等；哈希容器按 hashCode 分桶查找，违反后"相等"对象落不同桶，contains/remove/去重全部失灵。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">那 hashCode 相等、equals 不等呢？</div><div class="ca">这是哈希冲突，合法。冲突对象在同一桶内用链表/红黑树挂着，只影响性能不影响正确性。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">hashCode 全返回 1 行不行？</div><div class="ca">编译和运行都合法，但所有元素挤一个桶，HashSet/HashMap 退化为链表 O(n)——"正确但灾难"，面试用来考你对两层结构的理解。</div></div></div>
+      <div class="chain-item"><span class="cn">4</span><div class="cc"><div class="cq">可变对象做 HashMap 的 key 有什么风险？</div><div class="ca">put 后修改参与 hashCode 的字段 → hash 变了 → 定位到旧桶找不到 → 内存泄漏式"失踪"。规矩：key 用 String/Integer/record 等不可变对象。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 08 内部类 ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>内部类四兄弟</h2></div>
+
+    <h3 class="kp">8.1 全景对照<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tr><th>类型</th><th>写法位置</th><th>持有外部引用？</th><th>能否 static 成员</th><th>典型用途</th></tr>
+      <tr><td>成员内部类</td><td>类中、方法外</td><td><b>是</b>（Outer.this）</td><td>不能</td><td>集合迭代器（Iterator 与集合绑定）</td></tr>
+      <tr><td><b>静态内部类</b></td><td>类中、方法外 + static</td><td><b>否</b></td><td>能</td><td>Map.Entry、Builder 模式、单例 holder</td></tr>
+      <tr><td>局部内部类</td><td>方法内</td><td>是（+ 捕获局部变量）</td><td>不能</td><td>罕见（几乎被匿名类取代）</td></tr>
+      <tr><td>匿名内部类</td><td>new 接口(){...} 表达式</td><td>是（+ 捕获局部变量）</td><td>不能</td><td>回调/事件监听（Java8 前的主力，后被 Lambda 接管）</td></tr>
+    </table>
+
+    <h3 class="kp">8.2 静态内部类：为什么"推荐默认用它"<span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>两个经典应用</span><span>Java</span></div>
+      <pre><code>// ① 静态内部类单例（线程安全 + 懒加载，模块 2 埋的 &lt;clinit&gt; 伏笔兑现）
+class Singleton {
+    private Singleton() {}
+    private static class Holder {                    // 外部类加载时 Holder 不加载
+        static final Singleton INSTANCE = new Singleton();
+    }
+    public static Singleton get() { return Holder.INSTANCE; }
+    // 第一次调 get() 才触发 Holder 类加载 → JVM 保证 &lt;clinit&gt; 线程安全
+    // → 懒加载 + 线程安全，不需要 synchronized，教科书级方案
+}
+
+// ② Builder 模式（避免多参数构造器爆炸）
+class User {
+    private final String name; private final int age;
+    private User(Builder b) { name = b.name; age = b.age; }
+    public static class Builder {                   // static：Builder 不需要外部实例
+        private String name; private int age;
+        public Builder name(String n) { this.name = n; return this; }
+        public Builder age(int a) { this.age = a; return this; }
+        public User build() { return new User(this); }
+    }
+}
+User u = new User.Builder().name("Tom").age(18).build();   // 链式调用（this 的用法）</code></pre>
+    </div>
+
+    <h3 class="kp">8.3 局部变量捕获：为什么必须 final<span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>effectively final 的内存原因</span><span>Java</span></div>
+      <pre><code>void method() {
+    int count = 0;                                  // 栈上的局部变量
+    Runnable r = new Runnable() {                   // 匿名内部类对象【在堆里】
+        public void run() {
+            // System.out.println(count++);         // ❌ 编译错误：count 必须是 final
+            System.out.println(count);              // ✅ 读可以
+        }
+    };
+    r.run();
+    // 原因（用模块 1 的图想）：
+    //   count 在 method 的栈帧里，方法返回栈帧销毁，count 就没了
+    //   但匿名类对象（堆）可能活得比 method 久（被别处持有）
+    //   → 编译器把 count【拷贝】一份存进匿名类对象（合成字段）
+    //   → 如果允许 count++，改的是自己的拷贝，外面的 count 不动 → 数据不一致
+    //   → Java 直接禁止：捕获的变量必须只赋值一次（final 或事实 final）
+    // 想在回调里修改值？用数组/AtomicInteger/长度 1 的包装（传引用而非值）
+}</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 闭包捕获的是<b>变量的引用（cell）</b>而非值的拷贝，所以能在闭包里读写外层变量（改写需 nonlocal 声明）。Java 匿名类/Lambda 捕获的是<b>值拷贝</b>，故要求 effectively final——两种设计，Python 更灵活，Java 更防错。</p>
+    </div>
+  </section>
+
+  <!-- ================= 09 组合 vs 继承 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>组合 vs 继承</h2></div>
+
+    <h3 class="kp">9.1 is-a 与 has-a<span class="badge b-high">高频</span><span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>组合优先于继承</span><span>Java</span></div>
+      <pre><code>// ❌ 继承误用：不是 is-a 关系，只是想复用代码
+class ArrayList&lt;E&gt; { ... }
+class MyStack&lt;E&gt; extends ArrayList&lt;E&gt; {    // Stack 拿到了 ArrayList 的所有公开方法
+    // add(int, E) / remove(int) 这些"破坏栈结构"的方法也被继承暴露了！
+    // 继承破坏封装：父类实现变动直接砸进子类
+}
+
+// ✅ 组合：把 ArrayList 当零件
+class MyStack&lt;E&gt; {
+    private final ArrayList&lt;E&gt; list = new ArrayList&lt;&gt;();   // has-a
+    public void push(E e) { list.add(e); }
+    public E pop() { return list.remove(list.size() - 1); }
+    public E peek() { return list.get(list.size() - 1); }
+    // 只暴露栈该有的操作，内部用什么都无所谓（哪天换 LinkedList 也不影响调用方）
+}
+
+// 判定口诀：能说通 "B 是一种 A" → 继承；"B 有一个 A / B 用 A 实现" → 组合
+// Effective Java 第 18 条：复合优先于继承（非 final 的具体类尤其如此）</code></pre>
+    </div>
+    <details class="qa">
+      <summary>追问：什么时候必须用继承？</summary>
+      <div class="qa-body">
+        <p>当你需要<b>多态</b>——用父类型引用统一接收不同子类对象时，必须有继承/实现关系（模板方法模式：父类定骨架 abstract 步骤、子类填实现，也是合理的继承）。判断标准不是"想复用代码"（该用组合），而是"需要在父类型的变量里装下子类对象"。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 10 面试题速查 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>高频面试题速查（自测清单）</h2></div>
+
+    <details class="qa"><summary>1. 父子类初始化顺序？静态块执行几次？</summary><div class="qa-body"><p>父静态→子静态（类加载，仅一次）→ 父实例变量/构造块→父构造器→子实例变量/构造块→子构造器（每次 new）。第二次 new 时静态部分不再执行。</p></div></details>
+    <details class="qa"><summary>2. 构造器里调用被子类重写的方法会发生什么？</summary><div class="qa-body"><p>发生多态，执行子类实现——但此时子类实例变量尚未赋值（还是零值），子类方法读到的是默认值（num=0 而非 42）。启示：构造器不要调用可重写方法。同理也不要在构造器里启动线程/注册回调。</p></div></details>
+    <details class="qa"><summary>3. 重载和重写的区别？</summary><div class="qa-body"><p>重载：同类、同名、参数必须不同，编译期静态绑定，与多态无关；重写：父子类、同名同参，运行期动态绑定，受"返回值协变、权限只放大、受检异常只缩小"约束。static 方法"重写"是隐藏，private/final 不能被重写。</p></div></details>
+    <details class="qa"><summary>4. 方法签名包含返回值吗？</summary><div class="qa-body"><p>不包含。签名 = 方法名 + 参数类型列表。只靠返回值无法区分调用点（调用方可以不接返回值），所以仅返回值不同不构成重载，编译错误。</p></div></details>
+    <details class="qa"><summary>5. 多态三要素？字段有多态吗？</summary><div class="qa-body"><p>三要素：继承/实现 + 重写 + 父类引用指向子类对象。方法调用看实际类型（动态绑定/方法表槽位替换）；字段访问看声明类型（编译期定死偏移量）——字段没有多态，子类同名字段只是遮蔽。</p></div></details>
+    <details class="qa"><summary>6. 接口和抽象类的区别？什么时候用哪个？</summary><div class="qa-body"><p>接口：can-do 契约，无状态无构造器，多实现，JDK8+ 有 default/static 方法；抽象类：is-a 模板，有状态有构造器，单继承。要定义"行为能力/解耦"用接口；要在多个密切相关的类间"共享代码和状态"用抽象类。两者可配合（AbstractList implements List）。</p></div></details>
+    <details class="qa"><summary>7. 为什么重写 equals 必须重写 hashCode？只重写一个分别什么后果？</summary><div class="qa-body"><p>哈希容器两步走：hashCode 分桶 + equals 桶内比对。只重写 equals：相等对象 hashCode 不同（默认地址哈希）落不同桶，contains/remove/去重失灵；只重写 hashCode：桶对了但 equals 比地址，判重失效（Set 里出现重复），若 hashCode 返回常量则全部挤一桶退化 O(n)。正确做法：两者基于同一组字段成对重写（Objects.hash）。</p></div></details>
+    <details class="qa"><summary>8. 为什么匿名类/Lambda 捕获的局部变量必须 final？</summary><div class="qa-body"><p>捕获的是值的拷贝（合成字段存进堆里的匿名类对象），栈帧销毁后局部变量没了。若允许修改，改的是拷贝本体，内外不一致——语言直接禁止。需要可变就用数组/Atomic 包装（本质是把"值"换成"引用"）。</p></div></details>
+    <details class="qa"><summary>9. 静态内部类单例为什么线程安全且懒加载？</summary><div class="qa-body"><p>外部类加载不触发 Holder 加载；首次 getInstance 才触发 Holder 类初始化，JVM 保证 &lt;clinit&gt;（静态变量赋值）只执行一次且线程安全——借 JVM 的类加载机制白嫖了懒加载 + 线程安全。</p></div></details>
+    <details class="qa"><summary>10. 组合和继承怎么选？</summary><div class="qa-body"><p>is-a 用继承，has-a/复用用组合。继承是强耦合（父类实现变化穿透子类、暴露不该有的方法），Effective Java：复合优先于继承。需要多态（父类型引用装子类对象）才必须继承。</p></div></details>
+  </section>
+
+  <!-- ================= 11 小结 ================= -->
+  <section class="sec" id="s11">
+    <div class="sec-head"><span class="sec-no">11</span><h2>模块小结 · 必背清单</h2></div>
+
+    <div class="summary-grid">
+      <div class="sum-card"><h5>⚙️ 初始化</h5><ul>
+        <li>父静态→子静态→父实例→父构造→子实例→子构造</li>
+        <li>静态部分仅类加载时一次</li>
+        <li>构造器别调可重写方法（子类字段还是 0）</li>
+      </ul></div>
+      <div class="sum-card"><h5>🔀 重载 vs 重写</h5><ul>
+        <li>签名=方法名+参数（无返回值）</li>
+        <li>重载：编译期静态绑定；重写：运行期动态绑定</li>
+        <li>static 是隐藏，final/private 不可重写</li>
+      </ul></div>
+      <div class="sum-card"><h5>🎭 多态</h5><ul>
+        <li>方法看实际类型，字段看声明类型</li>
+        <li>原理：方法表槽位替换 + 类型指针</li>
+        <li>向下转型前 instanceof</li>
+      </ul></div>
+      <div class="sum-card"><h5>⚖️ equals/hashCode</h5><ul>
+        <li>两步：hashCode 分桶 + equals 桶内比对</li>
+        <li>equals 等 → hashCode 必等（反之只是冲突）</li>
+        <li>只重写一个 = 桶错位 / 判重失效</li>
+      </ul></div>
+      <div class="sum-card"><h5>🏠 内部类</h5><ul>
+        <li>默认用静态内部类（无外部引用）</li>
+        <li>Holder 单例：&lt;clinit&gt; 线程安全</li>
+        <li>捕获局部变量必须是 effectively final</li>
+      </ul></div>
+      <div class="sum-card"><h5>📐 设计语义</h5><ul>
+        <li>接口 can-do 多实现；抽象类 is-a 单继承</li>
+        <li>default 方法为接口进化不破坏实现</li>
+        <li>复合优先于继承</li>
+      </ul></div>
+    </div>
+
+    <div class="pagenav">
+      <a href="02-basic-syntax.html">← 模块 2：基础语法与数据类型</a>
+      <a href="04-collections.html">模块 4：集合框架 →</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="返回顶部">↑</button>
+
+<script>
+function highlightJava(src) {
+  let s = src.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])*')|(@\w+)|\b(abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|package|private|protected|public|record|return|sealed|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|yield|true|false|null)\b|\b(0[xX][0-9a-fA-F_]+|\d[\d_]*\.?[\d_]*[fFdDlL]?)\b/g;
+  return s.replace(re, (m, com, str, chr, anno, kw, num) => {
+    if (com) return '<span class="tok-com">' + m + '</span>';
+    if (str || chr) return '<span class="tok-str">' + m + '</span>';
+    if (anno) return '<span class="tok-anno">' + m + '</span>';
+    if (kw) return '<span class="tok-kw">' + m + '</span>';
+    if (num) return '<span class="tok-num">' + m + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram')) el.innerHTML = highlightJava(el.textContent);
+});
+
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

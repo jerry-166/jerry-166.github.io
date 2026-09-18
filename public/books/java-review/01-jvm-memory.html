@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块1：JVM 内存模型与对象</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== 顶部 Hero（浅色高对比版） ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 11.1%; background: linear-gradient(90deg, #2456d6, #4f7df9); border-radius: 4px; }
+
+/* ===== 模块导航条（浅色高对比版） ===== */
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+/* ===== 主体布局 ===== */
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+/* ===== 左侧目录 ===== */
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 章节 ===== */
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+/* ===== 徽章 ===== */
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+/* ===== 表格 ===== */
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+/* ===== 代码块 ===== */
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+/* ===== 提示框 ===== */
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+/* ===== 一句话回答 ===== */
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+/* ===== 面试 Q&A ===== */
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* ===== 追问链 ===== */
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+/* ===== 前置/后续依赖卡 ===== */
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+/* ===== 其他 ===== */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 1 / 9</div>
+  <h1>JVM 内存模型与对象</h1>
+  <div class="sub">
+    本模块是<b>全套手册的地基</b>：先建立"栈、堆、方法区"的内存全景图，再理解基本类型与引用类型、局部变量与成员变量的本质区别，最后解释包装类与 <b>== / equals</b> 的内存原理。后续所有模块（String 常量池、HashMap、GC、并发可见性）都建立在这些概念之上。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <span class="cur">1 内存模型与对象</span>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <span>6 并发编程</span>
+  <span>7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 为什么第一课讲内存</a>
+    <a href="#s2">02 运行时内存全景</a>
+    <a href="#s3">03 虚拟机栈：方法执行的舞台</a>
+    <a href="#s4">04 堆：对象的家</a>
+    <a href="#s5">05 方法区：类的家</a>
+    <a href="#s6">06 基本类型 vs 引用类型</a>
+    <a href="#s7">07 局部变量 vs 成员变量</a>
+    <a href="#s8">08 new 一个对象的完整过程</a>
+    <a href="#s9">09 包装类为什么存在</a>
+    <a href="#s10">10 == 与 equals</a>
+    <a href="#s11">11 高频面试题速查</a>
+    <a href="#s12">12 模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部面试答案</button>
+      <button id="btn-collapse" style="margin-top:6px">收起全部</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 01 为什么先讲内存 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>为什么第一课讲内存</h2></div>
+
+    <p>先看一个真实场景——下面这两行代码执行完后，内存里到底发生了什么？</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>贯穿全模块的例子</span><span>Java</span></div>
+      <pre><code>int age = 25;                    // 基本类型：变量里直接放"值"
+Person p = new Person("Tom");    // 引用类型：变量里放"对象的地址"，对象本体在堆里</code></pre>
+    </div>
+
+    <p>如果你能不假思索地画出上面两行代码的内存图，这个模块可以快速过。如果画不出来，正好——因为 <b>Java 里所有"反直觉"的行为，根子都在内存模型上</b>：</p>
+
+    <table>
+      <tr><th>你会遇到的怪现象</th><th>根因（本模块讲清）</th></tr>
+      <tr><td>局部变量不赋值就编译报错，成员变量却有默认值</td><td>局部变量在<b>栈</b>（不自动清零），成员变量在<b>堆</b>（JVM 分配时统一清零）</td></tr>
+      <tr><td><code>Integer a=127; a==b</code> 为 true，换成 128 就 false</td><td>包装类是<b>堆中的对象</b>，127 落在缓存池里复用同一对象</td></tr>
+      <tr><td><code>new String("a") == "a"</code> 为 false</td><td>一个是堆里 new 的对象，一个是<b>字符串常量池</b>里的对象，地址不同</td></tr>
+      <tr><td>方法里改参数，外面有时"看得见"有时"看不见"</td><td>传参拷贝的是<b>变量槽里的内容</b>——值 or 地址</td></tr>
+      <tr><td>HashMap 的 key 必须正确重写 hashCode</td><td>hashCode 决定对象在哈希表里<b>落在哪个桶</b></td></tr>
+    </table>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 学习路线声明</div>
+      <p>本模块只讲<b>内存结构的地基</b>（数据放在哪、怎么访问）。至于"内存怎么回收"（GC 垃圾回收）、"类怎么加载"（类加载器与双亲委派），依赖本模块的前置概念，放在<b>模块 5 JVM 深入</b>展开——那是对本模块的延伸，不是平行关系。</p>
+    </div>
+  </section>
+
+  <!-- ================= 02 全景图 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>JVM 运行时内存全景</h2></div>
+
+    <h3 class="kp">2.1 五大区域：先背"谁私有、谁共享"<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>JVM 把内存划分为 5 块。<b>前三块跟着线程走（线程私有），后两块所有线程共用（线程共享）</b>——这个划分直接决定了并发模块的一系列结论。</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>全景图（先有个整体印象，下面逐个拆解）</span><span>结构</span></div>
+      <pre class="diagram"><code>JVM 进程内存
+├─ 线程私有区（每开一个线程，就复制一套）          ┌──────────────┐
+│   ├─ 程序计数器   当前执行到哪条字节码            │  main 线程    │
+│   ├─ 虚拟机栈     ★ 方法执行的舞台（本模块重点）   │  ┌────────┐  │
+│   └─ 本地方法栈   native 方法专用（了解即可）      │  │ 栈帧1   │  │
+│                                                  │  │ 栈帧2 ← │  │
+├─ 线程共享区（全局一份，所有线程都能访问）          │  └────────┘  │
+│   ├─ 堆          ★ 所有对象的家（本模块重点）      └──────────────┘
+│   └─ 方法区       ★ 类信息、常量、静态变量（重点）
+│
+└─ 直接内存        NIO 用，堆外的一块地（模块 8 提一句即可）</code></pre>
+    </div>
+
+    <table>
+      <tr><th>区域</th><th>归属</th><th>存什么</th><th>常见错误</th><th>面试频率</th></tr>
+      <tr><td>程序计数器</td><td>线程私有</td><td>当前线程执行到的字节码行号</td><td>唯一不会 OOM 的区域</td><td>了解</td></tr>
+      <tr><td>虚拟机栈</td><td>线程私有</td><td>栈帧：局部变量表、操作数栈</td><td><code>StackOverflowError</code></td><td>★★★</td></tr>
+      <tr><td>本地方法栈</td><td>线程私有</td><td>native 方法的栈帧</td><td>同上</td><td>★</td></tr>
+      <tr><td>堆</td><td>共享</td><td>所有对象实例、数组</td><td><code>OutOfMemoryError</code></td><td>★★★</td></tr>
+      <tr><td>方法区</td><td>共享</td><td>类元信息、运行时常量池、静态变量</td><td>元空间 OOM</td><td>★★★</td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>栈管<b>运行</b>（方法怎么一步步执行），堆管<b>数据</b>（对象放在哪），方法区管<b>模板</b>（类长什么样）。线程私有的栈保证每个线程执行互不干扰；共享的堆是所有对象交换数据的场所。</p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>CPython 同样有"栈帧 + 对象堆"的模型（<code>sys._getframe()</code> 能看到帧对象，所有对象在堆上分配并靠引用计数回收）。区别：Python 连 int 都是堆上的对象（<code>id(10)</code> 就是地址），而 Java 的 int 是栈上的裸数值——这也是 Java 更快的原因之一。</p>
+    </div>
+  </section>
+
+  <!-- ================= 03 虚拟机栈 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>虚拟机栈：方法执行的舞台</h2></div>
+
+    <h3 class="kp">3.1 栈帧：每调用一个方法，压入一个栈帧<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>方法调用 = 压栈；方法返回 = 弹栈。栈帧里最重要的两块：</p>
+    <ul>
+      <li><b>局部变量表</b>：存放方法参数 + 方法内声明的局部变量（后面 3.2 详讲）</li>
+      <li><b>操作数栈</b>：计算的中转站。例如 <code>int c = a + b;</code> 会先把 a、b 压入操作数栈，执行 iadd 弹出相加，结果再压回去——JVM 是一台"栈式计算机"</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>方法调用与栈帧的变化</span><span>结构</span></div>
+      <pre class="diagram"><code>main() 调用 add()，add() 再调用 square()：
+
+main 开始        main 调 add       add 调 square     square 返回      add 返回
+┌────────┐      ┌────────┐       ┌────────┐
+│        │      │        │       │square帧│  ←栈顶   （square弹出） （add弹出）
+│        │      │  add帧 │       ├────────┤
+├────────┤      ├────────┤       │ add帧  │
+│ main帧 │      │ main帧 │       ├────────┤
+└────────┘      └────────┘       │ main帧 │
+                                 └────────┘
+→ 结论：方法没执行完，它的栈帧就一直占着内存；
+  调用层次太深（比如无限递归），栈被塞满 → StackOverflowError</code></pre>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>两种栈相关错误</span><span>Java</span></div>
+      <pre><code>// ① StackOverflowError：栈深度超限（经典复现：无终止条件的递归）
+void recurse() { recurse(); }          // 不久后抛 StackOverflowError
+// 栈容量由 -Xss 设置（默认约 512KB~1MB），线程越多、每个栈越小
+
+// ② OutOfMemoryError: unable to create new native thread
+// 不断 new Thread 且不结束：每个线程一套私有栈，耗尽内存</code></pre>
+    </div>
+
+    <h3 class="kp">3.2 局部变量表：局部变量真正的家<span class="badge b-hard">难点</span><span class="stars">★★</span></h3>
+    <p>先明确概念——<b>什么是局部变量</b>：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>局部变量 vs 成员变量（位置划分）</span><span>Java</span></div>
+      <pre><code>public class Demo {
+    int memberVar = 10;              // ① 成员变量（实例变量）：定义在"类里、方法外"
+                                     //    → 跟着对象走，存在堆中的对象体内
+
+    static int staticVar = 20;       // ② 成员变量（静态变量）：也定义在类里方法外
+                                     //    → 跟着类走，全局一份
+
+    public void method(int param) {  // param：方法的参数，也是一种局部变量
+        int localVar = 5;            // ③ 局部变量：定义在"方法内部"
+                                     //    → 存在本方法栈帧的局部变量表里
+        if (true) {
+            int blockVar = 6;        // ④ 局部变量：代码块 {} 内声明，出了块就不能用
+        }
+        // blockVar 这里已经不可访问 —— 作用域到 } 为止
+    }
+}</code></pre>
+    </div>
+
+    <p>局部变量表的本质是一排<b>固定大小的槽位（slot）</b>：</p>
+    <ul>
+      <li>一个 <code>int</code> 占 1 个槽（32 位），<code>long</code>/<code>double</code> 占 2 个槽</li>
+      <li>基本类型：槽里直接放<b>数值</b></li>
+      <li>引用类型：槽里放<b>地址</b>（指向堆中对象）</li>
+      <li>实例方法第 0 个槽固定放 <code>this</code>——这就是静态方法里没有 this 的原因</li>
+    </ul>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 关键结论：为什么局部变量没有默认值</div>
+      <p>局部变量表只是"划了一块地"，<b>JVM 不负责把槽位清零</b>，里面可能是上一个方法留下的脏数据。为避免读到随机值，Java 编译器强制"<b>先赋值、后使用</b>"，否则直接<b>编译报错</b>——把风险拦在编译期。（对比：堆中的对象分配后 JVM 会统一零值化，所以成员变量有默认值，见 07 章）</p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的局部变量未赋值就使用会抛 <code>UnboundLocalError</code>（运行时才报）。Java 是<b>编译期</b>拦截。两者机制不同（Python 运行时查名字绑定，Java 编译器数据流分析），但设计意图一样：不让程序读到未初始化的内存。</p>
+    </div>
+  </section>
+
+  <!-- ================= 04 堆 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>堆：对象的家</h2></div>
+
+    <h3 class="kp">4.1 堆的定位<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <ul>
+      <li><b>所有对象实例和数组都在堆上分配</b>（有例外：JIT 逃逸分析的栈上分配优化，视为高级细节，认知层面记住"对象在堆"即可）</li>
+      <li>堆是<b>线程共享</b>的，所以多个线程可以同时拿到同一个对象的引用去操作——并发的各种问题（竞态、可见性）都源于此（模块 6 展开）</li>
+      <li>对象不再被引用后，由 <b>GC 自动回收</b>——不用像 C 语言那样手动 free（GC 细节在模块 5）</li>
+      <li>堆内存不足时抛 <code>java.lang.OutOfMemoryError: Java heap space</code></li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>堆的基本参数与分代（了解结构即可，细节模块5）</span><span>Java</span></div>
+      <pre><code>// 堆大小控制
+-Xms512m    // 初始堆大小
+-Xmx2g      // 最大堆大小（生产环境通常设成与 Xms 相等，避免运行时扩容抖动）
+
+// 堆内部按"对象存活时间"分区（GC 的话题，这里只建立形状概念）
+// 堆 ┬─ 新生代 ┬─ Eden（绝大多数对象在这里出生，也在这里夭折）
+//    │         └─ Survivor ×2（从 Eden 幸存下来的对象）
+//    └─ 老年代（多次 GC 后仍存活的对象，如缓存、Spring 单例 Bean）</code></pre>
+    </div>
+
+    <details class="qa">
+      <summary>堆和栈分别存什么？一个对象创建后哪些部分在栈、哪些在堆？</summary>
+      <div class="qa-body">
+        <p>栈存<b>局部变量（基本类型的值 / 引用类型的地址）</b>和方法的执行状态；堆存<b>对象本体</b>（字段值、数组元素）。</p>
+        <p>以 <code>Person p = new Person("Tom")</code> 为例：<code>p</code> 这个变量在 main 的栈帧里（放地址）；<code>new Person(...)</code> 出来的对象（含 name 字段及其指向的 String）在堆里。另外"Person 类长什么样"这个<b>模板信息</b>在方法区。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 05 方法区 ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>方法区：类的家</h2></div>
+
+    <h3 class="kp">5.1 方法区存什么<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>方法区（Method Area）是<b>类层面信息的仓库</b>，一个类只存一份：</p>
+    <ul>
+      <li><b>类元信息</b>：类名、字段、方法、字节码指令</li>
+      <li><b>运行时常量池</b>：字面量（如字符串 <code>"abc"</code>、<code>final int X=10</code>）和符号引用——其中字符串的部分叫<b>字符串常量池</b>（模块 2 重点用）</li>
+      <li><b>静态变量</b>（JDK 7 起实际存到了堆中，认知上仍归方法区管辖，见下）</li>
+    </ul>
+
+    <h3 class="kp">5.2 一次重要演进：永久代 → 元空间<span class="badge b-hard">难点</span><span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>方法区是规范（逻辑概念），<b>怎么实现</b>是虚拟机自己的事，而 HotSpot 的实现换过一次——这是面试的经典考点：</p>
+
+    <table>
+      <tr><th></th><th>JDK 7 及以前（永久代）</th><th>JDK 8 及以后（元空间）</th></tr>
+      <tr><td>位于哪</td><td>堆的一部分（连续区域）</td><td><b>本地内存</b>（Native Memory，不在堆里）</td></tr>
+      <tr><td>大小限制</td><td><code>-XX:MaxPermSize</code>，容易满 → <code>PermGen OOM</code></td><td>默认仅受物理内存限制（可用 <code>-XX:MaxMetaspaceSize</code> 设上限）</td></tr>
+      <tr><td>为什么要改</td><td colspan="2">永久代大小难估：动态代理、热部署、大量类加载场景容易爆；且与 HotSpot 内部其他 VM 的架构不统一，JEP 122 干脆移除</td></tr>
+    </table>
+
+    <p><b>同一时期的两个"搬家"事件</b>（常被一起考）：</p>
+    <ul>
+      <li><b>JDK 7</b>：字符串常量池从永久代 <b>移到堆</b>（因为永久代容易满、而 String.intern 语义要调整）</li>
+      <li><b>JDK 7</b>：静态变量也从永久代 <b>移到堆</b>（挂在 Class 对象上）</li>
+      <li><b>JDK 8</b>：永久代整个废除，类元信息搬到元空间（本地内存）</li>
+    </ul>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>方法区存"类的模板信息"：类结构、常量池、静态变量。JDK 8 前用堆里的永久代实现、易 OOM；JDK 8 起改为本地内存中的元空间，字符串常量池和静态变量则早在 JDK 7 就搬进了堆。</p>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 面试官口径提醒</div>
+      <p>被问"字符串常量池在哪"：JDK 7 起<b>在堆中</b>（别再答"方法区"，这是老答案）。被问"静态变量在哪"：JDK 7 起在<b>堆</b>（随 Class 对象），JDK 8 的元空间里没有它。这两问坑过很多人。</p>
+    </div>
+  </section>
+
+  <!-- ================= 06 基本类型 vs 引用类型 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>基本类型 vs 引用类型（本模块核心）</h2></div>
+
+    <h3 class="kp">6.1 一张图看懂本质区别<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>核心内存图（背下来）</span><span>结构</span></div>
+      <pre class="diagram"><code>int a = 25;                          Person p = new Person("Tom");
+
+        栈（main 栈帧）                          栈（main 栈帧）        堆
+   ┌───────────────────┐                  ┌────────────────┐   ┌─────────────────┐
+   │ a  │     25        │                  │ p  │ 0x100 ────┼──→│ 地址0x100:       │
+   │    │（直接就是值）  │                  │    │（存的是地址）│   │  Person 对象     │
+   └───────────────────┘                  └────────────────┘   │   name ──→ "Tom"│
+                                                              └─────────────────┘
+① 基本类型：变量 = 值本身                     ① 引用类型：变量 = 遥控器（地址）
+② 赋值 b=a：把 25 复制一份                    ② 赋值 q=p：复制的是"地址"
+③ 改 b 不影响 a                              ③ 改 q.name，p.name 也跟着变（同一个对象！）</code></pre>
+    </div>
+
+    <h4>引用类型的完整清单</h4>
+    <p>除了 8 种基本类型（byte/short/int/long/float/double/char/boolean），<b>其余一切都是引用类型</b>，分三类：</p>
+    <table>
+      <tr><th>类别</th><th>例子</th><th>说明</th></tr>
+      <tr><td>类 class</td><td><code>String</code>、<code>Person</code>、<code>Integer</code>、<code>Object</code></td><td>最常见</td></tr>
+      <tr><td>接口 interface</td><td><code>List</code>、<code>Runnable</code></td><td>引用指向实现类对象</td></tr>
+      <tr><td>数组 array</td><td><code>int[]</code>、<code>String[]</code></td><td>数组本身也是对象，在堆中</td></tr>
+    </table>
+
+    <h3 class="kp">6.2 赋值与"修改"的语义差异<span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>最容易混淆的三段代码</span><span>Java</span></div>
+      <pre><code>// 情形一：基本类型赋值 → 值拷贝，之后互不影响
+int a = 10;
+int b = a;       // b 拿到的是 10 这个值的副本
+b = 99;
+System.out.println(a);   // 10，a 不受影响
+
+// 情形二：引用类型赋值 → 地址拷贝，两个引用指向同一个对象
+Person p1 = new Person("Tom");
+Person p2 = p1;          // p2 复制的是 0x100 这个地址
+p2.setName("Jerry");     // 通过 p2 修改的是"那一个"对象
+System.out.println(p1.getName());   // Jerry！p1 也看到修改（同一对象）
+
+// 情形三：给引用本身重新赋值 → 只是改了这个变量自己的指向，别的引用无感
+p2 = new Person("Spike");  // p2 指向新对象 0x200，p1 仍指向 0x100
+System.out.println(p1.getName());   // 还是 Jerry</code></pre>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">💡 心智模型</div>
+      <p>把引用类型的变量当成<b>"遥控器"</b>：赋值 = 复制一个遥控器（控制同一台电视）；<code>p2 = new ...</code> = 给这个遥控器重新配对到另一台电视（原电视不受影响）；<code>p2.setName(...)</code> = 按遥控器上的按钮（真的动了那台电视）。<b>判断任何"改了之后谁受影响"的问题，都回到这张图。</b></p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的变量<b>全部是引用</b>（连整数都是堆上对象的引用），没有"值拷贝"型赋值。但行为模型一致：可变对象（list/dict）= Java 的普通对象；不可变对象（int/str/tuple）≈ Java 的 String（改不动，只能新建）。所以 Python 的 <code>a = [1]; b = a; b.append(2)</code> 后 a 也变——和 Java 情形二完全同构。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">基本类型和引用类型的区别？</div><div class="ca">存储内容不同：基本类型变量直接存值（栈），引用类型变量存对象地址（栈存地址、对象在堆）。由此推出：赋值语义、== 比较语义、参数传递行为全都不同。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">引用可以理解为指针吗？</div><div class="ca">接近但受限：都是"存地址"，但 Java 引用不能做指针运算（不能 +1）、不能取地址、由 GC 管理。说"安全的指针"没问题。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">对象一定在堆上吗？</div><div class="ca">认知层面：是。加分项：JIT 逃逸分析发现对象没逃出方法时，可能"标量替换"打散到栈上——这是优化细节，不违背"对象在堆"的语义模型。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 07 局部变量 vs 成员变量 ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>局部变量 vs 成员变量：位置决定一切</h2></div>
+
+    <h3 class="kp">7.1 三种变量的完整对照<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tr><th></th><th>局部变量</th><th>实例变量（成员）</th><th>静态变量（类变量）</th></tr>
+      <tr><td>声明位置</td><td>方法内 / 代码块内 / 参数</td><td>类里、方法外，无 static</td><td>类里、方法外，有 static</td></tr>
+      <tr><td>内存位置</td><td><b>栈</b>：所在方法的栈帧局部变量表</td><td><b>堆</b>：所在对象的体内</td><td>JDK7+ 在<b>堆</b>（随 Class 对象），全局一份</td></tr>
+      <tr><td>归属</td><td>某一次方法调用</td><td>某一个对象</td><td>整个类（所有对象共享）</td></tr>
+      <tr><td>默认值</td><td><b>没有</b>，必须先赋值再用</td><td>有（0 / 0.0 / false / '\u0000'）</td><td>有（同左）</td></tr>
+      <tr><td>生命周期</td><td>方法调用开始 → 返回即销毁</td><td>对象创建 → GC 回收对象</td><td>类加载 → 类卸载（通常=进程结束）</td></tr>
+      <tr><td>能否被 static 方法访问</td><td>（不适用）</td><td>不能（static 无 this，找不到对象）</td><td>能</td></tr>
+    </table>
+
+    <h3 class="kp">7.2 "默认值之谜"的内存解释<span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <p>为什么成员变量自动有默认值、局部变量却必须手动初始化？从内存视角一句话讲透：</p>
+    <ul>
+      <li><b>成员变量（堆）</b>：对象在堆中分配内存时，JVM 会把整块内存<b>统一清零</b>（这也是安全要求——不能让新对象读到上一个死掉对象的脏数据）。清零后的位模式按类型解释：int 的 32 个 0 就是 0，boolean 的 0 就是 false，引用的 0 就是 null。<b>所以默认值 = "零值"，不是什么特别设计，是清零的副产品。</b></li>
+      <li><b>局部变量（栈）</b>：方法调用只是把局部变量表"划出槽位"，JVM 出于性能<b>不负责清零</b>（栈帧进出极频繁，每次清零开销大）。脏数据风险交给编译器解决——数据流分析确认"未赋值就使用"直接<b>编译报错</b>。</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>默认值速查（仅成员变量）</span><span>Java</span></div>
+      <pre><code>class Defaults {
+    int i;              // 0
+    long l;             // 0L
+    double d;           // 0.0
+    boolean b;          // false
+    char c;             // '\u0000'（码值为 0 的字符）
+    String s;           // null（引用类型都是 null —— 注意不是空串 ""！）
+    int[] arr;          // null（数组引用也是引用，别以为是空数组）
+
+    void method() {
+        int x;
+        // System.out.println(x);   // ❌ 编译错误：variable x might not have been initialized
+        int y = 0;                   // ✅ 显式初始化后才能用
+    }
+}</code></pre>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 高频事故：null 默认值</div>
+      <p>成员变量是包装类型/集合/对象时，默认值是 <b>null</b>。典型事故：Controller/Service 的字段忘记注入或赋值，运行时 <code>NullPointerException</code>——这是"默认值"概念在工程里最常咬人的地方。</p>
+    </div>
+  </section>
+
+  <!-- ================= 08 new 的过程 ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>new 一个对象的完整过程</h2></div>
+
+    <h3 class="kp">8.1 五个步骤<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>new Person("Tom") 时 JVM 做了什么</span><span>流程</span></div>
+      <pre class="diagram"><code>Person p = new Person("Tom");
+                 │
+   ① 类加载检查 ── 方法区里有 Person 的类信息吗？没有 → 触发类加载（模块5详述）
+                 │
+   ② 分配内存   ── 在堆中划出对象所需空间
+                 │   （优化细节：TLAB 线程私有缓冲区，避免多线程抢一块地）
+                 │
+   ③ 零值初始化 ── 把这块内存全部清零 ★ 这就是"成员变量有默认值"的真正出处！
+                 │
+   ④ 设置对象头 ── 写入 Mark Word（hashCode、GC 年龄、锁标志）
+                 │   + 类型指针（指向方法区的 Person 类信息）
+                 │
+   ⑤ 执行构造器 ── 按源码顺序：成员变量显式赋值 → 构造代码块 → 构造方法体
+                 │   （初始化顺序的完整规则在模块 3 面向对象展开）</code></pre>
+    </div>
+
+    <h3 class="kp">8.2 对象在堆中的内存布局<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>对象的三个部分（64位 JVM，开启压缩指针）</span><span>结构</span></div>
+      <pre class="diagram"><code>┌──────────────────────────────────────┐
+│ 对象头 (Object Header)               │
+│   ├─ Mark Word (8B)：hashCode、GC 分代│ ← 模块5(GC)、模块6(锁) 都会回来讲它
+│   │   年龄、锁标志位                   │
+│   └─ 类型指针 (4B)：指向方法区的类信息  │ ← 所以对象知道自己是哪个类（反射的根基）
+├──────────────────────────────────────┤
+│ 实例数据 (Instance Data)              │
+│   各字段的值（父类字段在前，子类在后）   │
+├──────────────────────────────────────┤
+│ 对齐填充 (Padding)                    │
+│   补齐到 8 字节的整数倍                │
+└──────────────────────────────────────┘
+
+一个 int 字段的对象为什么不止 4 字节？
+  Integer 实际 = 对象头 12B + int 字段 4B = 16B  → 装 4 字节的值要花 16 字节，
+  这就是"包装类比基本类型重 4 倍"的量化依据，也是集合里存 Integer 的隐性成本。</code></pre>
+    </div>
+
+    <details class="qa">
+      <summary>对象头里的 Mark Word 是什么？为什么重要？</summary>
+      <div class="qa-body">
+        <p>Mark Word 是对象头前 8 个字节，一块"多用途"存储区，内容随对象状态切换：<b>无锁态</b>存 hashCode + GC 分代年龄；<b>偏向锁/轻量级锁/重量级锁</b>状态下分别存线程 ID / 锁记录指针 / 监视器指针（模块 6 synchronized 锁升级的核心依据）。</p>
+        <p>它是"锁信息存在对象上而不是代码上"的原因——Java 任何对象都能当锁，就是锁信息记录在对象头里。</p>
+      </div>
+    </details>
+
+    <h3 class="kp">8.3 我们怎么访问对象：引用 → 对象<span class="stars">★★</span></h3>
+    <p>栈里的引用 p 指向堆对象，有两种实现方式：</p>
+    <ul>
+      <li><b>直接指针</b>（HotSpot 采用）：p 里直接存堆地址 → 访问快一次到位</li>
+      <li><b>句柄</b>：p 存句柄池地址，句柄再存对象地址 → GC 移动对象时只需改句柄，引用本身不动（了解到这个对比即可）</li>
+    </ul>
+  </section>
+
+  <!-- ================= 09 包装类 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>包装类：为什么存在</h2></div>
+
+    <h3 class="kp">9.1 设计动机：基本类型的三个"不能"<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>有了基本类型（快、省内存），为什么还要包装类？因为基本类型作为"裸数值"有三件事做不到：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>三个"不能"</span><span>Java</span></div>
+      <pre><code>// ① 集合/泛型只能装"对象" —— ArrayList<int> 直接编译错误
+List&lt;int&gt; wrong;                 // ❌ 泛型不支持基本类型（类型擦除的历史原因，模块9 详述）
+List&lt;Integer&gt; right = new ArrayList&lt;&gt;();   // ✅ 必须用包装类
+
+// ② 基本类型表达不了 null —— 而业务中"没有值"是真实存在的
+int score = null;                       // ❌ 编译错误
+Integer score = null;                   // ✅ 数据库字段为 NULL、Map 里查不到 key，都需要它
+Map&lt;String,Integer&gt; m = new HashMap&lt;&gt;();
+Integer v = m.get("不存在");            // null —— 用 int 接住会在拆箱时 NPE
+
+// ③ 基本类型不是对象，没有方法、不能参与面向对象机制
+10.toString();                          // ❌ int 就是裸数值，调不了任何方法
+Integer.toString(10);                   // ✅ 包装类有静态方法
+Integer.MIN_VALUE;                      // ✅ 常量也在类上</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>包装类 = 把基本类型包成对象，让它在"只能用对象"的场合（泛型集合、null 语义、调用方法/反射）也能出场。性能敏感的局部计算用基本类型，需要对象语义时用包装类。</p>
+    </div>
+
+    <h3 class="kp">9.2 自动装箱 / 拆箱：编译器的语法糖<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>装箱 = 堆里造对象；拆箱 = 取出值</span><span>Java</span></div>
+      <pre><code>Integer i = 10;    // 自动装箱：编译器翻译成 Integer i = Integer.valueOf(10);
+                    //   → 在堆中创建/复用一个 Integer 对象（别忘了模块1的图：对象在堆！）
+int n = i;         // 自动拆箱：编译器翻译成 int n = i.intValue();
+                    //   → 从对象里把 int 值取出来放回栈
+
+// 关键认知：装箱拆箱发生在【编译期】，是编译器插入方法调用，
+// JVM 运行时并没有"自动"魔法 —— 所以能被反编译看清，也有性能成本</code></pre>
+    </div>
+
+    <h3 class="kp">9.3 Integer 缓存池：== 陷阱的元凶<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <p>现在用本模块的内存知识解释那个经典问题——为什么 127 相等、128 不等：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>缓存池的内存真相</span><span>结构</span></div>
+      <pre class="diagram"><code>Integer a = 127;  Integer b = 127;      Integer c = 128;  Integer d = 128;
+
+ 堆中的 IntegerCache（类加载时预建好的数组，装着 -128~127 的对象）
+ ┌───────────────────────────────┐
+ │  ... [126] [127] [128] ...    │
+ │           ↑     ↑             │
+ │           └──┬──┘             │      a == b → true
+ │ a 和 b 指向【同一个】缓存对象    │      （同一地址）
+ └───────────────────────────────┘
+                                  ┌──────────┐   ┌──────────┐
+                                  │ Integer  │   │ Integer  │
+                                  │ 值: 128  │   │ 值: 128  │   c == d → false
+                                  └──────────┘   └──────────┘   （两个不同地址的新对象）
+                                   ↑ c 指向这个      ↑ d 指向这个
+                                   （valueOf 超出缓存范围就 new 新对象，各造各的）</code></pre>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>valueOf 源码与结论</span><span>Java</span></div>
+      <pre><code>public static Integer valueOf(int i) {
+    if (i &gt;= IntegerCache.low &amp;&amp; i &lt;= IntegerCache.high)   // low=-128, high=127
+        return IntegerCache.cache[i + 128];   // 命中缓存：返回预建对象（地址相同）
+    return new Integer(i);                    // 超范围：每次 new（地址必不同）
+}
+// 上限可通过 -XX:AutoBoxCacheMax=N 调大（仅 Integer 有这个待遇）
+
+// 铁律：包装类型之间的比较，永远用 equals，不用 ==
+Integer c = 128, d = 128;
+c == d          // false：比地址（两个堆对象）
+c.equals(d)     // true ：比值（Integer 重写了 equals 按数值比较）</code></pre>
+    </div>
+
+    <table>
+      <tr><th>包装类</th><th>缓存范围</th></tr>
+      <tr><td>Byte / Short / Long / Integer</td><td>-128 ~ 127（Integer 上限可调，其余固定）</td></tr>
+      <tr><td>Character</td><td>0 ~ 127</td></tr>
+      <tr><td>Boolean</td><td>TRUE / FALSE 两个单例</td></tr>
+      <tr><td>Float / Double</td><td><b>无缓存</b>（浮点值无穷多，缓存无意义）</td></tr>
+    </table>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>CPython 的小整数池缓存 <b>[-5, 256]</b>：<code>a=256; b=256; a is b</code> 为 True。和 IntegerCache 动机完全一致（小整数高频，复用省内存）。记忆锚点：Python 的 <code>is</code> ≈ Java 的 <code>==</code>（比地址/身份），Python 的 <code>==</code> ≈ Java 的 <code>equals</code>（比值）。</p>
+    </div>
+
+    <h3 class="kp">9.4 拆箱 NPE：内存视角的必然结果<span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>凡是"null 引用 + 拆箱"都会炸</span><span>Java</span></div>
+      <pre><code>// 拆箱 = 调用 对象.intValue() → 对象是 null 就是 null.xxx() → NPE
+Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+int cnt = map.get("不存在");     // get 返回 null，赋给 int 触发拆箱 → NullPointerException
+
+Integer maybeNull = null;
+int x = maybeNull + 1;          // 运算符要求 int，自动拆箱 → NPE
+
+// 防御写法
+Integer v = map.get("k");
+int safe = (v == null) ? 0 : v;        // 显式判空给默认值
+int safe2 = Objects.requireNonNullElse(v, 0);   // JDK 9+</code></pre>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 阿里规范（工程共识）</div>
+      <p>POJO / 数据库映射实体的字段用<b>包装类型</b>（要能表达 null）；局部变量 / 循环计算用<b>基本类型</b>（避免无谓装箱 + 天然免疫拆箱 NPE）。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">为什么要有包装类？</div><div class="ca">基本类型进不了泛型集合、表达不了 null、没有方法可调。包装类把数值包成对象补齐这三点。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">Integer a=127,b=127; a==b ？那 128 呢？</div><div class="ca">127 true（命中缓存池，同一个堆对象）；128 false（超范围各 new，地址不同）。所以包装类一律 equals。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">什么时候会 NPE？</div><div class="ca">null 的包装类型参与拆箱：赋给 int、参与算术运算、Map.get 结果直接接 int。</div></div></div>
+      <div class="chain-item"><span class="cn">4</span><div class="cc"><div class="cq">Integer == int 呢？</div><div class="ca">一边是基本类型时，== 会把包装类【自动拆箱】按数值比 → 不受缓存影响，纯比值。（缓存坑只在两边都是包装类时出现）</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 10 == 与 equals ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>== 与 equals：内存视角的第一课</h2></div>
+
+    <h3 class="kp">10.1 == 的本质：比较"变量槽里存的东西"<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <p>有了前面的内存图，== 的规则不用背，是<b>推出来的</b>：== 比较的就是变量槽里放的内容——</p>
+    <ul>
+      <li>基本类型的槽里放<b>数值</b> → == 比数值</li>
+      <li>引用类型的槽里放<b>地址</b> → == 比地址（是不是同一个对象）</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>== 全景</span><span>Java</span></div>
+      <pre><code>// 基本类型：比值（类型不同先自动提升）
+int a = 100; long b = 100L;
+a == b                     // true（int 提升为 long，比数值）
+
+// 引用类型：比地址
+String s1 = new String("x");   String s2 = new String("x");
+s1 == s2                   // false：两个不同的堆对象（内容一样但地址不同）
+s1.equals(s2)              // true ：String 的 equals 比内容
+
+// 混合：一边基本类型一边包装类 → 拆箱比值
+Integer i = 1000;  int n = 1000;
+i == n                     // true：编译器插入 i.intValue()，变成数值比较</code></pre>
+    </div>
+
+    <h3 class="kp">10.2 equals：Object 的方法，默认就是 ==<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <ul>
+      <li><code>equals</code> 是 <code>Object</code> 类的方法（所有对象都有），<b>默认实现就是 <code>==</code></b>（比地址）：</li>
+    </ul>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Object.equals 的默认实现</span><span>Java</span></div>
+      <pre><code>// java.lang.Object 里（JDK 源码就一行）
+public boolean equals(Object obj) {
+    return (this == obj);          // 没重写时，equals 和 == 完全等价
+}
+
+// String / Integer 等对它做了"重写"（Override = 子类重新实现父类方法的逻辑，
+// 模块 3 详解）—— 重写后 equals 变成"逐字符/按数值比内容"：
+"abc".equals(new String("abc"))   // true：String 重写后比内容
+new Integer(100).equals(100)      // true：Integer 重写后比数值</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>== 比变量槽里存的东西：基本类型比值、引用类型比地址。equals 是 Object 的方法，默认等价于 ==；String、Integer 等常用类重写后按内容比较。自定义类不重写 equals 就只能比地址。</p>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 本模块刻意不讲的部分</div>
+      <p><b>equals/hashCode 的重写规范、为什么"重写 equals 必须重写 hashCode"、只重写一个会怎样</b>——这些属于"方法重写"和"哈希容器"的话题，放在<b>模块 3（面向对象·重写）</b>用 HashSet 分桶图详细讲透，届时你会看到只重写一半时 HashSet 里到底发生了什么。</p>
+    </div>
+  </section>
+
+  <!-- ================= 11 面试题速查 ================= -->
+  <section class="sec" id="s11">
+    <div class="sec-head"><span class="sec-no">11</span><h2>高频面试题速查（自测清单）</h2></div>
+    <p>合上笔记口头回答，答不出的回到对应章节。点击展开参考答案。</p>
+
+    <details class="qa"><summary>1. JVM 运行时数据区有哪几块？哪些线程私有？</summary><div class="qa-body"><p>五块：程序计数器、虚拟机栈、本地方法栈（线程私有）；堆、方法区（线程共享）。栈溢出 StackOverflowError（递归过深），堆/方法区不足 OOM。</p></div></details>
+    <details class="qa"><summary>2. 栈和堆分别存什么？</summary><div class="qa-body"><p>栈：方法调用的栈帧（局部变量表放参数和局部变量——基本类型直接放值，引用类型放堆地址；操作数栈做计算中转）。堆：所有对象实例与数组本体，线程共享，由 GC 回收。</p></div></details>
+    <details class="qa"><summary>3. 为什么局部变量必须初始化，成员变量却有默认值？</summary><div class="qa-body"><p>成员变量在堆中随对象分配，JVM 分配时统一清零 → 零值即默认值。局部变量在栈帧槽位中，JVM 出于性能不清零，编译器通过数据流分析强制"先赋值后使用"，否则编译报错。</p></div></details>
+    <details class="qa"><summary>4. 方法区、永久代、元空间是什么关系？字符串常量池在哪？</summary><div class="qa-body"><p>方法区是规范概念。HotSpot JDK7 及以前用堆中的"永久代"实现，JDK8 起改为本地内存中的"元空间"（避免类加载多时 OOM，参数从 MaxPermSize 变为 MaxMetaspaceSize）。字符串常量池和静态变量在 JDK 7 起就搬到了堆中。</p></div></details>
+    <details class="qa"><summary>5. 基本类型和引用类型的区别？</summary><div class="qa-body"><p>基本类型变量直接存值（栈），8 种；引用类型变量存对象地址，对象本体在堆。由此产生赋值语义（值拷贝 vs 地址拷贝）、== 语义（比值 vs 比地址）、参数传递行为的三重差异。</p></div></details>
+    <details class="qa"><summary>6. new 一个对象的完整过程？</summary><div class="qa-body"><p>① 检查类是否加载（未加载先触发类加载）→ ② 堆中分配内存（TLAB 优化）→ ③ 零值初始化（成员变量默认值的来源）→ ④ 设置对象头（Mark Word + 类型指针）→ ⑤ 执行属性显式赋值、构造代码块、构造方法。</p></div></details>
+    <details class="qa"><summary>7. 对象由哪几部分组成？一个 Integer 对象占多少内存？</summary><div class="qa-body"><p>对象头（Mark Word 8B + 压缩类型指针 4B）+ 实例数据 + 对齐填充（8 的倍数）。Integer = 12B 头 + 4B int = 16B，是基本 int 的 4 倍——包装类的空间成本。</p></div></details>
+    <details class="qa"><summary>8. 为什么要设计包装类？</summary><div class="qa-body"><p>① 泛型/集合只能存对象；② 需要 null 语义（数据库 NULL、Map 查不到）；③ 基本类型没有方法、无法参与反射等面向对象机制。工程规范：实体字段用包装类，局部计算用基本类型。</p></div></details>
+    <details class="qa"><summary>9. Integer 127==127 与 128==128？为什么？</summary><div class="qa-body"><p>true / false。IntegerCache 缓存 [-128,127]，valueOf 命中返回同一对象；超出则每次 new，地址不同。== 比地址所以 128 不等，equals 比值恒为 true。Float/Double 无缓存，包装类比较一律 equals。</p></div></details>
+    <details class="qa"><summary>10. == 和 equals 的区别？</summary><div class="qa-body"><p>== 比变量槽内容：基本类型比值、引用类型比地址；Integer 与 int 比较会先拆箱。equals 是 Object 方法，默认实现就是 ==；String/Integer 等重写后比内容；自定义类不重写则仍比地址（重写规范与 hashCode 联动见模块 3）。</p></div></details>
+  </section>
+
+  <!-- ================= 12 小结 ================= -->
+  <section class="sec" id="s12">
+    <div class="sec-head"><span class="sec-no">12</span><h2>模块小结 · 必背清单</h2></div>
+
+    <div class="depcard">
+      <div class="dep"><b>⬅ 前置依赖</b>无。本模块是全套手册的地基，从零建立。</div>
+      <div class="dep"><b>➡ 后续去向</b>模块 2 用本模块的"常量池/栈槽"解释 String 与值传递；模块 4 用"对象在堆"讲 HashMap；模块 5 回到堆讲 GC、方法区讲类加载；模块 6 回到对象头 Mark Word 讲锁。</div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="sum-card"><h5>🗺️ 内存地图</h5><ul>
+        <li>栈：方法执行 + 局部变量（值/地址）</li>
+        <li>堆：对象本体，线程共享，GC 管</li>
+        <li>方法区：类模板 + 常量池（JDK8=元空间/本地内存）</li>
+        <li>字符串常量池、静态变量：JDK7 起在堆</li>
+      </ul></div>
+      <div class="sum-card"><h5>📦 变量的两条铁律</h5><ul>
+        <li>基本类型槽里是值；引用类型槽里是地址</li>
+        <li>成员变量默认值=堆清零副产品；局部变量必须显式初始化</li>
+      </ul></div>
+      <div class="sum-card"><h5>🎁 包装类</h5><ul>
+        <li>存在理由：进集合 / 表达 null / 有方法</li>
+        <li>装箱=valueOf 建堆对象；拆箱=intValue 取值</li>
+        <li>缓存 [-128,127]；比较一律 equals；null 拆箱=NPE</li>
+      </ul></div>
+      <div class="sum-card"><h5>⚖️ 比较体系</h5><ul>
+        <li>==：比值（基本）或比地址（引用）</li>
+        <li>equals：默认===，重写后比内容</li>
+        <li>hashCode 联动 → 模块 3 分桶图详解</li>
+      </ul></div>
+      <div class="sum-card"><h5>🐍 Python 对应关系</h5><ul>
+        <li>CPython 栈帧+对象堆 ≈ JVM 栈+堆</li>
+        <li>小整数池 [-5,256] ≈ IntegerCache [-128,127]</li>
+        <li>Python 全是引用；Java 保留基本类型为性能</li>
+      </ul></div>
+      <div class="sum-card"><h5>🧩 量化数字</h5><ul>
+        <li>Integer 对象 16B vs int 4B</li>
+        <li>对象头 12B（Mark Word 8 + 类型指针 4）</li>
+        <li>-Xss 栈大小；-Xmx 堆上限</li>
+      </ul></div>
+    </div>
+
+    <div class="pagenav">
+      <a class="disabled">← 模块 0（无，这是地基）</a>
+      <a href="02-basic-syntax.html">模块 2：基础语法与数据类型 →</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="返回顶部">↑</button>
+
+<script>
+// ========== 简易 Java 语法高亮（离线可用） ==========
+function highlightJava(src) {
+  let s = src.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])*')|(@\w+)|\b(abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|package|private|protected|public|record|return|sealed|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|yield|true|false|null)\b|\b(0[xX][0-9a-fA-F_]+|\d[\d_]*\.?[\d_]*[fFdDlL]?)\b/g;
+  return s.replace(re, (m, com, str, chr, anno, kw, num) => {
+    if (com) return '<span class="tok-com">' + m + '</span>';
+    if (str || chr) return '<span class="tok-str">' + m + '</span>';
+    if (anno) return '<span class="tok-anno">' + m + '</span>';
+    if (kw) return '<span class="tok-kw">' + m + '</span>';
+    if (num) return '<span class="tok-num">' + m + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram')) el.innerHTML = highlightJava(el.textContent);
+});
+
+// ========== 目录滚动联动 ==========
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+// ========== 一键展开/收起 ==========
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块5：JVM 深入（类加载与垃圾回收）</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== 顶部 Hero ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 55.6%; background: linear-gradient(90deg, #2456d6, #4f7df9); border-radius: 4px; }
+
+/* ===== 模块导航条 ===== */
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+/* ===== 主体布局 ===== */
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+/* ===== 左侧目录 ===== */
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 章节 ===== */
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+/* ===== 徽章 ===== */
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+/* ===== 表格 ===== */
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+/* ===== 代码块 ===== */
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+/* ===== 提示框 ===== */
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+/* ===== 一句话回答 ===== */
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+/* ===== 面试 Q&A ===== */
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* ===== 追问链 ===== */
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+/* ===== 前置/后续依赖卡 ===== */
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+/* ===== 其他 ===== */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 5 / 9</div>
+  <h1>JVM 深入：类加载与垃圾回收</h1>
+  <div class="sub">
+    模块 1 建立了"数据放在哪"的内存全景图；本模块回答两个遗留问题：<b>类信息是怎么进入方法区的</b>（类加载 / 双亲委派），以及<b>堆里的对象死掉后谁来清理</b>（GC 判活 / 分代收集 / CMS 与 G1）。最后落到工程必备的<b>内存泄漏排查</b>——这是面试里最能和项目经历结合的 JVM 话题。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <span class="cur">5 JVM 深入</span>
+  <span>6 并发编程</span>
+  <span>7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 衔接与全景图</a>
+    <a href="#s2">02 类的生命周期五阶段</a>
+    <a href="#s3">03 初始化：clinit 与单例原理</a>
+    <a href="#s4">04 类加载器与双亲委派</a>
+    <a href="#s5">05 对象存活判定与 GC Roots</a>
+    <a href="#s6">06 四种引用强度</a>
+    <a href="#s7">07 三大 GC 基础算法</a>
+    <a href="#s8">08 分代收集与 Minor GC 全程</a>
+    <a href="#s9">09 收集器演进：CMS 与 G1</a>
+    <a href="#s10">10 CMS vs G1 对比速查</a>
+    <a href="#s11">11 内存泄漏与 OOM 排查</a>
+    <a href="#s12">12 对象分配策略补全</a>
+    <a href="#s13">13 高频面试题速查</a>
+    <a href="#s14">14 模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部面试答案</button>
+      <button id="btn-collapse" style="margin-top:6px">收起全部</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 01 衔接与全景图 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>衔接与全景图</h2></div>
+
+    <p>先回收模块 1 埋下的两个伏笔：</p>
+    <ul>
+      <li>模块 1 说"<b>类信息存在方法区</b>"——那 <code>.class</code> 文件里的字节码，是怎么、什么时候、被谁搬进方法区的？→ <b>类加载机制</b>（本模块 02–04 节）</li>
+      <li>模块 1 说"<b>对象在堆里分配</b>"——堆不是无限大，对象用完之后谁来回收？为什么 Java 不用像 C 一样 <code>free()</code>？→ <b>垃圾回收 GC</b>（本模块 05–10 节）</li>
+      <li>回收机制理解错了，代码就会写出"<b>明明没用却占着内存</b>"的对象 → <b>内存泄漏</b>（本模块 11 节，项目向）</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>本模块在 JVM 全景中的位置</span><span>Diagram</span></div>
+      <pre class="diagram"><code>┌───────────────────────  JVM 运行时数据区（模块 1） ───────────────────────┐
+│                                                                            │
+│   线程私有                     线程共享                                     │
+│  ┌──────────┐   ┌──────────┐   ┌────────────────────────────────────┐     │
+│  │ 虚拟机栈  │   │  本地方法栈│   │            堆（Heap）              │     │
+│  └────┬─────┘   └──────────┘   │  ┌──────────┬───────────────────┐  │     │
+│       │                        │  │  新生代   │      老年代        │  │     │
+│  局部变量表的引用 ──GC Roots──▶ │  │Eden|S0|S1│   （对象按年龄晋升） │  │     │
+│       │                        │  └──────────┴───────────────────┘  │     │
+│       │                        └───────────────▲────────────────────┘     │
+│       │                                        │ new 对象                 │
+│  ┌────▼────────────────────────────────────┐   │                          │
+│  │ 程序计数器                                │   │                          │
+│  └─────────────────────────────────────────┘   │                          │
+│  ┌─────────────────────────────────────────────▼───────┐                  │
+│  │ 方法区 / 元空间（Metaspace）：类信息、运行时常量池、静态变量 │                  │
+│  └────────────────▲────────────────────────────────────┘                  │
+│                   │                                                         │
+│        .class 文件的类信息搬进来 ←── 类加载器（本模块 02–04 节）               │
+└────────────────────────────────────────────────────────────────────────┘
+
+对象的命运（本模块主线）：
+  出生（new，模块1第8节）→ 使用 → 失去引用 → 可达性分析判死 → GC 回收
+        ↑                                        │
+        └────── 分代收集策略决定它在哪一代被回收 ──┘（05–10 节）</code></pre>
+    </div>
+
+    <div class="depcard">
+      <div class="dep"><b>本模块依赖（先确保掌握）</b>模块 1：堆 / 方法区 / 静态变量位置；模块 3：静态代码块与初始化顺序</div>
+      <div class="dep"><b>本模块被谁依赖（往后看）</b>模块 6：ThreadLocal 内存泄漏要用"弱引用 + GC 判活"解释；模块 9：类加载是理解动态代理触发行为的背景</div>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 给 Python 背景的你：全局定位</div>
+      <p>CPython 的内存管理 = <b>引用计数</b>（实时回收）+ <b>分代标记清除</b>（专治循环引用）+ 池化（小整数 / intern）。JVM = <b>纯可达性分析</b>（不数引用）+ <b>分代 + 多种收集器</b>。Python 你写 <code>gc.collect()</code> 是"补救"，Java 的 GC 是"日常主力"——所以 Java 后端面试 GC 是必考题，而 Python 面试 gc 只是选考。本模块 05 节会精确对比两者的判活方式。</p>
+    </div>
+  </section>
+
+  <!-- ================= 02 类的生命周期 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>类的生命周期五阶段<span class="badge b-high">面试高频</span><span class="stars">★★★★★</span></h2></div>
+
+    <p>一个 <code>.class</code> 文件从"磁盘上的字节"到"可以 new 出对象"，要经历五步。<b>面试标准问法："说说类的加载过程"</b>，答出五阶段 + 各阶段一句话即可拿满分：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>类的生命周期</span><span>Diagram</span></div>
+      <pre class="diagram"><code> .class 文件（磁盘）
+       │
+       ▼
+ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌───────────┐
+ │ 1 加载   │──▶│ 2 验证   │──▶│ 3 准备   │──▶│ 4 解析   │──▶│ 5 初始化   │──▶ 使用 ──▶ 卸载
+ └─────────┘   └─────────┘   └─────────┘   └─────────┘   └───────────┘
+  读字节流        检查合法      静态变量      符号引用      执行 &lt;clinit&gt;()
+  方法区生成      防恶意类      分配+零值     →直接引用      静态赋值+静态块
+  Class对象                                                   （线程安全！）
+
+ 注意：2/3/4 合称"连接（Linking）"；其中 解析(4) 不一定在初始化前完成——
+       支持运行时绑定（多态的晚期绑定就靠它，呼应模块 3 动态分派）</code></pre>
+    </div>
+
+    <h3 class="kp">阶段 1：加载（Loading）——"搬进来"</h3>
+    <ul>
+      <li>通过类的全限定名拿到 <b>二进制字节流</b>（来源不限于磁盘：jar 包、网络、动态代理运行时生成——模块 9 的动态代理就是在这里"无中生有"出类）</li>
+      <li>把字节流的静态结构转化为<b>方法区</b>的运行时数据结构（类信息进方法区）</li>
+      <li>在<b>堆</b>中生成一个 <code>java.lang.Class</code> 对象，作为访问方法区类数据的入口（所以 Class 对象在堆，类数据在方法区——模块 1 的两张图在这里接上了）</li>
+    </ul>
+
+    <h3 class="kp">阶段 2：验证（Verification）——"安检"</h3>
+    <p>确保字节码合法且不危害虚拟机：文件格式（魔数 CAFEBABE）→ 元数据（是否有父类、是否继承 final 类）→ 字节码（类型转换安全）→ 符号引用（引用的目标确实存在）。</p>
+
+    <h3 class="kp">阶段 3：准备（Preparation）——"分房子、给零值"<span class="badge b-trap">易错点</span></h3>
+    <p>为<b>类静态变量</b>在方法区分配内存并设<b>零值</b>——注意不是你写的初始值！</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>准备阶段 vs 初始化阶段：同一个变量的两次赋值</span><span>Java</span></div>
+      <pre><code>public static int value = 123;
+
+// 准备阶段后：  value = 0        ← 零值！此时还没执行你写的 123
+// 初始化阶段后：value = 123      ← 这时才执行类构造器 &lt;clinit&gt;() 里的赋值
+
+// 例外：编译期常量在"准备"阶段就直接赋值（ConstantValue 属性）：
+public static final int CONST = 123;
+// 准备阶段后：CONST = 123   ← final + 编译期可确定 → 不用等初始化</code></pre>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 为什么这是易错点</div>
+      <p>面试常追问"静态变量的赋值发生在类加载的哪个阶段"——标准答案：<b>零值在准备，业务赋值在初始化</b>。这也解释了一个经典现象：静态代码块里能打印到还没执行赋值语句的静态变量（值为零值），因为赋值语句和静态块按<b>源码顺序</b>在 <code>&lt;clinit&gt;()</code> 里执行。</p>
+    </div>
+
+    <h3 class="kp">阶段 4：解析（Resolution）——"符号变地址"</h3>
+    <p>把常量池里的<b>符号引用</b>（如 <code>java/lang/Object</code> 这样的名字描述）替换为<b>直接引用</b>（指针 / 偏移量）。可以发生在初始化之后（晚期绑定），这正是<b>多态</b>的实现基础（模块 3 讲过的方法表分派）。</p>
+
+    <h3 class="kp">阶段 5：初始化（Initialization）——"执行你的静态代码"</h3>
+    <p>执行类构造器 <code>&lt;clinit&gt;()</code>：把<b>静态变量赋值语句 + 静态代码块</b>按源码顺序合并执行。重点在下一节展开。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>类加载过程 = 加载（搬进方法区+堆里建 Class 对象）→ 验证（安检）→ 准备（静态变量给零值）→ 解析（符号引用变直接引用）→ 初始化（执行 &lt;clinit&gt;，静态赋值+静态块）。常量（static final）在准备阶段就直接赋值，不等初始化。</p>
+    </div>
+  </section>
+
+  <!-- ================= 03 初始化 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>初始化：clinit 与"最优雅单例"的原理<span class="badge b-high">高频</span><span class="badge b-hard">难点</span><span class="stars">★★★★☆</span></h2></div>
+
+    <h3 class="kp">什么情况会触发初始化？（主动引用 6 种）</h3>
+    <p>JVM 规范严格规定了 6 种"必须立即初始化"的场景，除此之外都<b>不初始化</b>（被动引用）——这是选择题和读代码题的富矿：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>主动引用（触发初始化） vs 被动引用（不触发）</span><span>Java</span></div>
+      <pre><code>class Parent { static int a = 1; static { System.out.println("Parent init"); } }
+class Child extends Parent { static { System.out.println("Child init"); } }
+
+// ── 主动引用：会打印 "Parent init" ──────────────────────────
+new Child();                        // ① new 实例（先初始化 Parent 再 Child）
+int x = Parent.a;                   // 读写非 final 静态字段（只有定义它的类初始化）
+Parent.doSomething();               // 调用静态方法
+Class.forName("Parent");            // 反射
+// ⑤ 初始化子类时，父类若未初始化则先初始化（上面的 new Child() 已体现）
+// ⑥ main() 所在的类，启动时立刻初始化
+
+// ── 被动引用：一行都不会打印 ────────────────────────────────
+int y = Child.a;        // ② 通过子类名访问父类静态字段 → 只初始化 Parent？错！
+                        //    访问的还是 Parent.a（静态字段属于定义者），Child 不初始化
+Parent[] arr = new Parent[10];   // ③ 定义数组 → 只分配数组对象空间，元素类不初始化
+int z = Parent.CONST;   // ④ 访问编译期常量 → 常量在调用方类的常量池里，直接用，
+                        //    Parent 根本不会被加载初始化（最反直觉的一个！）</code></pre>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 被动引用第 4 种最常考</div>
+      <p>"引用常量不触发定义类的初始化"的原因：编译期常量在<b>编译阶段就被存进了使用者的常量池</b>，运行时根本不需要碰定义类。可以把 <code>static final</code> 理解成"宏替换进了对方的类"。</p>
+    </div>
+
+    <h3 class="kp">clinit 的两条铁律</h3>
+    <ol>
+      <li><b>父类优先</b>：子类 <code>&lt;clinit&gt;()</code> 执行前，保证父类的已执行完（所以静态块输出永远是"父先子后"，呼应模块 3 初始化顺序）</li>
+      <li><b>线程安全</b>：JVM 保证同一个类的 <code>&lt;clinit&gt;()</code> 在多线程下<b>只被一个线程执行一次</b>，其他线程阻塞等待 ← 这条铁律直接催生了一个面试标准答案：</li>
+    </ol>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>静态内部类单例：为什么它是"最优雅"的懒加载单例</span><span>Java</span></div>
+      <pre><code>public class Singleton {
+    private Singleton() {}
+
+    // 关键：静态内部类不会在 Singleton 加载时就初始化（被动引用规则）
+    private static class Holder {
+        // 第一次用到 Holder 才触发类加载 → &lt;clinit&gt;() 执行 new
+        // JVM 保证 &lt;clinit&gt; 只执行一次且线程安全 → 天然的懒加载 + 线程安全，零锁
+        static final Singleton INSTANCE = new Singleton();
+    }
+
+    public static Singleton getInstance() { return Holder.INSTANCE; }
+}
+
+// 面试话术：既不像饿汉式浪费（未用就建），又不像双重检查锁那样要写
+// volatile + 两次判空（模块 6 会展开 DCL），它把并发问题下放给了 JVM 类加载机制。</code></pre>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">追问：Class.forName 和 ClassLoader.loadClass 的区别？</div><div class="ca">两者都能把类加载进方法区，但 <code>Class.forName("X")</code> 默认会<b>执行到初始化阶段</b>（跑静态块），而 <code>loader.loadClass("X")</code> 只到加载阶段。JDBC 老写法 <code>Class.forName("com.mysql.jdbc.Driver")</code> 就是靠它执行驱动里的静态注册块。<code>forName</code> 还有个三参重载可以控制是否初始化和类加载器。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">追问：那接口有 clinit 吗？</div><div class="ca">接口可以有（接口里允许定义常量初始化表达式，JDK8+ 还有默认方法），但接口初始化<b>不要求先初始化父接口</b>，且只有在真正使用接口的静态成员时才初始化——比类更"懒"。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 04 类加载器与双亲委派 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>类加载器与双亲委派<span class="badge b-high">面试超高频</span><span class="stars">★★★★★</span></h2></div>
+
+    <h3 class="kp">三层加载器：各管一摊</h3>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>类加载器层次 + 双亲委派流程</span><span>Diagram</span></div>
+      <pre class="diagram"><code>        ┌──────────────────────────────────────────────┐
+        │  Bootstrap ClassLoader（启动类加载器，C++实现） │
+        │  加载：JAVA_HOME/lib 核心库（String、Object…）  │
+        │  特殊：拿不到它的引用（null），JVM 自身的一部分   │
+        └───────────────────▲──────────────────────────┘
+                            │ 委派↑ 回传↓
+        ┌───────────────────┴──────────────────────────┐
+        │  Platform ClassLoader（平台类加载器）           │
+        │  JDK 8 及以前叫 Extension（扩展类加载器）       │
+        │  加载：平台模块 / lib/ext（javax.* 等）          │
+        └───────────────────▲──────────────────────────┘
+                            │ 委派↑ 回传↓
+        ┌───────────────────┴──────────────────────────┐
+        │  Application ClassLoader（应用类加载器）        │
+        │  加载：你写的 classpath（业务代码、依赖 jar）    │
+        └──────────────────────────────────────────────┘
+
+双亲委派流程（应用程序收到 loadClass("X") 请求时）：
+  ① Application 不自己加载，先问上级 Platform
+  ② Platform 也不自己加载，先问上级 Bootstrap
+  ③ Bootstrap 找不到（X 不在核心库）→ 回复"我搞不定" → Platform 自己找
+  ④ Platform 找不到 → 回复"我搞不定" → Application 在 classpath 里找
+  ⑤ 谁先找到谁定义这个类；都找不到 → ClassNotFoundException
+
+一句话：孩子收到活儿先往上报，父辈干不了的才传回来自己干。</code></pre>
+    </div>
+
+    <h3 class="kp">为什么要双亲委派？两个原因<span class="badge b-high">必背</span></h3>
+    <ol>
+      <li><b>安全</b>：你自己写一个 <code>java.lang.String</code> 放进 classpath，加载请求会被委派给 Bootstrap，它加载的是 JDK 官方的 String，你的"假 String"永远没机会运行 → <b>防止核心 API 被篡改</b></li>
+      <li><b>一致性（类的唯一性）</b>：JVM 里类的身份 = <b>类加载器 + 全限定名</b>。同一个类只被同一个加载器加载一次，保证你在代码里 <code>instanceof</code>、强转不会因为"加载了两个同名类"而失败</li>
+    </ol>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>双亲委派 = 子加载器收到加载请求先层层上交，父级无法完成才自己加载。目的：①防止核心类被替换（安全）；②保证类只被加载一次（类的唯一性由"加载器+全限定名"共同决定）。</p>
+    </div>
+
+    <h3 class="kp">打破双亲委派的三个经典场景<span class="badge b-hard">难点·加分项</span></h3>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">JDBC 为什么必须打破？</div><div class="ca">核心矛盾：<code>DriverManager</code> 在核心库（Bootstrap 加载），而 MySQL 驱动 jar 在你的 classpath（Application 加载）。Bootstrap 是"祖宗"，按委派规则<b>永远看不到孙子的 jar</b>。解法：引入<b>线程上下文类加载器</b>（Thread Context ClassLoader），让核心代码"反向"借用应用加载器去加载驱动实现（SPI 机制的原理）。这是<b>父级代码调用子级加载器</b>的经典破坏。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">Tomcat 为什么打破？</div><div class="ca">一个 Tomcat 部署多个应用，两个应用依赖不同版本的同一个库 → 必须互相隔离。Tomcat 给每个 webapp 配一个<b>独立的 WebappClassLoader，优先加载自己应用下的类</b>（先自己找，找不到再委派）——把"先委派"改成"先自查"，实现应用隔离。但核心库依然委派，防止篡改。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">热部署 / OSGi 呢？</div><div class="ca">改了代码不重启就能生效 = 丢弃旧 ClassLoader、新建一个重新加载类（旧类对象等 GC 回收）。因为"类身份=加载器+类名"，新加载器加载出的类是"新类"，替换引用即完成热替换。JDK 9 模块化后，加载器结构变为"平台模块各有其类加载器"，也属于对经典三层结构的改造。</div></div></div>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>自定义类加载器：重写 findClass 而非 loadClass</span><span>Java</span></div>
+      <pre><code>public class MyClassLoader extends ClassLoader {
+    private String classDir;   // 从自定义目录（如加密的 class 文件）加载
+
+    @Override
+    protected Class&lt;?&gt; findClass(String name) throws ClassNotFoundException {
+        byte[] data = loadClassData(name);          // 读字节码（可在此解密）
+        if (data == null) throw new ClassNotFoundException(name);
+        // defineClass：把字节数组变成方法区里的类（JVM 提供的native能力）
+        return defineClass(name, data, 0, data.length);
+    }
+    private byte[] loadClassData(String name) { /* 读文件省略 */ return null; }
+}
+
+// 为什么重写 findClass 而不是 loadClass？
+// loadClass 里封装了"双亲委派"的模板流程；findClass 是留给子类填空的钩子。
+// 重写 findClass = 保留双亲委派 + 扩展加载来源（推荐）
+// 重写 loadClass = 彻底推翻双亲委派（Tomcat 式，需自担安全责任）</code></pre>
+    </div>
+  </section>
+
+  <!-- ================= 05 对象存活判定 ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>对象存活判定与 GC Roots<span class="badge b-high">面试高频</span><span class="stars">★★★★★</span></h2></div>
+
+    <p>GC 的第一个问题：怎么判断一个对象"死了"？两条技术路线：</p>
+
+    <h3 class="kp">路线一：引用计数（Java 没用，Python 在用）</h3>
+    <p>每个对象带一个计数器，被引用 +1，引用失效 -1，归零即回收。<b>优点</b>：简单、实时。<b>致命缺陷</b>：循环引用永远不为零。</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>循环引用：引用计数的死穴</span><span>Diagram</span></div>
+      <pre class="diagram"><code>    objA ──┐         ┌── objB
+           ▼互相引用 ▼
+        ┌─────────────────────┐
+        │  a.field = b        │   两个对象各自计数 = 1
+        │  b.field = a        │   外部引用已断（objA/objB 变量已置 null）
+        └─────────────────────┘
+        引用计数视角：都非零 → 永远不回收 → 内存泄漏
+
+        可达性分析视角：从 GC Roots 出发走不到它们 → 都是垃圾 → 回收</code></pre>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比：CPython 怎么处理的</div>
+      <p>CPython 主策略就是引用计数（所以 Python 对象 <code>sys.getrefcount</code> 可查、del 后多数立即释放），但它也知道循环引用救不了 → 另配一套<b>分代标记清除 gc</b> 专门扫描"容器对象"找环（<code>gc.collect()</code>）。Java 一开始就放弃引用计数，<b>只用可达性分析</b>——环不环无所谓，从根走不到就是死。面试被问"Python 和 Java GC 区别"，这就是核心差异点。</p>
+    </div>
+
+    <h3 class="kp">路线二：可达性分析（Java 的选择）</h3>
+    <p>从一组叫 <b>GC Roots</b> 的根对象出发，沿着引用链走（图遍历），<b>走得到的活，走不到的死</b>。</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>可达性分析图解</span><span>Diagram</span></div>
+      <pre class="diagram"><code> GC Roots（根）                          对象引用图
+ ════════════════                       ═══════════
+ ① 栈帧局部变量表中的引用
+    ──────────────────────┐
+ ② 方法区静态变量引用     │        obj1 ──▶ obj2 ──▶ obj4   ✅ 可达 → 活
+    ──────────────────────┼──▶ obj1
+ ③ 方法区常量池引用       │                  │
+    ──────────────────────┘                  ▼
+ ④ JNI（native 方法）栈引用                  obj3 ──▶ obj5    ✅ 可达 → 活
+ ⑤ 活跃线程、同步锁持有的对象
+                                          obj6 ──▶ obj7    ❌ 从任何根都走不到
+                                                            → 判死，等回收
+ （obj6 与 obj7 互相引用也没用——可达性分析不在乎环）</code></pre>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 背 GC Roots 别背成"堆里所有对象"</div>
+      <p>GC Roots 本质 = <b>堆外指向堆内的引用起点</b>：各线程栈帧的局部变量、方法区静态变量、常量池引用、JNI 栈引用、活跃 Thread 对象、被 <code>synchronized</code> 持有的对象。高频追问："方法区算不算 GC Roots？"——<b>方法区里的静态变量和常量是根</b>，但方法区本身不是。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Java 用可达性分析判活：从 GC Roots（栈局部变量、静态变量、常量、JNI 引用、活跃线程等）沿引用链遍历，不可达即判定死亡。不用引用计数，因为它无法回收循环引用（CPython 因此需要额外加分代 gc 补刀）。</p>
+    </div>
+
+    <h3 class="kp">"判死"到"真死"还有一次缓刑：finalize()</h3>
+    <p>不可达对象要经过<b>两次标记</b>：第一次发现不可达 → 检查是否重写 <code>finalize()</code> 且未执行过 → 放入 F-Queue 缓刑；若 <code>finalize()</code> 里把自己重新挂回引用链（如 <code>this.save = this</code>）→ 挽救成功。但 <code>finalize()</code> 执行时机无保证、性能差，<b>JDK 9 已废弃</b>——面试只需要知道"有这回事 + 别用，用 try-with-resources 替代"（模块 8 展开）。</p>
+  </section>
+
+  <!-- ================= 06 四种引用 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>四种引用强度<span class="badge b-high">高频</span><span class="stars">★★★★☆</span></h2></div>
+
+    <p>JDK 1.2 起，引用分四级（强 → 弱）。<b>级别决定 GC 对它的态度</b>：</p>
+
+    <table>
+      <tr><th>引用类型</th><th>回收时机</th><th>典型用途</th><th>对应 API</th></tr>
+      <tr><td><b>强引用</b> Strong</td><td><b>永不回收</b>（只要可达，OOM 也不回收）</td><td>99% 的日常代码 <code>Object o = new Object()</code></td><td>—</td></tr>
+      <tr><td><b>软引用</b> Soft</td><td><b>内存不足之前</b>（抛 OOM 前会先回收一轮软引用对象，还不够才 OOM）</td><td>内存敏感缓存（如图片缓存）</td><td><code>SoftReference</code></td></tr>
+      <tr><td><b>弱引用</b> Weak</td><td><b>只要发生 GC 就回收</b>（活过一次 GC 都算它命大）</td><td><b>ThreadLocalMap 的 key</b>、WeakHashMap、规范映射</td><td><code>WeakReference</code></td></tr>
+      <tr><td><b>虚引用</b> Phantom</td><td>随时回收，形同虚设（不影响对象生命周期）</td><td>回收时收到通知 → 管理堆外内存</td><td><code>PhantomReference</code> + <code>ReferenceQueue</code></td></tr>
+    </table>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>弱引用：一次 GC 就没</span><span>Java</span></div>
+      <pre><code>Object obj = new Object();                 // 强引用
+WeakReference&lt;Object&gt; weak = new WeakReference&lt;&gt;(obj);
+System.out.println(weak.get());            // java.lang.Object@... ✅
+
+obj = null;                                // 断掉唯一的强引用，只剩弱引用指着它
+System.gc();                               // 建议 GC（不保证立刻发生）
+Thread.sleep(100);
+System.out.println(weak.get());            // null  ← 只要 GC 跑了，弱引用对象必死</code></pre>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 虚引用唯一的存在意义：堆外内存的讣告</div>
+      <p><code>DirectByteBuffer</code> 的堆外内存不归 GC 管（堆外！），堆内只留一个小的 DirectByteBuffer 壳。壳被回收时怎么知道去释放堆外内存？——给壳挂一个<b>虚引用 + ReferenceQueue</b>：壳被 GC 时虚引用进入队列， Cleaner 线程收到"讣告"后调用 native 方法释放堆外内存。这是"虚引用 = 对象死亡通知器"的唯一标准场景，面试答出这个就是加分。</p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的 <code>weakref</code> 模块对应 Java 的弱引用，常用于缓存和避免父子对象循环引用（<code>weakref.WeakValueDictionary</code> ≈ Java 的 WeakHashMap）。Python 没有内置"软引用"分级——内存不足回收缓存这件事在 Python 里得自己实现。</p>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 本节的伏笔</div>
+      <p>"弱引用只要 GC 就回收"这个特性，是理解模块 6 中 <b>ThreadLocal 内存泄漏</b>的钥匙：ThreadLocalMap 的 key 是弱引用（会被回收成 null），value 却是强引用链（回收不掉）——错位导致泄漏。此处先留印象。</p>
+    </div>
+  </section>
+
+  <!-- ================= 07 三大 GC 基础算法 ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>三大 GC 基础算法<span class="badge b-high">高频</span><span class="stars">★★★★☆</span></h2></div>
+
+    <p>知道谁死了，怎么"收尸"？三种基础算法，后面的所有收集器都是它们的组合：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>标记-清除 / 标记-复制 / 标记-整理</span><span>Diagram</span></div>
+      <pre class="diagram"><code>【标记-清除 Mark-Sweep】 先标后扫，直接把死对象位置标记为"可用"
+   ┌────────────────────────────┐      ┌────────────────────────────┐
+   │ ██ 活 ██ 死死 ██ 活 死死死 ██ │ ──▶ │ ██ 活 ██ __ __ ██ 活 __ __ │  (__ = 空洞)
+   └────────────────────────────┘      └────────────────────────────┘
+   优点：简单，不移动对象        缺点：①效率不高 ②产生【内存碎片】
+                                      （大对象可能因为没有连续空间而提前 Full GC）
+
+【标记-复制 Copying】 把活对象全部搬到另一半空间，然后整半清空
+   ┌───────────────┬───────────────┐      ┌───────────────┬───────────────┐
+   │ ██ 活 ██ 死死活 │ │    空闲一半     │ ──▶ │ ___ ██ 活 ██ 活_│ │   整半清空=垃圾  │
+   └───────────────┴───────────────┘      └───────────────┴───────────────┘
+   优点：无碎片、分配快（指针碰撞）  缺点：浪费一半空间 → 只适合"朝生夕死"的新生代
+                                    （新生代 98% 对象活不过第一次 GC，复制成本极低）
+
+【标记-整理 Mark-Compact】 活对象全部向一端挪动，然后边界外一次清空
+   ┌────────────────────────────┐      ┌────────────────────────────┐
+   │ ██ 活 ██ 死死 ██ 活 死死死 ██ │ ──▶ │ ██ 活 活 活 活 ____________ │
+   └────────────────────────────┘      └────────────────────────────┘
+   优点：无碎片，不浪费空间       缺点：要移动对象+更新所有指向它们的引用，慢
+                                    → 适合存活率高的老年代</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>标记-清除简单但碎片化；标记-复制无碎片但费一半空间，适合朝生夕死的新生代；标记-整理无碎片不浪费但要搬对象改引用，适合高存活率的老年代。<b>"分代收集"就是把合适的算法用在合适的代上</b>。</p>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 面试防杠点</div>
+      <p>"分代收集"不是第四种基础算法，而是一种<b>策略</b>：按对象存活周期分区，不同区用不同算法。同理"自适应"收集器（如 G1 对不同 Region 动态选择）也是策略层面的组合。</p>
+    </div>
+  </section>
+
+  <!-- ================= 08 分代与 Minor GC ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>分代收集与 Minor GC 全程图解<span class="badge b-high">超高频</span><span class="stars">★★★★★</span></h2></div>
+
+    <h3 class="kp">堆的分代布局</h3>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>堆内存分代布局（-Xmn 设新生代，SurvivorRatio 默认 8:1:1）</span><span>Diagram</span></div>
+      <pre class="diagram"><code>┌──────────────────────────── 堆 (-Xms ~ -Xmx) ────────────────────────────┐
+│  ┌──────────────────── 新生代 (-Xmn) ─────────────────────┐  ┌─ 老年代 ─┐│
+│  │                                                       │  │          ││
+│  │   ┌─────────────────┐  ┌─────┐  ┌─────┐               │  │ 晋升来的  ││
+│  │   │  Eden (8)       │  │ S0  │  │ S1  │               │  │ 老对象    ││
+│  │   │  新对象在此出生   │  │ (1) │  │ (1) │               │  │ 大对象    ││
+│  │   └─────────────────┘  └─────┘  └─────┘               │  │          ││
+│  │   任一时刻 S0/S1 只有一个有数据，另一个留空当"复制目的地"   │  └──────────┘│
+│  └───────────────────────────────────────────────────────┘              │
+│        新生代 : 老年代 ≈ 1 : 2（默认）                                     │
+└─────────────────────────────────────────────────────────────────────────┘</code></pre>
+    </div>
+
+    <h3 class="kp">Minor GC 全程：一次新生代回收的完整剧本</h3>
+    <ol>
+      <li>Eden 满 → 触发 <b>Minor GC</b>（只回收新生代，快：新生代小 + 活得少）</li>
+      <li>可达性分析从 GC Roots + 老年代出发（<b>跨代引用怎么办？</b>见下方卡牌），标记 Eden + 当前存活 Survivor 里的活对象</li>
+      <li>活对象用<b>标记-复制</b>，全部搬到<b>空的那个 Survivor</b>（S0 有数据就搬到 S1），年龄 +1</li>
+      <li>Eden 和旧 Survivor 一次性清空（整块清零，无碎片）</li>
+      <li>存活对象年龄达到阈值（默认 <code>MaxTenuringThreshold=15</code>，4 bit 计数上限）→ <b>晋升老年代</b></li>
+    </ol>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Minor GC 图解：E 代表活对象，x 代表垃圾</span><span>Diagram</span></div>
+      <pre class="diagram"><code>  GC 之前                          GC 之后
+┌──────────────┬─────┬─────┐    ┌──────────────┬─────┬─────┐
+│ Eden         │ S0  │ S1  │    │ Eden         │ S0  │ S1  │
+│ E₁ x E₂ x x  │ E₃ E₄│ 空   │ ─▶│   (全空)      │ 空  │ E₁E₂│
+│ x E₃x E₄ x x │     │     │    │              │     │ E₃E₄│
+└──────────────┴─────┴─────┘    └──────────────┴─────┴─────┘
+  活的：E₁E₂(Eden) + E₃E₄(S0)     全部复制到 S1，年龄+1
+  死的：x 们随 Eden/S0 整块清空    （若年龄达到15 → 直接进老年代）</code></pre>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 跨代引用：记忆集与卡页（加分项）</div>
+      <p>Minor GC 只扫新生代，但老年代对象可能引用新生代对象——难道每次都全堆扫描？解法：<b>卡表（Card Table）</b>把老年代切成 512B 的卡页，只要老年代某处引用了新生代，对应卡页标"脏"。Minor GC 时只扫<b>脏卡</b> + GC Roots，把扫描范围从整个老年代缩小到几 KB。G1 把这个思想放大成每个 Region 一份记忆集（RSet）。</p>
+    </div>
+
+    <h3 class="kp">对象进入老年代的 4 条路（高频追问）</h3>
+    <table>
+      <tr><th>路径</th><th>条件</th><th>说明</th></tr>
+      <tr><td>① 年龄达标</td><td><code>age ≥ MaxTenuringThreshold</code>（默认 15）</td><td>每熬过一次 Minor GC 年龄 +1</td></tr>
+      <tr><td>② 动态年龄判定</td><td>S 区中<b>同龄对象总大小 &gt; S 区一半</b></td><td>该年龄及以上的对象直接晋升（"这一届人太多，S 区装不下"）</td></tr>
+      <tr><td>③ 大对象直通车</td><td>≥ <code>PretenureSizeThreshold</code></td><td>避免大对象在 Eden/S 之间反复复制，直接进老年代（Serial/ParNew 生效）</td></tr>
+      <tr><td>④ 空间分配担保</td><td>Minor GC 前老年代可用 &lt; 新生代全部对象大小</td><td>详见下卡</td></tr>
+    </table>
+
+    <div class="tipbox tb-hard">
+      <div class="tb-title">🧠 空间分配担保（难点，讲清就超越多数候选人）</div>
+      <p>Minor GC 前的保险检查：老年代剩余连续空间能否装下新生代<b>所有</b>对象（最坏情况全部晋升）？装得下 → 放心 Minor GC。装不下 → 再看<b>历次晋升平均大小</b>：历史均值装得下 → 赌一把 Minor GC；赌输（晋升对象超出预期）→ <b>担保失败（promotion failed）→ 触发 Full GC</b>。JDK 6u24 后规则简化为"老年代连续空间 &gt; 新生代对象总大小 或 &gt; 历次晋升平均大小"就放行。</p>
+    </div>
+
+    <h3 class="kp">Minor GC / Major GC / Full GC 的区别（必背）</h3>
+    <table>
+      <tr><th>名称</th><th>回收范围</th><th>触发条件</th><th>速度</th></tr>
+      <tr><td><b>Minor GC</b>（Young GC）</td><td>新生代（Eden + 一个 S）</td><td>Eden 满</td><td>快（毫秒级）：区域小、朝生夕死、复制算法</td></tr>
+      <tr><td><b>Major GC</b></td><td>老年代</td><td>老年代满 / 晋升失败</td><td>慢；Major GC 常伴随至少一次 Minor GC</td></tr>
+      <tr><td><b>Full GC</b></td><td><b>整堆 + 方法区</b></td><td>① 老年代空间不足 ② 方法区（元空间）不足 ③ <code>System.gc()</code> 建议 ④ 空间分配担保失败 ⑤ CMS 运行期晋升失败 / concurrent mode failure</td><td>最慢（STW 范围最大）——生产事故头号嫌疑人</td></tr>
+    </table>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 命名陷阱</div>
+      <p>不同资料对 "Major / Full" 的定义有分歧（有的把 Major=Full 混用）。面试建议主动澄清口径："我说的 Full GC 指<b>收集整个堆和方法区</b>的 stop-the-world 收集"，一句话体现严谨。另外注意：<b>老年代 GC 不一定叫 Full GC</b>——CMS 老年代回收是并发的，大多数资料不把它叫 Full GC。</p>
+    </div>
+  </section>
+
+  <!-- ================= 09 收集器演进 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>收集器演进：CMS 与 G1<span class="badge b-high">超高频</span><span class="badge b-hard">难点</span><span class="stars">★★★★★</span></h2></div>
+
+    <h3 class="kp">演进主线：一切为了缩短停顿</h3>
+    <table>
+      <tr><th>收集器</th><th>作用代</th><th>算法</th><th>线程模型</th><th>目标 / 适用</th></tr>
+      <tr><td>Serial</td><td>新生代</td><td>复制</td><td>单线程，全程 STW</td><td>客户端模式、小内存（百 MB）</td></tr>
+      <tr><td>ParNew</td><td>新生代</td><td>复制</td><td>并行（多线程 STW）</td><td>Serial 的多线程版，CMS 的老搭档</td></tr>
+      <tr><td>Parallel Scavenge</td><td>新生代</td><td>复制</td><td>并行</td><td><b>吞吐量优先</b>（GC 时间占比最小化）</td></tr>
+      <tr><td>CMS</td><td>老年代</td><td>标记-清除</td><td>并发</td><td><b>停顿时间优先</b>；JDK 9 废弃、14 移除</td></tr>
+      <tr><td>G1</td><td>整堆</td><td>整理+复制</td><td>并发+并行</td><td><b>可预测停顿</b>；JDK 9 起默认</td></tr>
+      <tr><td>ZGC / Shenandoah</td><td>整堆</td><td>着色指针/读屏障</td><td>并发</td><td>停顿 &lt; 10ms（亚毫秒级），大堆低延迟（了解即可）</td></tr>
+    </table>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 并行 ≠ 并发（术语先对齐）</div>
+      <p><b>并行（Parallel）</b>：多条 GC 线程同时干，但<b>用户线程全程暂停</b>（STW，吃满 CPU 换快）。<b>并发（Concurrent）</b>：GC 线程和用户线程<b>同时运行</b>，停顿大幅缩短，但 GC 要和业务抢 CPU，且并发带来"边扫边变"的一致性问题（三色标记的由来）。</p>
+    </div>
+
+    <h3 class="kp">CMS：以碎片换停顿的四阶段</h3>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>CMS 四阶段时序（初始标记与重新标记 STW，中间两阶段并发）</span><span>Diagram</span></div>
+      <pre class="diagram"><code> 用户线程 ──────────────┐──────────────┬─────────────┬──────────▶
+                        │暂停          │运行          │暂停        │运行
+ GC 线程        ┌─ 1 初始标记 ─┐ ── 2 并发标记 ──┌─ 3 重新标记 ─┐ 4 并发清除
+                │  STW(短)     │   (耗时长但     │   STW(短)    │  (耗时长但
+                │  只标GC Roots│    不停顿)      │  修正变动     │   不停顿)
+                │  直连的老对象 │               │             │
+                └─────────────┘               └─────────────┘
+ 为什么快：两个 STW 阶段都只做"薄薄一层"工作（直连对象扫描/增量修正），
+           最耗时的整图遍历和清除都与用户线程并发执行。
+
+ 三大代价：
+ ① CPU 敏感：并发阶段 GC 线程抢业务 CPU（默认回收线程 =(核数+3)/4）
+ ② 浮动垃圾：并发清除阶段用户线程新产生的垃圾本轮收不到 + 并发期用户线程
+   还要分配内存 → 老年代必须预留空间（CMSInitiatingOccupancyFraction，
+   默认 ~92% 老年代占比才启动）→ 预留不够 = promotion failed /
+   concurrent mode failure → 退化为 Serial Old 单线程整理（大停顿事故）
+ ③ 标记-清除 → 碎片 → 大对象没连续空间 → 又一个 Full GC 诱因</code></pre>
+    </div>
+
+    <h3 class="kp">三色标记与"漏标"：并发标记的核心难题<span class="badge b-hard">难点</span></h3>
+    <p>并发标记时用户线程还在改对象图，于是对象被抽象成三色：</p>
+    <ul>
+      <li><b>白色</b>：未被扫描（最终仍白 = 垃圾）</li>
+      <li><b>灰色</b>：自己已扫，但它的字段引用还没扫完</li>
+      <li><b>黑色</b>：自己和字段都扫完（认定存活，<b>不会再重扫</b>）</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>漏标：同时满足两个条件才会发生</span><span>Java</span></div>
+      <pre><code>class A { B b; }  class B { C c; }  class C { }
+
+// 灰色 A 正在扫描中，黑色 A' 已扫完，白色 C 还没被扫到
+A.b = null;        // 条件①：灰→白的引用被删除（A 不再指 B）
+// ...
+blackA.b = newC;   // 条件②：黑对象新增了指向白对象的引用（黑 A' 指向 C）
+
+// 扫描结束时：C 从灰色链上够不着（B 断了），
+//            而 A' 是黑色不会再扫 → C 被误判为白色垃圾 → 【活对象被回收】💥
+// 注意：必须两个条件【同时】满足才漏标，于是两种解法各堵一个条件：</code></pre>
+    </div>
+
+    <table>
+      <tr><th>方案</th><th>堵哪个条件</th><th>做法</th><th>副作用</th><th>使用者</th></tr>
+      <tr><td><b>增量更新</b> Incremental Update</td><td>条件②（黑插白）</td><td>黑对象插入白引用时记下来，<b>重新标记</b>阶段把这些黑重新变灰、再扫一遍</td><td>重新标记要 STW 多扫一些</td><td><b>CMS</b></td></tr>
+      <tr><td><b>原始快照</b> SATB</td><td>条件①（灰删白）</td><td>删除引用时记录<b>旧引用</b>（快照），标记按快照进行——快照里够得着的都算活</td><td>快照里的浮动垃圾本轮收不掉</td><td><b>G1</b></td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>并发标记时用户线程同时改图，可能"漏标"活对象（黑对象新指了白对象 + 灰对象到白的路径被删，两条件同时成立）。CMS 用增量更新堵第一个条件（记下黑→白新引用，重新标记时重扫）；G1 用 SATB 堵第二个（删引用时留旧引用快照，宁可多留浮动垃圾不可漏标）。</p>
+    </div>
+
+    <h3 class="kp">G1：Region 化的堆</h3>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>G1 的 Region 模型（逻辑分代，物理不分代）</span><span>Diagram</span></div>
+      <pre class="diagram"><code> 传统分代（物理连续）:  ┌─新生代──┬──老年代─┐
+                        G1:  整堆切成 ~2048 个等大 Region（1~32MB），
+                            每个 Region 动态扮演 E / S / O / H 角色
+
+ ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+ │ E │ S │ O │ E │ H │ O │ 空 │ O │ E │ 空 │   H = Humongous（大对象，
+ ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤       ≥Region一半，独占连续Region）
+ │ O │ 空 │ E │ O │ O │ E │ S │ O │ 空 │ O │
+ └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+
+ 核心机制：
+ ① 每次回收只挑部分 Region：按"回收价值/耗时"排序，优先收垃圾最多、
+    最省时间的 Region（Garbage First 名字的由来）
+ ② 可预测停顿：-XX:MaxGCPauseMillis=200（默认）→ G1 用停顿模型估算
+    本次能收几个 Region，把停顿控制在目标内
+ ③ 回收时 Region 间用复制算法（活对象搬空 Region）→ 整体无碎片
+    （解决了 CMS 碎片问题）
+ ④ 全局并发标记用 SATB；跨 Region 引用用每个 Region 独立的记忆集 RSet
+ ⑤ Mixed GC：Young GC 顺带捎上部分老年代 Region（垃圾最多的那批）</code></pre>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比：分代思想同源</div>
+      <p>CPython gc 也是分代（0/1/2 三代，阈值 700/10/10 次分配触发），思想一样：<b>越年轻的代回收越频繁</b>，多次幸存者往老一代搬。差异：Python 分代只针对"循环引用扫描"（引用计数仍实时收非环垃圾），Java 分代是全部回收策略；Python 没有可调停顿目标的收集器体系。</p>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 ZGC 一句话（防追问）</div>
+      <p>JDK 11 实验 / 17 转正 / 21 支持分代。核心：<b>着色指针</b>（指针里带标记位）+ <b>读屏障</b>，把几乎整个 GC（标记、转移、重定位）全部并发化，停顿亚毫秒级，支持 TB 级堆。答出"着色指针 + 读屏障 + 亚毫秒停顿"三个词就够了。</p>
+    </div>
+  </section>
+
+  <!-- ================= 10 CMS vs G1 对比 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>CMS vs G1 对比速查<span class="badge b-high">面试必考</span><span class="stars">★★★★★</span></h2></div>
+
+    <table>
+      <tr><th>维度</th><th>CMS</th><th>G1</th></tr>
+      <tr><td>堆布局</td><td>传统物理分代（连续的新生代/老年代）</td><td>Region 化（~2048 个等大块，逻辑分代）</td></tr>
+      <tr><td>算法</td><td>标记-清除（<b>有碎片</b>）</td><td>整体标记-整理 + Region 间复制（<b>无碎片</b>）</td></tr>
+      <tr><td>停顿</td><td>尽力而为，不可控</td><td><b>可预测停顿模型</b>（MaxGCPauseMillis）</td></tr>
+      <tr><td>并发标记方案</td><td>增量更新</td><td>原始快照 SATB</td></tr>
+      <tr><td>大对象</td><td>直接进老年代</td><td>Humongous Region 专门安置</td></tr>
+      <tr><td>跨代/跨区引用</td><td>卡表</td><td>每 Region 一份记忆集（RSet，更重）</td></tr>
+      <tr><td>适用</td><td>4~6G 小堆、JDK8 遗留系统</td><td><b>6G+ 大堆</b>、需要可控停顿；JDK 9+ 默认</td></tr>
+      <tr><td>主要坑</td><td>碎片 → promotion failed；并发预留不足 → concurrent mode failure 退化 Serial Old</td><td>RSet 内存开销大；小堆上不如 Parallel 吞吐高</td></tr>
+      <tr><td>命运</td><td>JDK 9 废弃、JDK 14 移除</td><td>JDK 9 起默认收集器</td></tr>
+    </table>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">追问：生产上怎么选收集器？</div><div class="ca">口径建议——JDK 8 且小堆（&lt;6G）：Parallel（吞吐优先）或 CMS（延迟敏感）；JDK 8 大堆 / JDK 9+：<b>G1 默认即可</b>；超大堆 + 极低延迟（&gt;16G、停顿要求 &lt;10ms）：ZGC。关键是说出"按吞吐 vs 延迟的取舍"而不是背配置。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">追问：为什么 G1 适合大堆？</div><div class="ca">传统收集器 STW 时长随堆增大而增长（整代扫描）；G1 每次只处理<b>部分 Region</b>，停顿由"处理几个 Region"决定而非堆总大小 → 堆再大，停顿仍可压在目标内（拿空间和吞吐换的）。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 11 内存泄漏与 OOM ================= -->
+  <section class="sec" id="s11">
+    <div class="sec-head"><span class="sec-no">11</span><h2>内存泄漏与 OOM 排查<span class="badge b-high">项目向高频</span><span class="stars">★★★★☆</span></h2></div>
+
+    <h3 class="kp">先分清三个词</h3>
+    <ul>
+      <li><b>内存溢出（OOM）</b>：申请内存时空间不够，JVM 抛 <code>OutOfMemoryError</code>——是<b>结果</b></li>
+      <li><b>内存泄漏（Leak）</b>：对象已无用了，却仍被引用着，GC 收不掉——是<b>原因</b>之一；泄漏越攒越多，最终以 OOM 爆发</li>
+      <li><b>内存抖动</b>：频繁创建回收（Java 内存抖动概念少提，Android 场景常说；Java 后端一般不考）</li>
+    </ul>
+
+    <h3 class="kp">八个经典泄漏场景（面试能说三个 + 项目结合就过关）</h3>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>泄漏场景 1+2：静态集合 & 未关闭资源</span><span>Java</span></div>
+      <pre><code>// ① 静态集合 = 全局生命周期，只进不出 → 缓存无限膨胀
+static Map&lt;String, byte[]&gt; CACHE = new HashMap&lt;&gt;();
+void handle(String key) {
+    CACHE.put(key, new byte[1024 * 1024]);   // 永远不 remove → 慢性泄漏
+}   // 修复：LRU 上限（LinkedHashMap/removeEldestEntry）、Guava Cache 设过期、Caffeine
+
+// ② 流/连接未关闭 → 堆外的文件描述符/连接泄漏，也能拖死进程
+void read(String path) throws IOException {
+    InputStream in = new FileInputStream(path);   // 若中途抛异常，in 永远关不上
+    // ... 抛异常 → in 泄漏
+}
+// 修复：try-with-resources（模块 8 展开），任何实现了 AutoCloseable 的都能自动关</code></pre>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>泄漏场景 3：ThreadLocal + 线程池（重中之重，模块 6 深挖）</span><span>Java</span></div>
+      <pre><code>private static ThreadLocal&lt;byte[]&gt; BUF = new ThreadLocal&lt;&gt;();
+
+void task() {
+    BUF.set(new byte[1024 * 1024]);   // 用完忘了 remove
+}                                      // 线程池的线程不死 → 泄漏链：
+
+// Thread（池中长命）→ ThreadLocalMap → Entry
+//   Entry.key  = ThreadLocal 对象 →【弱引用】→ GC 后变 null ✅ key 可回收
+//   Entry.value= byte[]          →【强引用】→ value 被死 key 拽着 ✗ 收不掉！
+//
+// 两个关键认知：
+// a) key 用弱引用正是为了"ThreadLocal 外部引用断了也能回收 key"（防 key 泄漏）
+// b) value 仍是强引用 → 只要 Entry 在（线程不死 Entry 就在），value 就在
+//    → 线程池场景必须 finally { BUF.remove(); }
+// （ThreadLocalMap 源码在 set/get 时也会顺手清 stale entry，但不能依赖）</code></pre>
+    </div>
+
+    <p>其余场景一句话（展开讲挑你项目相关的）：</p>
+    <table>
+      <tr><th>#</th><th>场景</th><th>机理一句话</th></tr>
+      <tr><td>④</td><td>监听器/回调未注销</td><td>注册进全局事件源的监听器持有大对象，忘记 unregister</td></tr>
+      <tr><td>⑤</td><td>非静态内部类</td><td>内部类默认持有 <code>Outer.this</code> 强引用（Android Handler 泄漏同源）；改静态内部类 + 弱引用</td></tr>
+      <tr><td>⑥</td><td>变量作用域过大</td><td>大对象定义在方法外/循环外，生命周期被拉长</td></tr>
+      <tr><td>⑦</td><td>可变 key</td><td>对象放入 HashSet/HashMap 后<b>修改了参与 hash 的字段</b> → 桶位变了，contains/remove 永远找不到它 → 既删不掉又访问不到（呼应模块 3：为什么重写 hashCode 要"不可变优先"）</td></tr>
+      <tr><td>⑧</td><td>无界缓存</td><td>本质同 ①，用软引用/Caffeine 弱键可缓解（呼应第 06 节引用分级）</td></tr>
+    </table>
+
+    <h3 class="kp">OOM 排查工具链（能说出流程 = 有生产经验感）</h3>
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">事前：留好现场</div><div class="ca">启动参数 <code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dump.hprof</code>——OOM 发生瞬间自动导堆快照，事后分析的第一手证据。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">事中：定位是什么 OOM、GC 是否还在干活</div><div class="ca"><code>jps</code> 找 PID → <code>jstat -gcutil &lt;pid&gt; 1000</code> 每秒看一次各代占用和 GC 次数：<b>O 老年代占满且 FGC 次数疯涨 → 老年代泄漏</b>；元空间涨 → 动态生成类失控（反思：CGLib 代理、Groovy 脚本）。<code>jmap -histo &lt;pid&gt;</code> 秒出"实例数 Top 榜"，往往一眼看到可疑类。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">事后：MAT 分析堆快照</div><div class="ca">用 MAT（Eclipse Memory Analyzer）打开 hprof：① Leak Suspects 自动报告 → ② <b>支配树（Dominator Tree）</b>看谁占着最多内存 → ③ 对可疑对象查 <b>GC Roots 引用链（Path to GC Roots）</b>——找到"是谁拽着它不放"，泄漏代码定位完成。在线环境可用 Arthas：<code>dashboard</code> / <code>heapdump</code> 不重启诊断。</div></div></div>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比：排查工具对应关系</div>
+      <p>Python 你用 <code>tracemalloc</code> / <code>objgraph</code> / <code>gc.get_objects()</code> 找泄漏；Java 对应关系：objgraph 的"反向引用"≈ MAT 的 Path to GC Roots，tracemalloc 快照对比 ≈ jmap -histo 前后对比。思想一致：<b>看数量异常 → 找持有链</b>。</p>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 项目话术模板（背下来直接用）</div>
+      <p>"我们服务有一次老年代持续上涨最终 OOM。jstat 看到 FGC 后老年代占用不降 → 判断泄漏；开了 HeapDumpOnOutOfMemoryError 拿到 hprof，MAT 支配树发现 XX 对象占了 70%，Path to GC Roots 显示被一个 static Map 持着 → 是历史代码里的本地缓存没有淘汰策略。改成 Caffeine（最大容量 + 过期时间）后，老年代稳定在 30%，问题闭环。"——把 XX 换成你项目里的真实对象即可。</p>
+    </div>
+  </section>
+
+  <!-- ================= 12 对象分配策略补全 ================= -->
+  <section class="sec" id="s12">
+    <div class="sec-head"><span class="sec-no">12</span><h2>对象分配策略补全：逃逸分析与 TLAB<span class="badge b-hard">难点</span><span class="stars">★★★☆☆</span></h2></div>
+
+    <p>模块 1 第 8 节讲过 new 的字节码层面流程；现在补上"<b>对象一定在堆上分配吗？</b>"——这是 JIT 优化的高光区：</p>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>new 之后的分配决策树（HotSpot JIT 视角）</span><span>Diagram</span></div>
+      <pre class="diagram"><code> new 指令
+    │
+    ▼
+ 【逃逸分析】(-XX:+DoEscapeAnalysis，JDK 7+ 默认开)
+    ├─ 对象不逃逸出方法（不被外部引用、不返回、不传出去）
+    │     └─▶ 标量替换：对象根本不创建！拆成零散局部变量放【栈帧】里
+    │          方法结束自动消失 → 0 GC 压力
+    │          （所以"Java 对象都在堆上"在 JIT 优化后并不绝对）
+    │
+    └─ 逃逸 → 真的要在堆分配
+          │
+          ▼
+      【TLAB】Thread Local Allocation Buffer
+          ├─ Eden 里给每个线程划一块私有缓冲区
+          ├─ 分配 = 移动私有指针（指针碰撞），【无需加锁】
+          └─ TLAB 放不下 → 同步申请新 TLAB / 直接在 Eden 共享区分配
+                │
+                ▼
+            【大对象？】(≥ PretenureSizeThreshold)
+                ├─ 是 → 直接进老年代（免得在 S 区之间来回复制）
+                └─ 否 → Eden 出生 → 走第 08 节的分代剧本</code></pre>
+    </div>
+
+    <div class="tipbox tb-hard">
+      <div class="tb-title">🧠 三个容易混的概念，一次掰清</div>
+      <p>①<b>栈上分配</b>：HotSpot 实际是通过<b>标量替换</b>实现的（对象拆散成基本类型局部变量），并不是真把完整对象塞进栈；②<b>锁消除</b>：逃逸分析证明锁对象不逃逸（方法内局部的 StringBuffer）→ synchronized 直接被 JIT 擦掉（模块 6 锁优化呼应）；③<b>TLAB</b>：解决的是堆分配的<b>并发竞争</b>（多线程抢 Eden 指针），不是决定对象放哪一代。</p>
+    </div>
+
+    <h3 class="kp">常用参数速查（背前两行即可）</h3>
+    <table>
+      <tr><th>参数</th><th>含义</th><th>生产习惯</th></tr>
+      <tr><td><code>-Xms / -Xmx</code></td><td>初始堆 / 最大堆</td><td><b>设成一样</b>，避免运行期动态扩缩引起抖动</td></tr>
+      <tr><td><code>-Xmn</code> / <code>-XX:SurvivorRatio=8</code></td><td>新生代大小 / Eden:S 比例</td><td>新生代 ≈ 堆的 1/3 ~ 1/2（G1 下别手动设 Xmn，交给停顿模型）</td></tr>
+      <tr><td><code>-Xss</code></td><td>单线程栈大小</td><td>默认 1M；深递归才需要调</td></tr>
+      <tr><td><code>-XX:MaxTenuringThreshold=15</code></td><td>晋升年龄阈值</td><td>默认 15（年龄字段只有 4 bit，上限就 15）</td></tr>
+      <tr><td><code>-XX:MetaspaceSize / MaxMetaspaceSize</code></td><td>元空间初始/上限</td><td>不设上限有泄漏风险（动态类生成失控时吃光物理内存）</td></tr>
+      <tr><td><code>-XX:+UseG1GC</code> / <code>-XX:MaxGCPauseMillis=200</code></td><td>选 G1 / 停顿目标</td><td>JDK 9+ 默认 G1；停顿目标别设太小（吞吐暴跌）</td></tr>
+      <tr><td><code>-XX:+HeapDumpOnOutOfMemoryError</code></td><td>OOM 自动 dump</td><td><b>线上必开</b>（第 11 节排查流程的起点）</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= 13 高频面试题速查 ================= -->
+  <section class="sec" id="s13">
+    <div class="sec-head"><span class="sec-no">13</span><h2>高频面试题速查</h2></div>
+    <p>以下答案都来自上文，模拟真实问答节奏；点击展开。建议先自己回答再对照。</p>
+
+    <details class="qa"><summary>类的加载过程有哪几步？<span class="badge b-high">高频</span></summary><div class="qa-body">
+      <p>五步：①<b>加载</b>——把 class 字节流转成方法区的运行时结构，并在堆里建 Class 对象；②<b>验证</b>——格式/元数据/字节码/符号引用四道安检；③<b>准备</b>——静态变量分配内存并赋<b>零值</b>（static final 编译期常量例外，直接赋真值）；④<b>解析</b>——符号引用转直接引用（可推迟到初始化后，支持晚期绑定）；⑤<b>初始化</b>——执行 <code>&lt;clinit&gt;()</code>（静态赋值+静态块按源码顺序），父类优先且 JVM 保证线程安全。</p>
+    </div></details>
+
+    <details class="qa"><summary>双亲委派是什么？为什么需要？怎么打破？<span class="badge b-high">超高频</span></summary><div class="qa-body">
+      <p><b>是什么</b>：子加载器收到请求先层层上交（App→Platform→Bootstrap），父级加载不了才退回自己加载。</p>
+      <p><b>为什么</b>：①安全——防核心类被自定义同名类替换；②一致性——类身份 = 加载器+全限定名，保证核心类全局唯一一份。</p>
+      <p><b>怎么打破</b>：重写 loadClass（或用线程上下文类加载器）。三个场景：JDBC/SPI（核心库借上下文加载器加载应用 jar 的驱动）、Tomcat（每应用独立 WebappClassLoader 先自查再委派，实现隔离）、热部署（丢弃旧加载器重新加载类，类身份不同即可替换）。</p>
+    </div></details>
+
+    <details class="qa"><summary>GC Roots 有哪些？静态内部类单例为什么线程安全？<span class="badge b-high">高频</span></summary><div class="qa-body">
+      <p>GC Roots = 栈帧局部变量、方法区静态变量、常量池引用、JNI 栈引用、活跃线程、锁持有的对象——本质是"堆外指向堆内的引用起点"。</p>
+      <p>静态内部类单例：外部类加载不会触发内部类初始化（被动引用）→ 懒加载；首次调用 getInstance 才初始化 Holder，而 <code>&lt;clinit&gt;()</code> 由 JVM 保证<b>只被一个线程执行一次</b>、其他线程阻塞等待 → 免锁的线程安全。</p>
+    </div></details>
+
+    <details class="qa"><summary>怎么判断对象可以回收？和 Python 的区别？<span class="badge b-high">高频</span><span class="badge b-py">对比</span></summary><div class="qa-body">
+      <p>Java：可达性分析——从 GC Roots 沿引用链遍历，不可达即死（两次标记 + finalize 缓刑机制已废弃）。引用计数因循环引用问题被 Java 弃用。</p>
+      <p>Python：CPython 主策略就是引用计数（实时性好），但环收不掉 → 另配分代标记清除 gc 专扫容器对象。Java 分代是为了<b>效率分区</b>，Python 分代是为了<b>给引用计数补刀</b>——出发点和 Java 完全不同。</p>
+    </div></details>
+
+    <details class="qa"><summary>Minor GC 和 Full GC 的触发条件？什么时候对象进老年代？<span class="badge b-high">超高频</span></summary><div class="qa-body">
+      <p>Minor GC：Eden 满。Full GC：老年代空间不足、元空间不足、System.gc()、空间分配担保失败、CMS 并发失败退化。</p>
+      <p>进老年代四条路：①年龄 ≥ 15（MaxTenuringThreshold）；②动态年龄判定（同龄对象总大小超 S 区一半）；③大对象（PretenureSizeThreshold）直达；④空间分配担保时整体转移。</p>
+    </div></details>
+
+    <details class="qa"><summary>CMS 和 G1 的区别？<span class="badge b-high">必考</span></summary><div class="qa-body">
+      <p>①堆布局：CMS 传统连续分代，G1 Region 化（~2048 块，逻辑分代）；②算法：CMS 标记-清除（碎片化），G1 整体整理+Region 间复制（无碎片）；③停顿：CMS 尽力而为，G1 有可预测停顿模型（MaxGCPauseMillis），按 Region 回收价值优先收垃圾最多的块；④并发标记：CMS 增量更新 vs G1 SATB；⑤大对象：G1 有 Humongous Region；⑥适用：CMS 小堆（JDK 14 已移除），G1 大堆（JDK 9+ 默认）。</p>
+    </div></details>
+
+    <details class="qa"><summary>什么是三色标记？漏标怎么发生、怎么解决？<span class="badge b-hard">难点</span></summary><div class="qa-body">
+      <p>并发标记时对象分三色：白（未扫，最终仍白=垃圾）、灰（自身已扫字段未扫完）、黑（全扫完不重扫）。漏标 = 死对象判断反了的反面：<b>活对象被当垃圾</b>，需同时满足：①灰色到白色的引用被删；②黑色对象新增了到白色的引用。CMS 增量更新堵②（记黑→白新引用，重新标记重扫）；G1 SATB 堵①（删引用时记旧快照，宁留浮动垃圾不漏标）。</p>
+    </div></details>
+
+    <details class="qa"><summary>强软弱虚四种引用？<span class="badge b-high">高频</span></summary><div class="qa-body">
+      <p>强：永不回收；软（SoftReference）：内存不足前回收，做缓存；弱（WeakReference）：只要 GC 就回收，ThreadLocalMap 的 key、WeakHashMap；虚（PhantomReference）：不影响生命周期，唯一作用是对象被回收时进 ReferenceQueue 发通知——DirectByteBuffer 用它管理堆外内存的释放。</p>
+    </div></details>
+
+    <details class="qa"><summary>内存泄漏和内存溢出的区别？说说你排查 OOM 的思路。<span class="badge b-high">项目向</span></summary><div class="qa-body">
+      <p>泄漏是无用对象仍被引用收不掉（原因），溢出是分配时空间不够抛 OOMError（结果）；泄漏累积导致溢出。</p>
+      <p>排查：①事前开 <code>-XX:+HeapDumpOnOutOfMemoryError</code>；②<code>jstat -gcutil</code> 看 GC 后老年代是否回落（不回落=泄漏嫌疑）、jmap -histo 看实例数 Top；③MAT 打开 hprof：Leak Suspects → 支配树找大对象 → Path to GC Roots 找持有者 → 定位代码。常见根因：静态集合无界、ThreadLocal 在线程池中未 remove、资源未关闭、可变 key。</p>
+    </div></details>
+
+    <details class="qa"><summary>对象一定分配在堆上吗？<span class="badge b-hard">难点</span></summary><div class="qa-body">
+      <p>不一定。JIT 逃逸分析（JDK 7+ 默认开）判定对象不逃逸出方法时，做<b>标量替换</b>：对象不真正创建，拆成局部变量放在栈帧里，方法结束即消失，零 GC 压力——所以"Java 对象都在堆上"在 JIT 优化后不绝对。逃逸的对象在堆上走 TLAB（线程私有缓冲，指针碰撞无锁分配）→ 大对象直接老年代，其余 Eden 出生。</p>
+    </div></details>
+
+  </section>
+
+  <!-- ================= 14 模块小结 ================= -->
+  <section class="sec" id="s14">
+    <div class="sec-head"><span class="sec-no">14</span><h2>模块小结</h2></div>
+
+    <div class="summary-grid">
+      <div class="sum-card"><h5>类加载主线</h5><ul>
+        <li>五阶段：加载→验证→准备(零值)→解析→初始化(clinit)</li>
+        <li>初始化：主动引用 6 种触发；clinit 父先子后、线程安全（静态内部类单例）</li>
+        <li>双亲委派：先上交再自查；为了安全 + 类唯一性</li>
+        <li>打破：JDBC 上下文加载器、Tomcat 隔离、热部署</li>
+      </ul></div>
+      <div class="sum-card"><h5>GC 判活与引用</h5><ul>
+        <li>可达性分析（GC Roots 起步），弃用引用计数（环）</li>
+        <li>Python 对比：引用计数为主 + 分代 gc 补刀环</li>
+        <li>强 / 软(缓存) / 弱(ThreadLocal key) / 虚(堆外内存通知)</li>
+      </ul></div>
+      <div class="sum-card"><h5>分代与收集器</h5><ul>
+        <li>新生代 Eden:S0:S1=8:1:1，标记-复制；老年代整理</li>
+        <li>晋升 4 路：年龄15 / 动态判定 / 大对象 / 担保</li>
+        <li>CMS：并发四阶段、碎片、concurrent mode failure</li>
+        <li>G1：Region + 可预测停顿 + SATB（JDK9+ 默认）</li>
+      </ul></div>
+      <div class="sum-card"><h5>工程与排查</h5><ul>
+        <li>泄漏 8 场景：静态集合 / 资源未关 / ThreadLocal / 可变 key…</li>
+        <li>排查链：jstat → jmap -histo → MAT 支配树 → GC Roots 链</li>
+        <li>线上必开 HeapDumpOnOutOfMemoryError</li>
+      </ul></div>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 下一模块预告</div>
+      <p>模块 6 <b>并发编程</b>是 Java 面试的"珠穆朗玛"，也是与 Python 差异最大的领域（CPython 有 GIL，Java 真并行）。本模块已埋好三个钩子：①<b>弱引用</b>→ThreadLocal 泄漏完整版；②<b>clinit 线程安全</b>→单例与 DCL；③<b>锁消除</b>→JIT 锁优化。带着这三个钩子进模块 6，衔接零成本。</p>
+    </div>
+
+    <div class="pagenav">
+      <a href="04-collections.html">← 模块 4：集合框架</a>
+      <a class="disabled">模块 6：并发编程（待更新）</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="回到顶部">↑</button>
+
+<script>
+/* 简易 Java 语法高亮（关键词/字符串/注释/数字） */
+function highlightJava(src) {
+  return src.replace(/(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b(?:public|private|protected|static|final|class|interface|extends|implements|void|int|long|boolean|double|float|char|byte|short|new|return|if|else|for|while|try|catch|finally|throw|throws|import|package|this|super|null|true|false|synchronized|volatile|transient|abstract|enum|instanceof|default|break|continue)\b)|(\b\d+(?:\.\d+)?[LlFfDd]?\b)/gm,
+  function (m, com, str, kw, num) {
+    if (com) return '<span class="tok-com">' + com + '</span>';
+    if (str) return '<span class="tok-str">' + str + '</span>';
+    if (kw) return '<span class="tok-kw">' + kw + '</span>';
+    if (num) return '<span class="tok-num">' + num + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram')) el.innerHTML = highlightJava(el.textContent);
+});
+
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

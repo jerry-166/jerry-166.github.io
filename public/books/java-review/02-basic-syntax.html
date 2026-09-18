@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块2：基础语法与数据类型</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== Hero（浅色高对比） ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 22.2%; background: linear-gradient(90deg, #2456d6, #4f7df9); border-radius: 4px; }
+
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.b-back { background: #eef3ff; color: #2456d6; border: 1px solid #c7d7fe; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 2 / 9</div>
+  <h1>基础语法与数据类型</h1>
+  <div class="sub">
+    在模块 1 的内存地基上，讲清<b>类型系统全貌、类型转换完整规则、运算符陷阱、浮点精度、String 常量池、值传递</b>。本模块大量结论直接由模块 1 的内存图推出——遇到"为什么"先回想那张栈/堆图。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <span class="cur">2 基础语法与数据类型</span>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <span>6 并发编程</span>
+  <span>7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1" class="">01 类型系统总览</a>
+    <a href="#s2" class="">02 类型转换与数值提升</a>
+    <a href="#s3" class="">03 运算符核心考点</a>
+    <a href="#s4" class="">04 浮点精度与 BigDecimal</a>
+    <a href="#s5" class="">05 String 深度剖析（不可变性）</a>
+    <a href="#s6" class="active">06 值传递</a>
+    <a href="#s7">07 流程控制与数组</a>
+    <a href="#s8">08 final 与 static</a>
+    <a href="#s9">09 高频面试题速查</a>
+    <a href="#s10">10 模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部面试答案</button>
+      <button id="btn-collapse" style="margin-top:6px">收起全部</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 01 类型系统总览 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>类型系统总览</h2></div>
+
+    <div class="depcard">
+      <div class="dep"><b>⬅ 前置依赖</b>模块 1：基本类型存值（栈）、引用类型存地址（对象在堆）。</div>
+      <div class="dep"><b>➡ 本模块去向</b>类型转换为运算打基础；String 常量池为集合/面试打基础；值传递贯穿所有方法调用。</div>
+    </div>
+
+    <h3 class="kp">1.1 八大基本类型<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tbody><tr><th>分类</th><th>类型</th><th>大小</th><th>取值范围</th><th>包装类</th></tr>
+      <tr><td rowspan="4">整型</td><td><code>byte</code></td><td>1 字节</td><td>-128 ~ 127</td><td>Byte</td></tr>
+      <tr><td><code>short</code></td><td>2 字节</td><td>-32768 ~ 32767</td><td>Short</td></tr>
+      <tr><td><code>int</code></td><td>4 字节</td><td>约 ±21.4 亿（-2³¹ ~ 2³¹-1）</td><td>Integer</td></tr>
+      <tr><td><code>long</code></td><td>8 字节</td><td>约 ±922 京（-2⁶³ ~ 2⁶³-1）</td><td>Long</td></tr>
+      <tr><td rowspan="2">浮点</td><td><code>float</code></td><td>4 字节</td><td>约 7 位有效数字（IEEE 754）</td><td>Float</td></tr>
+      <tr><td><code>double</code></td><td>8 字节</td><td>约 15 位有效数字（IEEE 754）</td><td>Double</td></tr>
+      <tr><td>字符</td><td><code>char</code></td><td>2 字节</td><td>0 ~ 65535（无符号，存 UTF-16 编码）</td><td>Character</td></tr>
+      <tr><td>布尔</td><td><code>boolean</code></td><td>规范未定义</td><td>true / false</td><td>Boolean</td></tr>
+    </tbody></table>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">💡 数量级感知（写代码前的直觉）</div>
+      <p>int 上限 21 亿 → 乘法累积极易溢出（13! 就超了）；毫秒时间戳必须用 long；业务金额永远不用浮点（见第 04 章）。boolean 大小规范未定义，JVM 实现里单独的 boolean 按 int 处理、boolean 数组按 byte 存——知道"未定义"即可。</p>
+    </div>
+
+    <h3 class="kp">1.2 引用类型的三个家族<span class="stars">★★</span></h3>
+    <p>除了以上 8 种，<b>其余全部是引用类型</b>（模块 1 已建立内存模型：变量存地址、对象在堆）：</p>
+    <ul>
+      <li><b>类</b>：String、所有自定义类、包装类</li>
+      <li><b>接口</b>：List、Runnable（引用实际指向实现类对象，模块 3 展开）</li>
+      <li><b>数组</b>：<code>int[]</code> 也是对象，数组本体在堆（所以数组有 length 属性、能被 GC）</li>
+    </ul>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Java 是<b>静态强类型</b>：类型编译期确定，<code>x = 1; x = "a"</code> 直接编译错误。Python 是<b>动态强类型</b>：变量只是名字，可随时换绑不同类型的对象，但 <code>1 + "a"</code> 同样报 TypeError——"强"都体现在不隐式乱转，"静/动"差异在检查时机。另外 Python 的 int <b>无限精度</b>、float 就是 double。</p>
+    </div>
+  </section>
+
+  <!-- ================= 02 类型转换 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>类型转换与数值提升（完整规则）</h2></div>
+
+    <h3 class="kp">2.1 自动类型转换：小容量 → 大容量<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p>容量小的类型可以<b>自动</b>赋给容量大的类型，不丢精度、不报错：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>自动提升链（箭头方向可自动转）</span><span>结构</span></div>
+      <pre class="diagram"><code> byte → short → int → long → float → double
+                  ↑
+                char（char 可自动转 int 及更大，但不能转 byte/short）
+
+long l = 100;       // int → long ✅
+float f = 10L;      // long → float ✅（能转！原因见 2.4）
+double d = 10.5f;   // float → double ✅</code></pre>
+    </div>
+
+    <h3 class="kp">2.2 二元数值提升：算术运算时两边统一成什么类型？<span class="badge b-hard">难点</span><span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <p><b>规则：不是一律提升到 int！按双方类型中"更大"的那个统一，最低保底 int。</b>判定顺序（从高到低）：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>二元数值提升判定流程</span><span>规则</span></div>
+      <pre class="diagram"><code>两个操作数（byte/short/char/int/long/float/double）做 + - * / % 时：
+
+  有 double ?  ── 是 ──→ 双方都转 double
+      │否
+  有 float ?   ── 是 ──→ 双方都转 float
+      │否
+  有 long ?    ── 是 ──→ 双方都转 long
+      │否
+  （只剩 byte/short/char/int）──→ 双方都转 int   ← "必升 int"只是这一步！
+
+例子：
+  1 + 2L          → long  （一方是 long）
+  1 + 2.0         → double（一方是 double，注意 1 也被转成 1.0）
+  1 + 2.0f        → float
+  byte + byte     → int   （都 ≤ int，保底转 int）
+  char + int      → int</code></pre>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">💡 为什么 byte+byte 结果是 int？</div>
+      <p>JVM 指令集层面<b>没有 byte/short/char 的算术指令</b>，只有 int/long/float/double 四则指令——CPU 按字长计算更快。所以"小类型参与运算必升 int"是物理实现决定的，不是设计洁癖。</p>
+    </div>
+
+    <h3 class="kp">2.3 由此产生的经典编译错误<span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>三个必考片段</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// ① 小类型变量相加 → 结果是 int → 赋回小类型要强转</span>
+<span class="tok-kw">byte</span> b1 = <span class="tok-num">1</span>, b2 = <span class="tok-num">2</span>;
+<span class="tok-kw">byte</span> b3 = b1 + b2;            <span class="tok-com">// ❌ 编译错误：b1+b2 已是 int</span>
+<span class="tok-kw">byte</span> b3 = (<span class="tok-kw">byte</span>)(b1 + b2);    <span class="tok-com">// ✅ 显式强转</span>
+
+<span class="tok-com">// ② 但纯常量可以 —— 编译期"常量折叠"先算出结果，只要结果在范围内就放行</span>
+<span class="tok-kw">byte</span> b4 = <span class="tok-num">1</span> + <span class="tok-num">2</span>;              <span class="tok-com">// ✅ 编译器直接算出 3，3 ≤ 127，合法</span>
+<span class="tok-kw">byte</span> b5 = <span class="tok-num">200</span>;                <span class="tok-com">// ❌ 常量但超范围，编译错误</span>
+
+<span class="tok-com">// ③ 复合赋值自带强转（语言规范规定 E1 op= E2 ≡ E1 = (T)(E1 op E2)）</span>
+<span class="tok-kw">short</span> s = <span class="tok-num">1</span>;
+s = s + <span class="tok-num">1</span>;      <span class="tok-com">// ❌ 同①：右边是 int</span>
+s += <span class="tok-num">1</span>;         <span class="tok-com">// ✅ 等价于 s = (short)(s + 1)，编译器帮你强转（可能悄悄溢出截断）</span></code></pre>
+    </div>
+
+    <h3 class="kp">2.4 强制转换：截断与溢出<span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>强转 = 砍掉高位，不是四舍五入</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// 整型强转：直接丢弃高位字节</span>
+<span class="tok-kw">int</span> i = <span class="tok-num">300</span>;             <span class="tok-com">// 二进制 1 0010 1100</span>
+<span class="tok-kw">byte</span> b = (<span class="tok-kw">byte</span>) i;       <span class="tok-com">// 只保留低 8 位 0010 1100 = 44！</span>
+
+<span class="tok-com">// int 溢出：按补码"环绕"，不报错、不抛异常 —— 静默出错（Python 没有这个概念！）</span>
+<span class="tok-kw">int</span> fact = <span class="tok-num">1</span>;
+<span class="tok-kw">for</span> (<span class="tok-kw">int</span> k = <span class="tok-num">1</span>; k &lt;= <span class="tok-num">15</span>; k++) fact *= k;    <span class="tok-com">// 13! 就超 int 了，结果是错的负数</span>
+
+<span class="tok-com">// 想要溢出报警：</span>
+Math.addExact(Integer.MAX_VALUE, <span class="tok-num">1</span>);        <span class="tok-com">// 抛 ArithmeticException（JDK 8+）</span>
+
+<span class="tok-com">// 浮点强转：直接砍掉小数部分（向零截断），不是四舍五入</span>
+<span class="tok-kw">double</span> d = <span class="tok-num">3.99</span>;
+<span class="tok-kw">int</span> x = (<span class="tok-kw">int</span>) d;         <span class="tok-com">// 3</span>
+Math.round(<span class="tok-num">3.5</span>)          <span class="tok-com">// 4（要四舍五入用 round）</span>
+
+<span class="tok-com">// 二分查找的经典溢出修复</span>
+<span class="tok-kw">int</span> mid = (low + high) / <span class="tok-num">2</span>;              <span class="tok-com">// ❌ low+high 可能溢出成负数</span>
+<span class="tok-kw">int</span> mid = low + ((high - low) &gt;&gt; <span class="tok-num">1</span>);     <span class="tok-com">// ✅ 先做减法就不超范围</span></code></pre>
+    </div>
+
+    <div class="tipbox tb-hard">
+      <div class="tb-title">🧩 冷门加分点：为什么 long 能自动转 float？</div>
+      <p>long 是 8 字节、float 只有 4 字节，按"字节"想不通。按"范围"想就通了：float 指数位让它能表示约 ±3.4E38，远大于 long 的 ±9.2E18——<b>自动转换看表示范围，不看字节数</b>。代价是丢精度（float 只有 23 位尾数，装不下 64 位整数）。这也是"范围大 ≠ 精确"的直觉来源。</p>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ Python → Java 迁移者警告</div>
+      <p>Python 的 int 无限精度、永远不会溢出；Java 的 int/long 有硬上限且<b>溢出静默环绕</b>。任何乘法累积、大数求和、时间戳运算前，先估算数量级（21 亿 ≈ 2^31，超过就用 long / BigInteger）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 03 运算符 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>运算符核心考点</h2></div>
+
+    <h3 class="kp">3.1 除法与取模：符号规则是 Python 的"反面"<span class="badge b-trap">易错</span><span class="badge b-py">Python 对比</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Java vs Python 符号差异</span><span>对比</span></div>
+      <pre class="diagram"><code>               Java                    Python
+ 7 / 2     →   3（砍尾巴）          →  3.5（真除法，/ 就是数学除）
+-7 / 2     →  -3（向零截断）        →  -3.5
+ 7 % 3     →   1                    →   1
+-7 % 3     →  -1（符号随被除数）    →   2（符号随除数）
+ 7 % -3    →   1（符号随被除数）    →   1
+
+ Java 取模：结果符号 = 左操作数（被除数）的符号
+ Python 取模：结果符号 = 右操作数（除数）的符号
+
+ 整数除法想四舍五入：(a + b/2*sign) / b 或先转 double 再 Math.round</code></pre>
+    </div>
+
+    <h3 class="kp">3.2 i = i++ 的字节码真相<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>经典笔试题</span><span>Java</span></div>
+      <pre><code><span class="tok-kw">int</span> i = <span class="tok-num">1</span>;
+i = i++;              <span class="tok-com">// i 最终是 1，不是 2！</span>
+
+<span class="tok-com">// 执行顺序（结合模块1的操作数栈理解）：</span>
+<span class="tok-com">// ① 把 i 的旧值 1 压栈（这就是 i++ 表达式的值）</span>
+<span class="tok-com">// ② i 自增成 2</span>
+<span class="tok-com">// ③ 把栈顶的 1 存回 i → i 被旧值覆盖，白增了</span>
+
+<span class="tok-kw">int</span> j = <span class="tok-num">1</span>;
+<span class="tok-kw">int</span> k = j++ + ++j;    <span class="tok-com">// j++ 取旧值 1（j变2）；++j 先加再取 3 → k = 4</span>
+
+<span class="tok-com">// Python 没有自增运算符（++i 只是两次正号），无此坑也无此考点</span></code></pre>
+    </div>
+
+    <h3 class="kp">3.3 逻辑运算：短路的工程价值<span class="badge b-trap">易错</span><span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>&amp;&amp; 与 &amp; 的区别</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// &amp;&amp; / || 短路：左边已定结果，右边不再求值 —— 最常见的判空防御</span>
+<span class="tok-kw">if</span> (str != <span class="tok-kw">null</span> &amp;&amp; str.length() &gt; <span class="tok-num">0</span>) { ... }
+<span class="tok-com">// str 为 null 时左边 false，右边不执行 → 不抛 NPE</span>
+
+<span class="tok-com">// &amp; / | 非短路：两边一定都执行（也兼做位运算）</span>
+<span class="tok-kw">boolean</span> ok = check1() &amp; check2();    <span class="tok-com">// check2 必执行（比如两边都要记审计日志时用）</span>
+
+<span class="tok-com">// Python 的 and/or 同样短路，但返回"操作数本身"而非布尔：</span>
+<span class="tok-com">// name = arg or "default"   ← Python 惯用法</span>
+<span class="tok-com">// Java 的 &amp;&amp;/|| 只返回 boolean，不能这样写，要用三目：name = arg != null ? arg : "default"</span></code></pre>
+    </div>
+
+    <h3 class="kp">3.4 位运算：面试隐藏考点<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tbody><tr><th>运算符</th><th>含义</th><th>示例</th></tr>
+      <tr><td><code>&amp; | ^ ~</code></td><td>按位与 / 或 / 异或 / 取反</td><td><code>~5 = -6</code>（取反 = -x-1）</td></tr>
+      <tr><td><code>&lt;&lt;</code></td><td>左移，低位补 0</td><td><code>1 &lt;&lt; 3 = 8</code>（×2³）</td></tr>
+      <tr><td><code>&gt;&gt;</code></td><td>算术右移，高位补<b>符号位</b></td><td><code>-8 &gt;&gt; 1 = -4</code></td></tr>
+      <tr><td><code>&gt;&gt;&gt;</code></td><td>无符号右移，高位恒补 0（Java 特有）</td><td><code>-1 &gt;&gt;&gt; 1 = 2147483647</code></td></tr>
+    </tbody></table>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>位运算面试套题（算法高频）</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// ① 判断奇偶（比 % 2 快）</span>
+(n &amp; <span class="tok-num">1</span>) == <span class="tok-num">1</span>     <span class="tok-com">// 奇数：最低位是 1</span>
+
+<span class="tok-com">// ② 判断 2 的幂：二进制只有一个 1，减 1 后全翻转，相与为 0</span>
+n &gt; <span class="tok-num">0</span> &amp;&amp; (n &amp; (n - <span class="tok-num">1</span>)) == <span class="tok-num">0</span>
+
+<span class="tok-com">// ③ 统计二进制中 1 的个数：每次消掉最低位的 1</span>
+<span class="tok-kw">int</span> cnt = <span class="tok-num">0</span>;
+<span class="tok-kw">while</span> (n != <span class="tok-num">0</span>) { n &amp;= (n - <span class="tok-num">1</span>); cnt++; }
+
+<span class="tok-com">// ④ 找出数组中只出现一次的数（其余成对）：全员异或，成对抵消</span>
+<span class="tok-kw">int</span> single = <span class="tok-num">0</span>;
+<span class="tok-kw">for</span> (<span class="tok-kw">int</span> v : arr) single ^= v;
+
+<span class="tok-com">// ⑤ 乘除 2^n 用移位 —— HashMap 就是这么算下标的（模块 4 见）</span>
+hash &amp; (table.length - <span class="tok-num">1</span>)   <span class="tok-com">// length 是 2 的幂时 ≡ hash % length，但快</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ================= 04 浮点 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>浮点精度与 BigDecimal</h2></div>
+
+    <h3 class="kp">4.1 为什么 0.1 + 0.2 != 0.3<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <p>float/double 采用 <b>IEEE 754 二进制浮点</b>：符号位 + 指数位 + 尾数位。问题出在——<b>十进制小数转二进制可能是无限循环的</b>：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>0.1 的二进制是无限循环小数</span><span>原理</span></div>
+      <pre class="diagram"><code>0.1 (十进制) = 0.0001100110011001100... (二进制，0011 无限循环)
+                                          ↑
+                     double 尾数只有 52 位 → 第 53 位起只能丢弃（存成近似值）
+
+所以：double 里存的 0.1 ≠ 数学上的 0.1，只是"最接近 0.1 的二进制数"
+     0.1 + 0.2 = 两个近似值相加 ≈ 0.30000000000000004 ≠ 0.3 的近似值
+
+→ 本质：二进制无法精确表示分母含非 2 因子的小数（0.1=1/10，10=2×5）
+→ 0.5、0.25、0.125（2 的负幂）则精确无损</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>事故现场与特殊值</span><span>Java</span></div>
+      <pre><code>System.out.println(<span class="tok-num">0.1</span> + <span class="tok-num">0.2</span>);          <span class="tok-com">// 0.30000000000000004</span>
+System.out.println(<span class="tok-num">0.1</span> + <span class="tok-num">0.2</span> == <span class="tok-num">0.3</span>);   <span class="tok-com">// false</span>
+System.out.println(<span class="tok-num">2.0</span> - <span class="tok-num">1.1</span>);          <span class="tok-com">// 0.8999999999999999</span>
+
+<span class="tok-com">// 浮点判等的正确姿势：误差容忍</span>
+Math.abs(<span class="tok-num">0.1</span> + <span class="tok-num">0.2</span> - <span class="tok-num">0.3</span>) &lt; 1e-<span class="tok-num">9</span>;
+
+<span class="tok-com">// 特殊值（Python 完全一样）：</span>
+<span class="tok-kw">double</span> nan = <span class="tok-num">0.0</span> / <span class="tok-num">0.0</span>;     <span class="tok-com">// NaN：和任何值都不等，包括自己！</span>
+nan == nan                  <span class="tok-com">// false —— 判断 NaN 只能用 Double.isNaN(nan)</span>
+<span class="tok-kw">double</span> inf = <span class="tok-num">1.0</span> / <span class="tok-num">0.0</span>;     <span class="tok-com">// Infinity（整型除 0 才抛 ArithmeticException）</span>
+<span class="tok-num">0.0</span> == -<span class="tok-num">0.0</span>                 <span class="tok-com">// true（还有正零负零这回事）</span></code></pre>
+    </div>
+
+    <h3 class="kp">4.2 BigDecimal：金额计算的正确姿势<span class="badge b-high">高频</span><span class="badge b-trap">易错</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>三个必踩的坑</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// 坑1：用 double 构造 → 把近似值原样带进来（白瞎了 BigDecimal）</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-num">0.1</span>);        <span class="tok-com">// 0.1000000000000000055511151231257827…</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"0.1"</span>);      <span class="tok-com">// ✅ 字符串构造才精确</span>
+BigDecimal.valueOf(<span class="tok-num">0.1</span>);    <span class="tok-com">// ✅ 等效字符串（内部先 Double.toString）</span>
+
+<span class="tok-com">// 坑2：equals 连"小数位数 scale"一起比</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"2.0"</span>).equals(<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"2.00"</span>));    <span class="tok-com">// false！scale 不同</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"2.0"</span>).compareTo(<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"2.00"</span>)); <span class="tok-com">// 0 ✅ 比较数值用这个</span>
+
+<span class="tok-com">// 坑3：除不尽不给精度 → 直接异常</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"10"</span>).divide(<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"3"</span>));                    <span class="tok-com">// ❌ ArithmeticException</span>
+<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"10"</span>).divide(<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"3"</span>), <span class="tok-num">2</span>, RoundingMode.HALF_UP);  <span class="tok-com">// 3.33 ✅</span>
+
+<span class="tok-com">// 金额计算标准范式：字符串构造 + 最后统一 setScale</span>
+BigDecimal total = <span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"19.99"</span>)
+        .multiply(<span class="tok-kw">new</span> BigDecimal(<span class="tok-str">"3"</span>))          <span class="tok-com">// 乘法天然精确，无需精度</span>
+        .setScale(<span class="tok-num">2</span>, RoundingMode.HALF_UP);     <span class="tok-com">// 最后统一保留 2 位小数</span></code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>同构问题同构解：Python 也是 <code>0.1 + 0.2 != 0.3</code>，解法也是 <code>decimal.Decimal("0.1")</code>（同样必须字符串构造）。差异：Python Decimal 默认 28 位有效数字、默认银行家舍入（ROUND_HALF_EVEN）；Java 必须显式给 RoundingMode。数据库金额字段用 DECIMAL 类型对应。</p>
+    </div>
+  </section>
+
+  <!-- ================= 05 String ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>String 深度剖析</h2></div>
+
+    <h3 class="kp">5.1 不可变性：实现与理由<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>源码级实现</span><span>Java</span></div>
+      <pre><code><span class="tok-kw">public</span> <span class="tok-kw">final</span> <span class="tok-kw">class</span> String {          <span class="tok-com">// final 类：不许继承，防止子类破坏不可变</span>
+    <span class="tok-kw">private</span> <span class="tok-kw">final</span> <span class="tok-kw">byte</span>[] value;      <span class="tok-com">// private + final：外部拿不到数组引用，内部不可重指向</span>
+    <span class="tok-kw">private</span> <span class="tok-kw">final</span> <span class="tok-kw">byte</span> coder;        <span class="tok-com">// JDK9+：标记编码（Latin-1 省一半内存 / UTF-16）</span>
+    <span class="tok-kw">private</span> <span class="tok-kw">int</span> hash;                <span class="tok-com">// hashCode 的惰性缓存（算一次存起来）</span>
+}
+<span class="tok-com">// "不可变"的本质：没有任何方法能修改 value 数组的内容；</span>
+<span class="tok-com">// substring/replace/concat 全部返回新对象，原串毫发无损</span></code></pre>
+    </div>
+    <p><b>为什么设计成不可变？（背 4 点，每点都能展开）</b></p>
+    <ol>
+      <li><b>字符串常量池的前提</b>：只有不可变，多个引用才能放心共享池中同一对象（否则我改了你用的字符串，全世界遭殃）——这就是模块 1 说的"常量池在堆中省内存"的根基</li>
+      <li><b>天然线程安全</b>：不可变对象无状态变更，随意跨线程共享无需加锁</li>
+      <li><b>hashCode 可缓存</b>：String 是 HashMap key 的头号主力，hash 算一次就缓存，put/get 提速</li>
+      <li><b>安全性</b>：类名、文件路径、SQL、网络参数都是字符串，不可变防止被中途篡改</li>
+    </ol>
+
+    <h3 class="kp">5.2 字符串常量池：接着模块 1 讲<span class="badge b-high">超高频</span><span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <p>模块 1 说过：<b>字符串常量池 JDK 7 起在堆中</b>，作用是让相同字面量只存一份。两种创建方式的内存差异：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>字面量 vs new 的内存图</span><span>结构</span></div>
+      <pre class="diagram"><code>String s1 = "abc";               String s3 = new String("abc");
+
+   栈              堆                  栈              堆
+ ┌──────┐   ┌──────────────┐      ┌──────┐   ┌──────────┐ ┌──────────────┐
+ │ s1 ──┼──→│ 常量池 "abc"  │      │ s3 ──┼──→│ 新对象    │ │ 常量池 "abc"  │
+ └──────┘   │ （全局一份）  │      └──────┘   │ "abc"内容 │ │              │
+            └──────────────┘                 └──────────┘ └──────────────┘
+  s1 == "abc"  → true                        s3 == "abc"  → false（两个不同对象）
+
+高频问：new String("abc") 创建几个对象？
+答：最多 2 个 —— 堆中 new 的 + 常量池里的 "abc"（池中已存在则只 new 1 个）
+注意：s3 的内容数组和池中对象也各自独立（new 时还拷贝了一份数组）</code></pre>
+    </div>
+
+    <h3 class="kp">5.3 == 六连问（笔试最爱）<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>一条心法判定</span><span>Java</span></div>
+      <pre><code>String s1 = <span class="tok-str">"hello"</span>;
+String s2 = <span class="tok-str">"hello"</span>;
+String s3 = <span class="tok-kw">new</span> String(<span class="tok-str">"hello"</span>);
+String s4 = <span class="tok-str">"hel"</span> + <span class="tok-str">"lo"</span>;         <span class="tok-com">// 纯常量：编译期折叠成 "hello" → 指向池</span>
+String s5 = <span class="tok-str">"hel"</span>;                
+String s6 = s5 + <span class="tok-str">"lo"</span>;            <span class="tok-com">// 有变量：运行期 StringBuilder 拼接 → 堆中新对象</span>
+<span class="tok-kw">final</span> String s7 = <span class="tok-str">"hel"</span>;          <span class="tok-com">// final + 常量初始化 = 编译期常量（宏替换）</span>
+String s8 = s7 + <span class="tok-str">"lo"</span>;            <span class="tok-com">// s7 被当常量折叠 → 指向池中 "hello"</span>
+
+s1 == s2    <span class="tok-com">// true   同一个池对象</span>
+s1 == s3    <span class="tok-com">// false  堆里 new 的</span>
+s1 == s4    <span class="tok-com">// true   常量折叠回池</span>
+s1 == s6    <span class="tok-com">// false  运行期生成的堆对象</span>
+s1 == s8    <span class="tok-com">// true   final 常量参与折叠</span>
+s3.intern() == s1    <span class="tok-com">// true  intern()：把 s3 的串登记进池，返回池中对象</span>
+
+<span class="tok-com">// 【心法】看引用"编译期能不能确定"：</span>
+<span class="tok-com">// 纯字面量（含 final 常量）→ 池对象；任何普通变量参与 → 堆对象</span>
+<span class="tok-com">// 一律用 equals 比内容，以上只是原理剖析</span></code></pre>
+    </div>
+    <details class="qa">
+      <summary>intern() 是什么？JDK 6 和 7 的行为差异？</summary>
+      <div class="qa-body">
+        <p><code>intern()</code> = "去常量池登记，返回池中的那个对象"：池里已有等值串就返回已有的；没有就登记后返回。</p>
+        <p><b>JDK 6</b>：池在永久代，空间紧张，intern 会把字符串<b>复制</b>一份进池，返回新地址 → <code>new String("a").intern() == "a"</code> 可能不等。<b>JDK 7+</b>：池在堆，intern 发现没有时只<b>记录堆对象的引用</b>，不复制 → intern 返回的就是那个堆对象本身。工程上不建议手动 intern（容易混淆），面试懂原理即可。</p>
+      </div>
+    </details>
+
+    <h3 class="kp">5.4 String / StringBuilder / StringBuffer<span class="badge b-high">超高频</span><span class="stars">★★★</span></h3>
+    <table>
+      <tbody><tr><th></th><th>String</th><th>StringBuilder</th><th>StringBuffer</th></tr>
+      <tr><td>可变性</td><td>不可变</td><td>可变</td><td>可变</td></tr>
+      <tr><td>线程安全</td><td>不可变即安全</td><td>不安全（但快）</td><td>方法加 synchronized，安全但慢</td></tr>
+      <tr><td>场景</td><td>常量、少量拼接</td><td><b>单线程拼接首选</b></td><td>多线程拼同一对象（罕见）</td></tr>
+    </tbody></table>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>循环拼接的性能灾难与正解</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// ❌ 灾难：循环里用 +，每轮 new StringBuilder + 全量拷贝 → O(n²)</span>
+String result = <span class="tok-str">""</span>;
+<span class="tok-kw">for</span> (<span class="tok-kw">int</span> i = <span class="tok-num">0</span>; i &lt; <span class="tok-num">10000</span>; i++) result += i;
+
+<span class="tok-com">// ✅ 正解：循环外建一个 StringBuilder，内部数组自动扩容 → 均摊 O(n)</span>
+StringBuilder sb = <span class="tok-kw">new</span> StringBuilder(<span class="tok-num">64</span>);   <span class="tok-com">// 预估容量，避免反复扩容拷贝</span>
+<span class="tok-kw">for</span> (<span class="tok-kw">int</span> i = <span class="tok-num">0</span>; i &lt; <span class="tok-num">10000</span>; i++) sb.append(i);
+String s = sb.toString();
+
+<span class="tok-com">// StringBuilder 扩容策略：不够用时 new char[旧容量*2 + 2] 再 System.arraycopy</span>
+<span class="tok-com">// —— 和 ArrayList 一个思路（模块 4 会看到同款扩容）</span></code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>Python 的 <code>"".join(list)</code> ↔ Java 的 StringBuilder：解决同一个问题（不可变字符串的重复拷贝）。Python 教程也警告别在循环里 <code>s += x</code>。面试主动提这个对应关系是加分项。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><span class="cn">1</span><div class="cc"><div class="cq">String 为什么不可变？怎么实现的？</div><div class="ca">final 类 + private final 数组 + 不提供修改方法。收益：常量池共享、线程安全、hash 缓存、安全。修改类方法全部返回新对象。</div></div></div>
+      <div class="chain-item"><span class="cn">2</span><div class="cc"><div class="cq">String StringBuffer StringBuilder 怎么选？</div><div class="ca">默认 StringBuilder（单线程快）；多线程共享同一拼接对象才用 StringBuffer（synchronized 开销）；少量拼接 String 足够。</div></div></div>
+      <div class="chain-item"><span class="cn">3</span><div class="cc"><div class="cq">循环里 += 什么问题？</div><div class="ca">每轮新建 StringBuilder + 全量拷贝 = O(n²)；单 StringBuilder 复用 = O(n)。</div></div></div>
+      <div class="chain-item"><span class="cn">4</span><div class="cc"><div class="cq">String 的 hashCode 为什么用 31 做乘数？</div><div class="ca">① 31 是奇素数，哈希分布均匀冲突少；② 31*i 可被优化为 (i&lt;&lt;5)-i，移位减法快于乘法。回答出这两点即满分。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 06 值传递 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>值传递：用模块 1 的内存图彻底讲透</h2></div>
+
+    <h3 class="kp">6.1 结论：Java 只有值传递<span class="badge b-high">超高频</span><span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>传参 = 把<b>变量槽里的内容复制一份</b>给形参。基本类型槽里是值 → 拷值；引用类型槽里是地址 → 拷地址。所以：方法内<b>改对象内容</b>外面看得见（同一对象），方法内<b>给参数重新赋值</b>外面看不见（改的是副本的指向）。</p>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>内存图：调用 change(p) 时发生了什么</span><span>结构</span></div>
+      <pre class="diagram"><code>static void change(Person p) {          Person p = new Person("Tom");  change(p);
+    p.setName("Jerry");   // ①改对象内容
+    p = new Person("X");  // ②参数重新赋值
+}
+
+   调用前                     调用中（实参 p 复制地址给形参 p'）
+ ┌─────────┐  ┌──────────┐   ┌─────────┐  ┌──────────┐  ┌──────────┐
+ │main栈: p│→ │ 堆:Tom对象│   │main栈: p│→ │ 堆:Tom对象│←│change栈:p'│
+ └─────────┘  └──────────┘   └─────────┘  └──────────┘  └──────────┘
+                                            ↑ 两个槽指向同一个对象
+
+ ① p'.setName("Jerry")：通过地址改堆对象 → main 里的 p 也看到 Jerry ✅影响外部
+ ② p' = new Person("X")：只是让 change 栈帧里那个槽改指新对象
+                            → main 的 p 槽纹丝不动，还是指向 Tom ❌不影响外部</code></pre>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>四段验证代码</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// ① 基本类型：拷值，swap 永远失败</span>
+<span class="tok-kw">static</span> <span class="tok-kw">void</span> swap(<span class="tok-kw">int</span> a, <span class="tok-kw">int</span> b) { <span class="tok-kw">int</span> t = a; a = b; b = t; }
+swap(x, y);                          <span class="tok-com">// x、y 不变 —— 换的是副本</span>
+
+<span class="tok-com">// ② 引用类型改内容：外部可见</span>
+<span class="tok-kw">static</span> <span class="tok-kw">void</span> changeName(Person p) { p.setName(<span class="tok-str">"新名字"</span>); }   <span class="tok-com">// ✅ 生效</span>
+
+<span class="tok-com">// ③ 引用类型重新赋值：外部不可见</span>
+<span class="tok-kw">static</span> <span class="tok-kw">void</span> reassign(Person p) { p = <span class="tok-kw">new</span> Person(); }       <span class="tok-com">// ❌ 无效</span>
+
+<span class="tok-com">// ④ String 的"怪象"：其实一点不怪</span>
+<span class="tok-kw">static</span> <span class="tok-kw">void</span> change(String s) { s = <span class="tok-str">"world"</span>; }
+String str = <span class="tok-str">"hello"</span>;  change(str);  <span class="tok-com">// str 仍是 "hello"</span>
+<span class="tok-com">// s = "world" 属于情形③（参数重新赋值）；</span>
+<span class="tok-com">// 而且 String 是不可变的，压根没有情形②可玩 —— 所以 String 参数"永远改不动"</span></code></pre>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 完全同构</div>
+      <p>Python 官方叫 "call by object reference / 传共享"：传"对象引用的副本"。函数内 <code>lst.append(x)</code>（改内容）外部可见 ↔ Java 情形②；<code>lst = [...]</code>（重绑定）外部不可见 ↔ Java 情形③。你写 Python 时已有的直觉可以直接迁移。真·引用传递是 C++ 的 <code>int&amp;</code> 和 C# 的 <code>ref</code>，Java/Python/Go 都没有。</p>
+    </div>
+  </section>
+
+  <!-- ================= 07 流程控制与数组 ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>流程控制与数组</h2></div>
+
+    <h3 class="kp">7.1 switch：支持类型与新语法<span class="badge b-high">高频</span><span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>传统坑 + JDK14 新写法</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// switch 支持：byte/short/char/int + 枚举 + String(JDK7)</span>
+<span class="tok-com">// 不支持：long / float / double / boolean（JVM 的 tableswitch 指令只认 int 系列）</span>
+
+<span class="tok-com">// 传统写法的坑：忘 break 会"穿透"顺序执行下一个 case</span>
+<span class="tok-kw">switch</span> (day) {
+    <span class="tok-kw">case</span> <span class="tok-str">"MONDAY"</span>:
+        System.out.println(<span class="tok-str">"周一"</span>);   <span class="tok-com">// ← 没 break！会继续执行"周二"那行</span>
+    <span class="tok-kw">case</span> <span class="tok-str">"TUESDAY"</span>:
+        System.out.println(<span class="tok-str">"周二"</span>);
+        <span class="tok-kw">break</span>;
+}
+
+<span class="tok-com">// JDK 14+ 箭头语法（switch 表达式）：无穿透、可直接返回值</span>
+String type = <span class="tok-kw">switch</span> (day) {
+    <span class="tok-kw">case</span> <span class="tok-str">"MONDAY"</span>, <span class="tok-str">"TUESDAY"</span> -&gt; <span class="tok-str">"工作日"</span>;    <span class="tok-com">// 多值合并</span>
+    <span class="tok-kw">case</span> <span class="tok-str">"SATURDAY"</span>, <span class="tok-str">"SUNDAY"</span> -&gt; <span class="tok-str">"周末"</span>;
+    <span class="tok-kw">default</span> -&gt; <span class="tok-str">"其他"</span>;
+};
+
+<span class="tok-com">// switch(String) 的底层：先比 hashCode 再 equals 确认（防哈希碰撞）</span>
+<span class="tok-com">// 所以 case 传 null 直接 NPE —— String switch 不会帮你判空</span></code></pre>
+    </div>
+
+    <h3 class="kp">7.2 foreach 的原理与 fail-fast<span class="badge b-high">高频</span><span class="badge b-hard">难点</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>增强 for 循环 = 语法糖</span><span>Java</span></div>
+      <pre><code>List&lt;String&gt; list = <span class="tok-kw">new</span> ArrayList&lt;&gt;(List.of(<span class="tok-str">"a"</span>, <span class="tok-str">"b"</span>, <span class="tok-str">"c"</span>));
+<span class="tok-kw">for</span> (String s : list) {                 <span class="tok-com">// 编译器改写为：</span>
+    <span class="tok-kw">if</span> (s.equals(<span class="tok-str">"b"</span>)) list.remove(s);  <span class="tok-com">// ❌ ConcurrentModificationException！</span>
+}
+<span class="tok-com">// 等价展开：</span>
+<span class="tok-com">// Iterator&lt;String&gt; it = list.iterator();</span>
+<span class="tok-com">// while (it.hasNext()) { String s = it.next(); ... }</span>
+
+<span class="tok-com">// 为什么炸：ArrayList 迭代器每次 next() 都核对 modCount（集合结构修改次数）</span>
+<span class="tok-com">// 是否还等于 expectedModCount（迭代器创建时的快照）</span>
+<span class="tok-com">// list.remove(s) 走集合自身方法：modCount+1，但迭代器不知情</span>
+<span class="tok-com">// 下一次 next() 发现对不上 → 判定"结构被外部篡改" → fail-fast 抛异常</span>
+<span class="tok-com">//（这是"提前暴露并发修改 bug"的保护机制，模块 4 集合框架展开）</span>
+
+<span class="tok-com">// ✅ 正确删除姿势</span>
+list.removeIf(<span class="tok-str">"b"</span>::equals);             <span class="tok-com">// JDK8+ 内部用迭代器自己的 remove，安全</span>
+<span class="tok-com">// 或迭代器：it.remove();（它删完会同步 expectedModCount）</span></code></pre>
+    </div>
+
+    <h3 class="kp">7.3 数组要点<span class="stars">★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>数组是对象 + Arrays 工具的两个坑</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// 数组本质是堆中的对象（模块 1），length 是它自带的属性</span>
+<span class="tok-kw">int</span>[] arr = {<span class="tok-num">5</span>, <span class="tok-num">3</span>, <span class="tok-num">1</span>, <span class="tok-num">4</span>};
+Arrays.sort(arr);                      <span class="tok-com">// 双轴快排（基本类型）/ TimSort（对象，稳定）</span>
+
+<span class="tok-com">// ⚠ 坑1：Arrays.asList 返回"定长视图"，不是 ArrayList</span>
+List&lt;Integer&gt; view = Arrays.asList(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>);
+view.set(<span class="tok-num">0</span>, <span class="tok-num">99</span>);                       <span class="tok-com">// ✅ 能改（写穿到底层数组）</span>
+view.add(<span class="tok-num">4</span>);                           <span class="tok-com">// ❌ UnsupportedOperationException —— 没有增删能力</span>
+List&lt;Integer&gt; ok = <span class="tok-kw">new</span> ArrayList&lt;&gt;(Arrays.asList(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>));  <span class="tok-com">// 想要可变就这么包一层</span>
+
+<span class="tok-com">// ⚠ 坑2：基本类型数组会被整个当成"一个元素"</span>
+<span class="tok-kw">int</span>[] nums = {<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>};
+Arrays.asList(nums).size();            <span class="tok-com">// 1！（泛型不支持基本类型，推断成 List&lt;int[]&gt;）</span>
+Arrays.stream(nums).boxed().toList();  <span class="tok-com">// ✅ 转成 List&lt;Integer&gt;，size=3</span>
+
+<span class="tok-com">// 多维数组 = 数组的数组，各行可不等长</span>
+<span class="tok-kw">int</span>[][] m = <span class="tok-kw">new</span> <span class="tok-kw">int</span>[<span class="tok-num">3</span>][];
+m[<span class="tok-num">0</span>] = <span class="tok-kw">new</span> <span class="tok-kw">int</span>[<span class="tok-num">5</span>];  m[<span class="tok-num">1</span>] = <span class="tok-kw">new</span> <span class="tok-kw">int</span>[<span class="tok-num">2</span>]; <span class="tok-com">// 每行是独立的堆上数组对象</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ================= 08 final static ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>final 与 static</h2></div>
+
+    <h3 class="kp">8.1 final：三副面孔<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>final 变量 / 方法 / 类</span><span>Java</span></div>
+      <pre><code><span class="tok-com">// ① final 变量：只能赋值一次</span>
+<span class="tok-kw">final</span> <span class="tok-kw">int</span> X = <span class="tok-num">1</span>;
+<span class="tok-kw">final</span> Person p = <span class="tok-kw">new</span> Person();
+p = <span class="tok-kw">new</span> Person();          <span class="tok-com">// ❌ 引用本身不可再指向别的对象</span>
+p.setName(<span class="tok-str">"新名字"</span>);       <span class="tok-com">// ✅ 对象内部状态随便改 —— final 锁引用不锁对象！</span>
+                           <span class="tok-com">//   （Python 类比：tuple 不可变，但元组里的 list 内容可变）</span>
+
+<span class="tok-com">// ② final 方法：禁止子类重写（可重载）—— 模块 3 讲重写时展开</span>
+<span class="tok-com">// ③ final 类：禁止继承 —— String、Integer 都是，守护不可变性</span>
+
+<span class="tok-com">// 关键细节：final + 编译期常量初始化 = "编译期常量"（宏变量）</span>
+<span class="tok-kw">final</span> <span class="tok-kw">int</span> C = <span class="tok-num">10</span>;
+<span class="tok-kw">int</span> y = C + <span class="tok-num">5</span>;             <span class="tok-com">// 编译后直接是 int y = 15 —— 5.3 节常量折叠的根源</span>
+
+<span class="tok-com">// 隐含规则（模块 7 Lambda 会用）：匿名类/Lambda 只能捕获 final</span>
+<span class="tok-com">// 或"事实 final"（只赋值过一次）的局部变量 —— 因为捕获的是值的拷贝</span></code></pre>
+    </div>
+
+    <h3 class="kp">8.2 static：属于类而非对象<span class="badge b-high">高频</span><span class="stars">★★★</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>结合模块 1 的内存位置理解</span><span>Java</span></div>
+      <pre><code><span class="tok-kw">class</span> Counter {
+    <span class="tok-kw">static</span> <span class="tok-kw">int</span> total;                  <span class="tok-com">// 静态变量：全局一份（JDK7+ 存堆，随 Class 对象）</span>
+                                       <span class="tok-com">//   所有实例共享 —— 见模块 1 的变量对照表</span>
+    <span class="tok-kw">int</span> count;                         <span class="tok-com">// 实例变量：每个对象一份，在各自堆对象体内</span>
+    <span class="tok-kw">static</span> <span class="tok-kw">int</span> getNext() { <span class="tok-kw">return</span> ++total; }
+    <span class="tok-com">// 静态方法：没有 this —— 因为调用时可能根本没有对象！</span>
+    <span class="tok-com">// → 不能访问实例变量/实例方法（找不到 this 就找不到那个对象）</span>
+}
+
+<span class="tok-com">// main 为什么是 static？程序入口，JVM 启动时还没有任何对象可调用</span>
+
+<span class="tok-com">// Python 类比：类变量 vs 实例变量（self.x = ... 才是实例的），</span>
+<span class="tok-com">// 静态方法 ≈ @staticmethod（无 self）</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ================= 09 面试题速查 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>高频面试题速查（自测清单）</h2></div>
+
+    <details class="qa"><summary>1. 八大基本类型及大小？boolean 多大？</summary><div class="qa-body"><p>byte(1) short(2) int(4) long(8) float(4) double(8) char(2) boolean(规范未定义，实现上单独用按 int、数组按 byte)。默认值仅成员变量有：0/0.0/false/'\u0000'/null。</p></div></details>
+    <details class="qa"><summary>2. byte b = 1+2 可以，b1+b2 赋回 byte 却不行？</summary><div class="qa-body"><p>1+2 是编译期常量折叠，结果 3 在 byte 范围内直接放行；b1+b2 是变量运算，二元数值提升为 int，int→byte 必须强转。复合赋值 s+=1 合法是因为规范规定其自带 (T) 强转。</p></div></details>
+    <details class="qa"><summary>3. 两个不同类型做算术运算，结果类型怎么定？</summary><div class="qa-body"><p>二元数值提升：有 double 转 double，其次 float，其次 long，都 ≤ int 则统一 int。不是一律 int！byte+byte 才是 int，int+long 是 long，int+double 是 double。</p></div></details>
+    <details class="qa"><summary>4. i = i++ 后 i 的值？为什么？</summary><div class="qa-body"><p>还是 1。执行序：旧值 1 压栈（作为表达式值）→ i 自增为 2 → 栈顶旧值 1 赋回 i 覆盖。i++ 表达式的值是自增前的旧值。</p></div></details>
+    <details class="qa"><summary>5. 0.1+0.2 != 0.3 的原因和解法？</summary><div class="qa-body"><p>IEEE 754 二进制浮点无法精确表示 0.1（无限循环二进制），存的是近似值。判等用误差容忍；精确计算用 BigDecimal（字符串构造/valueOf），判等 compareTo，除法必须给 scale + RoundingMode，否则除不尽抛 ArithmeticException。Python 的 decimal.Decimal 同理。</p></div></details>
+    <details class="qa"><summary>6. String 为什么不可变？如何实现？</summary><div class="qa-body"><p>final 类 + private final byte[]（JDK9 紧凑字符串）+ 无修改方法。收益：常量池共享、线程安全、hashCode 缓存、安全性。修改类 API 全部返回新对象。</p></div></details>
+    <details class="qa"><summary>7. new String("abc") 创建几个对象？两种创建方式 == 结果？</summary><div class="qa-body"><p>最多 2 个：堆中 new 的 + 常量池的（已存在则 1 个）。字面量指向池中对象，new 强制在堆创建新对象，所以 s1=="abc" 为 true 而 new String("abc")=="abc" 为 false。intern 返回池中对象（JDK7+ 池在堆，登记引用不复制）。</p></div></details>
+    <details class="qa"><summary>8. 循环里 += 拼接字符串有什么问题？</summary><div class="qa-body"><p>每轮 new StringBuilder + 全量拷贝，O(n²)。循环外单个 StringBuilder 复用（可预估容量），均摊 O(n)。Python 的对应物是 str.join。</p></div></details>
+    <details class="qa"><summary>9. Java 是值传递还是引用传递？</summary><div class="qa-body"><p>只有值传递：拷贝变量槽内容。基本类型拷值 → 方法内改不影响外部；引用类型拷地址 → 方法内改对象内容外部可见、重新赋值外部不可见。String 参数"改不动"= 不可变 + 重新赋值双重原因。</p></div></details>
+    <details class="qa"><summary>10. foreach 里 remove 会怎样？怎么正确删？</summary><div class="qa-body"><p>ArrayList 抛 ConcurrentModificationException：迭代器 next() 核对 modCount 与 expectedModCount，集合自身 remove 使 modCount+1 触发 fail-fast。正确姿势：iterator.remove() / removeIf / 并发集合 CopyOnWriteArrayList。</p></div></details>
+    <details class="qa"><summary>11. Arrays.asList 有什么坑？</summary><div class="qa-body"><p>返回定长视图（内部类 Arrays$ArrayList）：set 可以、add/remove 抛 UnsupportedOperationException；基本类型数组会被整个当一个元素（List&lt;int[]&gt;，size=1）。要可变就 new ArrayList&lt;&gt;(...) 再包一层。</p></div></details>
+    <details class="qa"><summary>12. final 修饰引用变量，对象还能改吗？</summary><div class="qa-body"><p>能。final 锁的是"引用的指向"（不可再 = 别的对象），不锁对象内部状态（字段照样 set）。类比 Python 的 tuple 装可变对象。</p></div></details>
+  </section>
+
+  <!-- ================= 10 小结 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>模块小结 · 必背清单</h2></div>
+
+    <div class="depcard">
+      <div class="dep"><b>⬅ 用到的模块 1 结论</b>栈槽存值/地址；常量池在堆；对象头与堆布局；包装类缓存对象。</div>
+      <div class="dep"><b>➡ 后续去向</b>StringBuilder 扩容 → 模块 4 ArrayList 同款思路；fail-fast → 模块 4 集合；final/static/重写 → 模块 3 面向对象；effectively final → 模块 7 Lambda。</div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="sum-card"><h5>🔁 类型转换</h5><ul>
+        <li>自动：小→大（byte→short→int→long→float→double）</li>
+        <li>运算：double&gt;float&gt;long&gt;int 逐级判定，保底 int</li>
+        <li>强转 = 砍高位；int 溢出静默环绕</li>
+        <li>复合赋值自带隐式强转</li>
+      </ul></div>
+      <div class="sum-card"><h5>🧮 运算符</h5><ul>
+        <li>i = i++ 结果不变（旧值覆盖）</li>
+        <li>&amp;&amp; 短路是判空防御的根基</li>
+        <li>位运算：n&amp;(n-1) 判 2 的幂/数 1 的个数</li>
+        <li>-7%3：Java=-1，Python=2</li>
+      </ul></div>
+      <div class="sum-card"><h5>💰 浮点</h5><ul>
+        <li>二进制表示不了 0.1 → 近似值</li>
+        <li>金额 = BigDecimal + 字符串构造 + compareTo + HALF_UP</li>
+        <li>NaN 不等于自己；判空用 isNaN</li>
+      </ul></div>
+      <div class="sum-card"><h5>📜 String</h5><ul>
+        <li>不可变四理由：池/线程/hash/安全</li>
+        <li>字面量→池；变量拼接→堆；final 常量→折叠回池</li>
+        <li>循环拼接用 StringBuilder（O(n)）</li>
+        <li>常量池 JDK7 起在堆</li>
+      </ul></div>
+      <div class="sum-card"><h5>📤 值传递</h5><ul>
+        <li>拷贝的是栈槽内容：值 or 地址</li>
+        <li>改对象内容 → 外部可见</li>
+        <li>参数重新赋值 → 外部不可见</li>
+        <li>String 永远"改不动"= 不可变</li>
+      </ul></div>
+      <div class="sum-card"><h5>🔑 修饰符</h5><ul>
+        <li>final：变量锁指向/方法禁重写/类禁继承</li>
+        <li>static：属于类，无 this，全局一份</li>
+        <li>编译期常量 = final + 字面量初始化</li>
+      </ul></div>
+    </div>
+
+    <div class="pagenav">
+      <a href="01-jvm-memory.html">← 模块 1：JVM 内存模型与对象</a>
+      <a href="03-oop.html">模块 3：面向对象 →</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="返回顶部" style="display: block;">↑</button>
+
+<script>
+function highlightJava(src) {
+  let s = src.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])*')|(@\w+)|\b(abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|package|private|protected|public|record|return|sealed|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|yield|true|false|null)\b|\b(0[xX][0-9a-fA-F_]+|\d[\d_]*\.?[\d_]*[fFdDlL]?)\b/g;
+  return s.replace(re, (m, com, str, chr, anno, kw, num) => {
+    if (com) return '<span class="tok-com">' + m + '</span>';
+    if (str || chr) return '<span class="tok-str">' + m + '</span>';
+    if (anno) return '<span class="tok-anno">' + m + '</span>';
+    if (kw) return '<span class="tok-kw">' + m + '</span>';
+    if (num) return '<span class="tok-num">' + m + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram')) el.innerHTML = highlightJava(el.textContent);
+});
+
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+
+
+</body></html>

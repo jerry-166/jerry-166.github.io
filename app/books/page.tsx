@@ -5,7 +5,7 @@ import { siteConfig, tutorialBooks } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: `教程手册 - ${siteConfig.title}`,
-  description: `${siteConfig.author} 自研编写的教程手册系列：前端系列与 Python 后端系列，自包含静态页面，支持在线交互演示`,
+  description: `${siteConfig.author} 自研编写的教程手册系列：前端系列、Python 后端系列与 Java 系列，自包含静态页面，支持在线交互演示`,
 }
 
 export default function BooksPage() {

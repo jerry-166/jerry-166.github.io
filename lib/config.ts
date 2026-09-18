@@ -11,7 +11,7 @@ export const siteConfig = {
 }
 
 // 教程手册系列（静态 HTML 手册，部署在 /public/books 下，按 category 分组展示）
-export type BookCategory = 'frontend' | 'backend'
+export type BookCategory = 'frontend' | 'backend' | 'java'
 
 export interface TutorialBook {
   title: string
@@ -27,6 +27,7 @@ export interface TutorialBook {
 export const bookCategories: { key: BookCategory; label: string }[] = [
   { key: 'frontend', label: '前端系列' },
   { key: 'backend', label: 'Python / 后端系列' },
+  { key: 'java', label: 'Java 系列' },
 ]
 
 export const tutorialBooks: TutorialBook[] = [
@@ -109,6 +110,16 @@ export const tutorialBooks: TutorialBook[] = [
     tags: ['Python', '内存泄漏', 'Docker', '可观测性'],
     accent: '#8a3b3b',
     category: 'backend',
+  },
+  {
+    title: 'Java 复习手册 · 秋招面试向',
+    volume: 'Java',
+    description:
+      '以 JVM 内存模型为地基的体系化 Java 复习：栈/堆/方法区 → 基础语法与值传递 → 面向对象（初始化顺序、equals/hashCode 分桶）→ 集合框架（HashMap put 全流程、ConcurrentHashMap）→ JVM 深入（类加载、GC 三色标记、内存泄漏排查）。面试高频与易错点全程标注，内置划线批注 + 云端同步。',
+    href: '/books/java-review/index.html',
+    tags: ['Java', 'JVM', '集合', '面试'],
+    accent: '#2456d6',
+    category: 'java',
   },
 ]
 

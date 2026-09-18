@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习手册 · 总目录</title>
+<style>
+:root {
+  --bg: #f4f6fa; --card: #ffffff; --ink: #1e293b; --ink-2: #475569; --ink-3: #64748b;
+  --line: #e2e8f0; --primary: #2456d6; --primary-soft: #eef3ff;
+  --high: #dc2626; --high-bg: #fef2f2; --hard: #7c3aed; --hard-bg: #f5f3ff;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+
+/* ===== Hero ===== */
+.hero { background: linear-gradient(135deg,#ffffff 0%,#e8efff 70%,#dde8ff 100%); border-bottom: 1px solid #d4e0f7; padding: 40px 20px 34px; text-align: center; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; max-width: 640px; margin-left: auto; margin-right: auto; }
+.progress-track { margin: 22px auto 0; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 420px; }
+.progress-fill { height: 100%; width: 55.6%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
+.hero .pct { margin-top: 8px; font-size: 12.5px; color: #475569; }
+
+/* ===== 主体 ===== */
+.wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px 80px; }
+.sec-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 34px 0 16px; display: flex; align-items: center; gap: 10px; }
+.sec-title::before { content: ""; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
+
+/* 模块卡片网格 */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 20px 18px; text-decoration: none; color: var(--ink); box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--primary); }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(15,23,42,.10); }
+.card .num { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--primary); margin-bottom: 6px; }
+.card h3 { font-size: 16.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.card p { font-size: 13px; color: var(--ink-2); }
+.card .tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.card .tag { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+.card .tag.h { background: var(--high-bg); color: var(--high); }
+.card .tag.d { background: var(--hard-bg); color: var(--hard); }
+/* 待更新占位卡 */
+.card.locked { background: #f8fafc; border-style: dashed; box-shadow: none; }
+.card.locked::before { background: #cbd5e1; }
+.card.locked:hover { transform: none; box-shadow: none; }
+.card.locked .num { color: #94a3b8; }
+.card.locked h3 { color: #475569; }
+.card.locked .tag { background: #f1f5f9; color: #94a3b8; }
+
+/* 批注功能说明 */
+.guide { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; box-shadow: var(--shadow); }
+.guide h3 { font-size: 16.5px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+.guide ol { padding-left: 20px; }
+.guide li { font-size: 14px; color: var(--ink-2); margin-bottom: 8px; }
+.guide li b { color: #0f172a; }
+.guide .note { margin-top: 12px; font-size: 12.5px; color: var(--ink-3); background: var(--primary-soft); border-radius: 8px; padding: 10px 14px; }
+
+footer { text-align: center; padding: 30px 0 50px; color: var(--ink-3); font-size: 12.5px; }
+footer a { color: var(--primary); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA REVIEW · 秋招面试向</div>
+  <h1>Java 复习手册</h1>
+  <p class="sub">承接 Python 复习路线的 Java 体系化复习：以 <b>JVM 内存模型为地基</b>，语法 → 面向对象 → 集合 → JVM 深入 → 并发，逐模块推进。面试高频与易错点全程标注，重点讲透原理而非罗列结论。</p>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="pct">已完成 5 / 9 个模块</div>
+</div>
+
+<div class="wrap">
+
+  <div class="sec-title">模块目录</div>
+  <div class="grid">
+    <a class="card" href="01-jvm-memory.html">
+      <div class="num">MODULE 01 · 地基</div>
+      <h3>JVM 内存模型与对象</h3>
+      <p>栈/堆/方法区运行时结构、局部 vs 成员变量、基本 vs 引用类型、new 的全过程、包装类缓存池、== 与 equals。</p>
+      <div class="tags"><span class="tag">内存模型</span><span class="tag h">高频</span><span class="tag d">Integer 缓存</span></div>
+    </a>
+    <a class="card" href="02-basic-syntax.html">
+      <div class="num">MODULE 02</div>
+      <h3>基础语法与数据类型</h3>
+      <p>八种基本类型与转换规则、二元数值提升、运算符与控制流、String 不可变与常量池、值传递本质。</p>
+      <div class="tags"><span class="tag">语法</span><span class="tag h">值传递</span><span class="tag d">intern()</span></div>
+    </a>
+    <a class="card" href="03-oop.html">
+      <div class="num">MODULE 03</div>
+      <h3>面向对象</h3>
+      <p>初始化顺序、重写与重载、多态与方法表、equals/hashCode 分桶原理、抽象类 vs 接口、内部类家族。</p>
+      <div class="tags"><span class="tag">OOP</span><span class="tag h">高频</span><span class="tag d">初始化顺序</span></div>
+    </a>
+    <a class="card" href="04-collections.html">
+      <div class="num">MODULE 04</div>
+      <h3>集合框架</h3>
+      <p>ArrayList/LinkedList、HashMap 结构与 put 全流程、树化与扩容、fail-fast、ConcurrentHashMap 并发控制演进。</p>
+      <div class="tags"><span class="tag">集合</span><span class="tag h">HashMap</span><span class="tag d">CHM</span></div>
+    </a>
+    <a class="card" href="05-jvm-deep.html">
+      <div class="num">MODULE 05</div>
+      <h3>JVM 深入</h3>
+      <p>类加载五阶段与双亲委派、GC 可达性分析与三色标记、分代收集与空间分配担保、CMS/G1、内存泄漏排查链路。</p>
+      <div class="tags"><span class="tag">类加载</span><span class="tag h">GC</span><span class="tag d">三色标记</span></div>
+    </a>
+    <div class="card locked">
+      <div class="num">MODULE 06</div>
+      <h3>并发编程</h3>
+      <p>线程生命周期、JMM 与 volatile、synchronized 锁升级、AQS、线程池、ThreadLocal —— 待更新。</p>
+      <div class="tags"><span class="tag">待更新</span></div>
+    </div>
+    <div class="card locked">
+      <div class="num">MODULE 07</div>
+      <h3>Java 8+ 新特性</h3>
+      <p>Lambda、Stream、Optional、接口默认方法 —— 待更新。</p>
+      <div class="tags"><span class="tag">待更新</span></div>
+    </div>
+    <div class="card locked">
+      <div class="num">MODULE 08</div>
+      <h3>异常体系与 IO/NIO</h3>
+      <p>异常分类、try-with-resources、BIO/NIO/AIO、零拷贝 —— 待更新。</p>
+      <div class="tags"><span class="tag">待更新</span></div>
+    </div>
+    <div class="card locked">
+      <div class="num">MODULE 09</div>
+      <h3>泛型 · 反射 · 注解 · 动态代理</h3>
+      <p>类型擦除、反射开销、注解处理器、JDK 动态代理 vs CGLIB —— 待更新。</p>
+      <div class="tags"><span class="tag">待更新</span></div>
+    </div>
+  </div>
+
+  <div class="sec-title">划线批注 · 使用说明</div>
+  <div class="guide">
+    <h3>这是你自己的笔记本</h3>
+    <ol>
+      <li><b>划线</b>：用鼠标/手指选中任意文字，浮出工具条，选颜色即划线；写批注支持 <b>Markdown</b> 语法。</li>
+      <li><b>查看</b>：右侧栏（手机端点右下角悬浮按钮）汇总本页全部批注，可逐条<b>展开 / 收起</b>、跳转定位、编辑、删除。</li>
+      <li><b>云端同步</b>：首次保存会提示输入<b>写入口令</b>，输入一次永久记住。之后所有批注自动推送到云端，<b>换设备 / 换浏览器登录同一页面，批注自动回来</b>。</li>
+      <li><b>离线可用</b>：断网时批注存本地，联网后打开页面自动补推，不丢数据。</li>
+    </ol>
+    <div class="note">数据保存在云端 Redis（按页面文件名隔离），本地 localStorage 做缓存加速。右下角状态标签：☁ 已同步 / ✎ 仅本机（未推云端）。</div>
+  </div>
+
+  <footer>Java 复习手册 · 与 <a href="/">blog</a> 同源部署 · 模块6-9 持续更新中</footer>
+</div>
+
+<script src="anno.js"></script>
+</body>
+</html>

@@ -13,17 +13,27 @@
    v3 变更（云端持久化，配合 blog 的 /api/annotations）：
      · 存储 = localStorage（本地缓存，秒开） + 云端 KV（跨设备同步）
      · 打开页面：先渲染本地 → 后台拉云端，云端较新则自动覆盖并重画
-     · 每次保存：本地立即写 + 异步推送云端（keepalive，关页也不丢）
+     · 每次保存：本地立即写 + 异步推云端（keepalive，关页也不丢）
      · 乐观锁：多设备并发写时 409 → 自动"拉云端+合并本地未推送项"后重推
      · 写口令：首次推送时提示输入一次（存本机），对应服务端 ANNO_WRITE_TOKEN
      · 云端不可用（未部署/断网）→ 自动降级为仅本地，功能不受影响
      · 面板标题右侧有同步状态标签（☁已同步/仅本机/☁待验证），点击=手动同步
+
+   v3.1 变更（交互优化）：
+     · 点击页面空白处即可收起批注边栏/管理面板（不再只认 ✕ 和 Esc）
+     · 宽屏（≥1200px）打开边栏时切换为"挤压布局"：body 右侧让位，正文左移，
+       与边栏并排同屏 —— 看批注不打断阅读；窄屏仍为悬浮覆盖（保证正文可读宽度）
+     · 引入前可设置 window.ANNO_PAGE='书名/页面名' 自定义存储键：
+       多本教程书批量接入时防止同名页面（如都有 index.html）串数据
    ================================================================== */
 (function () {
   'use strict';
 
   /* ==================== 配置 ==================== */
-  var PAGE = decodeURIComponent(location.pathname.split('/').pop() || 'index');
+  // 存储键 = 批注归属页面。默认取 URL 文件名（本地打开与线上打开同键，云端同一份数据）；
+  // 多本书接入时若可能出现同名文件，在引入本脚本前设 window.ANNO_PAGE 显式指定键名
+  var PAGE = (window.ANNO_PAGE != null) ? String(window.ANNO_PAGE)
+    : decodeURIComponent(location.pathname.split('/').pop() || 'index');
   var KEY = 'anno:' + PAGE;
   var MTIME_KEY = KEY + ':mtime';   // 本地最后一次修改时间（用于重启后判断有无未推送数据）
   var PUSHED_KEY = KEY + ':pushed'; // 本地最后一次成功推送云端的时间
@@ -323,6 +333,18 @@
       'background:#fff;border-left:1px solid #e2e8f0;box-shadow:-12px 0 36px rgba(15,23,42,.14);',
       'display:flex;flex-direction:column;transform:translateX(105%);transition:transform .28s cubic-bezier(.4,0,.2,1);}',
       '.anno-drawer.open{transform:translateX(0)}',
+
+      /* ---- 挤压布局（v3.1）：宽屏下边栏不再悬浮盖住正文，而是把正文挤到左边并排 ----
+         原理：body 加 anno-squeeze 类 → padding-right 让出 430px（=边栏宽）→
+         页面自身居中的内容列整体左移、宽度变窄重新排版；边栏 fixed 贴右缘，两者互不遮挡。
+         开关唯一来源是 JS 的 updateSqueeze()（开/关边栏、窗口 resize 时都会重算），
+         窄屏（<1200px）不加类，保持悬浮覆盖，正文不被挤没 */
+      'body{transition:padding-right .28s cubic-bezier(.4,0,.2,1);}',
+      'body.anno-squeeze{padding-right:430px;}',
+      /* 挤压时悬浮按钮/管理面板跟着左移到边栏旁边，避免被边栏盖住点不到 */
+      '.anno-fab{transition:right .28s cubic-bezier(.4,0,.2,1),background .15s;}',
+      'body.anno-squeeze .anno-fab{right:456px;}',
+      'body.anno-squeeze .anno-panel{right:456px;}',
       '.ad-head{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid #e2e8f0;flex-shrink:0;}',
       '.ad-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 1px #cbd5e1 inset;}',
       '.ad-dot.c-y{background:#f59e0b}.ad-dot.c-g{background:#10b981}.ad-dot.c-r{background:#ef4444}',
@@ -612,19 +634,36 @@
     });
   }
 
+  /* ---- 挤压布局（v3.1）----
+     视口 ≥1200px 且边栏打开 → body 加 anno-squeeze（右侧让位 430px，正文左移并排）；
+     更窄则不加类，边栏保持悬浮覆盖。窗口尺寸变化（拖拽/旋转）时同步重算。 */
+  var SQUEEZE_MIN = 1200;
+  function updateSqueeze() {
+    document.body.classList.toggle('anno-squeeze',
+      drawer.classList.contains('open') && window.innerWidth >= SQUEEZE_MIN);
+  }
+
   /** 打开边栏。mode: 'view' 查看 | 'edit' 编辑 */
   function openDrawer(id, mode) {
     var a = byId(id);
     if (!a) return;
+    var wasOpen = drawer.classList.contains('open'); // 记录是否"从关到开"（决定会不会发生挤压重排）
     curId = id;
     editColor = a.color;
     drawerMode = mode || 'view';
     renderDrawer();
     drawer.classList.add('open');
     panel.style.display = 'none';
+    updateSqueeze();
+    // 从关到开 + 宽屏挤压：正文会变窄重排（换行位置变化，划线可能被挤出视野），
+    // 等挤压动画结束（.28s）后再定位/闪烁一次当前批注，保证它回到屏幕中央
+    if (!wasOpen && document.body.classList.contains('anno-squeeze')) {
+      setTimeout(function () { if (curId) locate(curId); }, 340);
+    }
   }
   function closeDrawer() {
     drawer.classList.remove('open');
+    updateSqueeze(); // 同步摘掉挤压类，正文还原占满全宽
     curId = null;
   }
 
@@ -811,6 +850,12 @@
       if (t) { openDrawer(t.dataset.aid, 'view'); return; }
       if (e.target.closest('.anno-drawer, .anno-toolbar, .anno-panel, .anno-fab')) return;
       hide(toolbar);
+      // v3.1：点到页面空白处 = 收起批注边栏与管理面板（原先只能点 ✕ / Esc，不友好）。
+      // 两个例外：① 正在划词选字（getSelection 非空）时不收，避免打断用户创建新批注；
+      //          ② 点击本身就是划线/角标/边栏内部/面板/按钮的情况，上面已提前 return
+      if (window.getSelection && String(window.getSelection()).length) return;
+      closeDrawer();
+      panel.style.display = 'none';
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { closeDrawer(); hide(toolbar); panel.style.display = 'none'; }
@@ -821,6 +866,8 @@
       }
     });
     window.addEventListener('scroll', function () { hide(toolbar); }, { passive: true });
+    // 窗口宽度变化（拖拽窗口/旋转屏幕）→ 重算挤压模式：跨过 1200px 阈值时切换并排/覆盖
+    window.addEventListener('resize', function () { hide(toolbar); updateSqueeze(); });
   }
 
   /* ==================== 面板列表 ==================== */

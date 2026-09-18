@@ -3,11 +3,11 @@ import Link from 'next/link'
 import Layout from '@/components/Layout'
 import ShowcaseCarousel from '@/components/ShowcaseCarousel'
 import { getUserRepos, getLanguageColor, GitHubRepo } from '@/lib/github'
-import { siteConfig, tutorialBooks, TutorialBook, bookCategories, showcaseItems } from '@/lib/config'
+import { siteConfig, showcaseItems } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: `项目展示 - ${siteConfig.title}`,
-  description: `${siteConfig.author} 的自研教程手册与 GitHub 项目作品集`,
+  description: `${siteConfig.author} 的作品精选与 GitHub 开源项目`,
 }
 
 // ISR: 每 1 小时自动重新拉取 GitHub 仓库列表，新项目自动同步
@@ -19,77 +19,6 @@ function formatDate(dateStr: string) {
     month: 'short',
     day: 'numeric',
   })
-}
-
-// 教程书卡片：书籍装帧风格，左侧色条呼应各册主题色
-function BookCard({ book, index }: { book: TutorialBook; index: number }) {
-  return (
-    <article className="card-classic group relative overflow-hidden">
-      {/* 左侧强调色条 - 书脊效果 */}
-      <span
-        className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-        style={{ backgroundColor: book.accent }}
-        aria-hidden
-      />
-
-      <a href={book.href} target="_blank" rel="noopener noreferrer" className="block pl-3">
-        {/* 顶部：卷号徽章 + 书籍图标 */}
-        <div className="flex items-center justify-between mb-3">
-          <span
-            className="text-xs px-2 py-0.5 rounded-full border"
-            style={{ borderColor: `${book.accent}55`, color: book.accent }}
-          >
-            {book.volume}
-          </span>
-          <svg
-            className="w-5 h-5 text-ink/25 group-hover:text-bamboo transition-colors"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.247m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.247"
-            />
-          </svg>
-        </div>
-
-        {/* 书名 */}
-        <h3 className="text-base md:text-lg font-medium text-ink-dark group-hover:text-bamboo-dark transition-colors leading-snug">
-          {book.title}
-        </h3>
-
-        {/* 简介 */}
-        <p className="mt-2 text-sm text-ink/70 leading-relaxed line-clamp-3 min-h-[3.75rem]">
-          {book.description}
-        </p>
-
-        {/* 标签 */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {book.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs px-2 py-0.5 bg-mist/40 text-ink/60 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* 阅读引导 */}
-        <div className="mt-4 text-sm text-bamboo opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-          在线阅读 →
-        </div>
-      </a>
-
-      {/* 序号水印 */}
-      <span className="absolute bottom-2 right-3 text-4xl font-zhserif text-ink/5 select-none pointer-events-none">
-        {String(index + 1).padStart(2, '0')}
-      </span>
-    </article>
-  )
 }
 
 function RepoCard({ repo }: { repo: GitHubRepo }) {
@@ -169,7 +98,7 @@ export default async function ProjectsPage() {
             项目展示
           </h1>
           <p className="text-base text-ink/70 max-w-2xl mx-auto leading-relaxed">
-            这里汇集了我编写的教程手册系列，以及 GitHub 上的开源项目。
+            作品精选的关键画面，以及 GitHub 上的开源项目。教程手册与玩物志已分设独立栏目。
           </p>
           <div className="divider mt-8">
             <span className="divider-text">✦</span>
@@ -189,47 +118,7 @@ export default async function ProjectsPage() {
           <ShowcaseCarousel items={showcaseItems} />
         </section>
 
-        {/* 教程系列专区：按分类分组展示（前端系列 / Python 后端系列），配置见 lib/config.ts */}
-        <section id="books" className="mb-16 md:mb-20 scroll-mt-24">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-lg md:text-xl font-medium text-ink-dark">
-              教程手册
-            </h2>
-            <span className="text-xs text-ink/50">
-              共 {tutorialBooks.length} 册 · 持续更新
-            </span>
-          </div>
-
-          {/* 分类专栏：全局书脊编号连续递增 */}
-          {bookCategories.map((cat) => {
-            const books = tutorialBooks.filter((b) => b.category === cat.key)
-            if (books.length === 0) return null
-            const offset = tutorialBooks.filter(
-              (b) => bookCategories.findIndex((c) => c.key === b.category) <
-                bookCategories.findIndex((c) => c.key === cat.key)
-            ).length
-            return (
-              <div key={cat.key} className="mb-10 last:mb-0">
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-base font-medium text-ink-dark">
-                    {cat.label}
-                  </h3>
-                  <span className="flex-1 h-px bg-mist/50" aria-hidden />
-                  <span className="text-xs text-ink/40">{books.length} 册</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {books.map((book, i) => (
-                    <BookCard key={book.href} book={book} index={offset + i} />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-
-          <p className="mt-6 text-center text-xs text-ink/40 leading-relaxed">
-            所有教程均为自包含静态页面，手机/平板/电脑均可流畅阅读，支持直接交互演示。
-          </p>
-        </section>
+        {/* 教程手册与玩物志已分设独立栏目：/books 与 /playground */}
 
         {/* 开源项目专区 */}
         <section className="mb-10">

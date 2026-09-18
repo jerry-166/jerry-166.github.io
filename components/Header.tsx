@@ -33,21 +33,21 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* 导航 */}
-          <nav className="flex items-center space-x-1 md:space-x-6">
+          {/* 导航：移动端 6 项需收紧字号与间距，sm 起恢复舒适间距 */}
+          <nav className="flex items-center gap-0.5 sm:space-x-1 md:space-x-3">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href || 
+              const isActive = pathname === link.href ||
                 (link.href !== '/' && pathname.startsWith(link.href))
-              
+
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={`
-                    px-3 py-2 text-sm md:text-base tracking-wide-custom
+                    px-1.5 sm:px-3 py-2 text-xs sm:text-sm md:text-base tracking-wide-custom
                     transition-colors duration-200
-                    ${isActive 
-                      ? 'text-bamboo-dark font-medium' 
+                    ${isActive
+                      ? 'text-bamboo-dark font-medium'
                       : 'text-ink/60 hover:text-ink-dark'
                     }
                   `}

@@ -112,6 +112,31 @@ export const tutorialBooks: TutorialBook[] = [
   },
 ]
 
+// 玩物志：AI 协作创作的闲趣小件（静态交互页面，部署在 /public/playground 下）
+// 「玩物丧志」的反转——不追求实用，只为好玩；每件都是可直接在线把玩的单文件作品
+export interface PlaygroundItem {
+  title: string
+  edition: string // 期号（呼应作品的系列编号）
+  description: string
+  href: string
+  tags: string[]
+  accent: string // 卡片左侧强调色
+  cover: string // 封面图路径（public 下）
+}
+
+export const playgroundItems: PlaygroundItem[] = [
+  {
+    title: '慢慢骑 · Pelican Sunday',
+    edition: 'Nº 001',
+    description:
+      '鹈鹕先生的周日沿海骑行：纯 SVG + 原生 JS 动态插画，零依赖单文件。90 秒日夜循环（天色插值、日月升落、星夜渐显），车轮曲柄与双腿运动学联动，Web Audio 合成八音盒配乐与车铃，支持 prefers-reduced-motion 无障碍。',
+    href: '/playground/pelican-sunday/index.html',
+    tags: ['SVG 动画', 'Web Audio', '单文件'],
+    accent: '#df653f',
+    cover: '/playground/pelican-sunday/cover.png',
+  },
+]
+
 // 作品精选轮播（项目展示页顶部，图片位于 public/showcase/）
 export interface ShowcaseItem {
   src: string
@@ -173,7 +198,7 @@ export const showcaseItems: ShowcaseItem[] = [
   {
     src: '/showcase/blog_projects.jpg',
     title: '墨染秋毫（本站）',
-    subtitle: '教程手册 + GitHub 开源项目自动同步展示',
+    subtitle: '教程手册 / 玩物志 / 开源项目分栏展示',
   },
 ]
 
@@ -181,6 +206,8 @@ export const showcaseItems: ShowcaseItem[] = [
 export const navLinks = [
   { href: '/', label: '首页' },
   { href: '/posts', label: '文章' },
+  { href: '/books', label: '教程' },
+  { href: '/playground', label: '玩物志' },
   { href: '/projects', label: '项目' },
   { href: '/about', label: '关于' },
 ]

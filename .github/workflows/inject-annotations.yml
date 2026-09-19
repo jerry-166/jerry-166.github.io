@@ -10,11 +10,16 @@
 name: inject-annotations
 
 on:
+  # 手动触发入口：Actions 页面出现 "Run workflow" 按钮（首次接入新 workflow 的
+  # push 不会触发它自己 —— GitHub 在 push 落地前判定触发，彼时分支上还没有此文件，
+  # 因此首次运行要么手动点，要么靠下一次内容 push）
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'public/books/**'        # 书页内容或权威源 anno.js 变化
       - 'scripts/inject-anno.mjs' # 注入逻辑本身变化
+      - '.github/workflows/inject-annotations.yml' # workflow 自身变化（立即验证配置）
 
 permissions:
   contents: write # 允许 GITHUB_TOKEN 推送 bot 提交

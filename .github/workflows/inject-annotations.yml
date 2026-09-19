@@ -1,0 +1,47 @@
+# 批量为教程书页面注入划线批注脚本（anno.js）
+#
+# 流程：push → 本工作流检出代码 → 运行注入脚本（幂等）→ 有变更则由 bot 追加一个提交
+#
+# 关键机制：
+#   · GITHUB_TOKEN 的推送【不会】再次触发工作流（GitHub 内建规则）—— 天然防无限循环
+#   · 提交信息里的 [skip ci] 是第二重保险，显式禁止任何工作流响应这次推送
+#   · 脚本幂等：已注入的文件跳过，无变更时不产生空提交，工作流绿灯退出
+#   · concurrency：连续快速 push 时取消旧的进行中运行，只跑最新状态
+name: inject-annotations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/books/**'        # 书页内容或权威源 anno.js 变化
+      - 'scripts/inject-anno.mjs' # 注入逻辑本身变化
+
+permissions:
+  contents: write # 允许 GITHUB_TOKEN 推送 bot 提交
+
+concurrency:
+  group: inject-annotations
+  cancel-in-progress: true
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 注入批注脚本到书页
+        run: node scripts/inject-anno.mjs
+
+      - name: 有变更则提交推送
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/books
+          if git diff --cached --quiet; then
+            echo "无变更，幂等退出"
+          else
+            git commit -m "chore(ci): 自动注入批注脚本到书页 [skip ci]"
+            git push
+            echo "已推送注入提交"
+          fi

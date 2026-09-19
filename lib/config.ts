@@ -213,10 +213,31 @@ export const showcaseItems: ShowcaseItem[] = [
   },
 ]
 
+// 笔试复盘考点体系（/exams 模块）
+// 顺序即考点视图的分组顺序：四大件（计算机基础）在前，语言/领域类扩展在后。
+// 不在此列表中的新考点（如「组成原理」「图形学」）会自动排在已知考点之后，
+// 按题数、名称排序——引入新考点无需改任何代码，直接写进 md 的 questions 即可。
+export const examTopicOrder: string[] = [
+  // —— 四大件 ——
+  '操作系统',
+  '计算机网络',
+  '数据结构与算法',
+  '数据库',
+  // —— 扩展考点 ——
+  'Java',
+  'Python',
+  '前端',
+  '大模型',
+  'AI Coding',
+  '游戏',
+  '其他',
+]
+
 // 导航链接
 export const navLinks = [
   { href: '/', label: '首页' },
   { href: '/posts', label: '文章' },
+  { href: '/exams', label: '笔试' },
   { href: '/books', label: '教程' },
   { href: '/playground', label: '玩物志' },
   { href: '/projects', label: '项目' },

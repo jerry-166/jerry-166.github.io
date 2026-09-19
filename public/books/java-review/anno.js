@@ -894,6 +894,13 @@
     document.addEventListener('click', function (e) {
       var t = e.target.closest('.anno-hl, .anno-chip');
       if (t) { openDrawer(t.dataset.aid, 'view'); return; }
+      /* v3.2.1 修复：点"✎ 编辑 / 👁 查看模式"等按钮会触发 renderDrawer 整体重渲染，
+         click 事件还在冒泡途中时目标按钮已被移出 DOM 树 —— 此时 closest() 沿实时
+         DOM 向上找 .anno-drawer 祖先必然失败，会被误判成"页面外部点击"，把刚打开
+         的编辑框立刻收起（用户所见：点编辑，框弹一下就没了）。
+         判据：isConnected=false 的事件目标不可能来自用户对页面的正常点击，
+         只能是本脚本重渲染的产物 —— 放行，不收起。 */
+      if (!e.target.isConnected) { hide(toolbar); return; }
       if (e.target.closest('.anno-drawer, .anno-toolbar, .anno-panel, .anno-fab')) return;
       hide(toolbar);
       // v3.1：点到页面空白处 = 收起批注边栏与管理面板（原先只能点 ✕ / Esc，不友好）。

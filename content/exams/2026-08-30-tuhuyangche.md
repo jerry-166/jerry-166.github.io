@@ -1,7 +1,7 @@
 ---
-company: 用友集团
+company: 途虎养车
 date: 2026-08-30
-title: 用友集团笔试复盘
+title: 途虎养车笔试复盘
 description: 10 道客观题、优惠券编程题与 AI Coding 复盘
 questions:
   # —— 客观题 ——

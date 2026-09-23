@@ -21,7 +21,7 @@ body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; backg
 .hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
 .hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; max-width: 640px; margin-left: auto; margin-right: auto; }
 .progress-track { margin: 22px auto 0; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 420px; }
-.progress-fill { height: 100%; width: 55.6%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
+.progress-fill { height: 100%; width: 77.8%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
 .hero .pct { margin-top: 8px; font-size: 12.5px; color: #475569; }
 
 /* ===== 主体 ===== */
@@ -68,7 +68,7 @@ footer a { color: var(--primary); text-decoration: none; }
   <h1>Java 复习手册</h1>
   <p class="sub">承接 Python 复习路线的 Java 体系化复习：以 <b>JVM 内存模型为地基</b>，语法 → 面向对象 → 集合 → JVM 深入 → 并发，逐模块推进。面试高频与易错点全程标注，重点讲透原理而非罗列结论。</p>
   <div class="progress-track"><div class="progress-fill"></div></div>
-  <div class="pct">已完成 5 / 9 个模块</div>
+  <div class="pct">已完成 7 / 9 个模块（+6B 附册）</div>
 </div>
 
 <div class="wrap">
@@ -117,12 +117,12 @@ footer a { color: var(--primary); text-decoration: none; }
       <p>与模块 6 同一批知识点的故事线重写：每个武器先有惨案、再挖根因、再看它没解决什么逼出下一个。四问框架，读一遍把因果链长进脑子。</p>
       <div class="tags"><span class="tag">四问叙事</span><span class="tag h">高频考点</span><span class="tag d">演进链</span></div>
     </a>
-    <div class="card locked">
+    <a class="card" href="07-java8.html">
       <div class="num">MODULE 07</div>
       <h3>Java 8+ 新特性</h3>
-      <p>Lambda、Stream、Optional、接口默认方法 —— 待更新。</p>
-      <div class="tags"><span class="tag">待更新</span></div>
-    </div>
+      <p>Lambda 底层原理（invokedynamic）、Stream 惰性求值与并行、Optional 陷阱、接口默认方法冲突、java.time、CompletableFuture，外加 Java 9~21 版本地图（record / sealed / var）。</p>
+      <div class="tags"><span class="tag">Lambda</span><span class="tag h">Stream</span><span class="tag d">版本地图</span></div>
+    </a>
     <div class="card locked">
       <div class="num">MODULE 08</div>
       <h3>异常体系与 IO/NIO</h3>

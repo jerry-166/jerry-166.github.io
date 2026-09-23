@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块7：Java 8+ 新特性（Lambda / Stream / Optional / 新时间 API）</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== 顶部 Hero ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 77.8%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
+
+/* ===== 模块导航条 ===== */
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+/* ===== 主体布局 ===== */
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+/* ===== 左侧目录 ===== */
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 章节 ===== */
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+/* ===== 徽章 ===== */
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+/* ===== 表格 ===== */
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+/* ===== 代码块 ===== */
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+/* ===== 提示框 ===== */
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+/* ===== 一句话回答 ===== */
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+/* ===== 面试 Q&A ===== */
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* ===== 追问链 ===== */
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+/* ===== 前置/后续依赖卡 ===== */
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+/* ===== 其他 ===== */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 7 / 9</div>
+  <h1>Java 8+ 新特性：面向面试的"原理版"</h1>
+  <div class="sub">
+    Java 8（2014 年发布）是 Java 历史上最重要的分水岭——<b>函数式编程第一次进入 Java</b>。本模块的讲法：每个特性先回答<b>"它解决什么痛点"</b>，再往下挖<b>"底层怎么实现的"</b>——面试官问"Lambda 是语法糖吗"“Stream 惰性求值怎么回事”"orElse 和 orElseGet 差在哪"，答案都在原理层。最后补齐 Java 9~21 的<b>版本地图</b>（var / switch 表达式 / record / sealed），这些是新版面试的渐热考点。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <a href="06-concurrency.html">6 并发编程</a>
+  <a href="06b-concurrency.html">6B 并发·大白话</a>
+  <span class="cur">7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 开场：Java 8 为什么是分水岭</a>
+    <a href="#s2">02 Lambda：从臃肿到极致</a>
+    <a href="#s3">03 Lambda 底层：不是语法糖</a>
+    <a href="#s4">04 方法引用与函数式接口家族</a>
+    <a href="#s5">05 Stream：声明式数据流水线</a>
+    <a href="#s6">06 Stream 原理：惰性求值与并行</a>
+    <a href="#s7">07 Optional：把 NPE 提前到编译期</a>
+    <a href="#s8">08 接口的默认方法与冲突裁决</a>
+    <a href="#s9">09 新日期时间：java.time</a>
+    <a href="#s10">10 Java 9~21 版本地图 + 小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部 Q&amp;A</button>
+      <button id="btn-collapse">收起全部 Q&amp;A</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 1 开场 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>开场：Java 8 为什么是分水岭</h2></div>
+
+    <p>Java 8 之前的 Java 是一门<b>纯命令式、纯面向对象</b>的语言——一切行为都必须包在类和方法里，连"传一个行为"都要先造个对象。Java 8 一次性带来了四样改变语言性格的东西：</p>
+    <table>
+      <tr><th>新特性</th><th>一句话概括</th><th>解决什么痛点</th></tr>
+      <tr><td>Lambda 表达式</td><td>把"行为"当值传递</td><td>匿名内部类的臃肿噪音</td></tr>
+      <tr><td>Stream API</td><td>声明式数据处理流水线</td><td>命令式循环的样板代码</td></tr>
+      <tr><td>接口默认方法</td><td>接口可以带实现</td><td>已发布接口无法演化（加了方法全炸）</td></tr>
+      <tr><td>Optional / java.time</td><td>空值与时间的现代化</td><td>NPE 满天飞 / Date 又臭又不可靠</td></tr>
+    </table>
+    <p>这四样不是孤立的——<b>Lambda 是地基，Stream 是 Lambda 最大的消费者，默认方法是 Stream 能进 Collection 接口的前提</b>，Optional 和 java.time 是同一波"现代化"思潮的产物。整条链是这样咬合的：</p>
+    <pre class="diagram"><code>痛点：给集合排序，要传"比较规则"（一个行为）
+   └─► Lambda：让行为成为一等公民，可以像值一样传来传去
+         └─► Stream：既然行为能传，集合的"过滤/映射/汇总"就能声明式拼接
+               └─► 接口默认方法：stream() 要加进 Collection 接口，
+                     但接口加抽象方法会让所有实现类编译报错
+                     → 带着实现加进去（default）
+   （Optional 和 java.time 是并行的两条现代化支线）</code></pre>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 面试性价比提示</div>
+      <p>本章考点的特点是<b>"题目短、答案有层次"</b>：基础层（会不会用 Stream）、原理层（Lambda 是不是语法糖、惰性求值怎么实现）、陷阱层（orElse 求值时机、流只能消费一次）。三层都准备好，这一章就是送分章。</p>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 你的 Python 背景怎么用</div>
+      <p>这一章是你<b>优势最大</b>的一章：lambda、Stream、Optional、record，你在 Python 里全有对应物（<code>lambda</code>、列表推导/generator、<code>Optional[T]</code>、<code>dataclass</code>），概念零障碍。唯一要小心的反向陷阱：因为 Python 是动态类型，你会天然把 <code>var</code> 和"动态类型"划等号——错，Java 的 var 是编译期推断，类型从没变过。本文每个特性都会给出 Python 对比锚点，帮你把已有直觉迁移过来。</p>
+    </div>
+
+    <div class="depcard">
+      <div class="dep"><b>前置模块（会回收的钩子）</b>模块 1（值传递→lambda 捕获）、模块 3（equals/hashCode→record、多态→sealed）、模块 4（HashMap 红黑树是 Java 8 加的）、模块 5（元空间取代永久代）、模块 6/6B（SimpleDateFormat 线程安全→java.time）</div>
+      <div class="dep"><b>后续模块（本章埋的钩子）</b>模块 9（函数式接口→动态代理的 InvokerHandler 是 SAM）、模块 8（Stream 的 IO 版 NIO Channel）</div>
+    </div>
+  </section>
+
+  <!-- ================= 2 Lambda 基础 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>Lambda：从臃肿到极致 <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">2.1 痛点：匿名内部类的噪音</h3>
+    <p>Java 一切皆对象——那么"给排序器传一个比较规则"这种事，就必须把规则包进一个对象。Java 8 之前的写法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Before.java</span><span>五行情报，一句有效</span></div>
+      <pre><code>list.sort(new Comparator&lt;User&gt;() {          // 为了传"比较规则"
+    @Override                                 // 造一个类
+    public int compare(User a, User b) {      // 签名是上下文早就知道的
+        return a.getAge() - b.getAge();       // ★ 唯一有意义的一行
+    }
+});
+// 5 行代码里，4 行是"仪式"，1 行是"意图"。
+// 更糟的是：编译期就生成一个 Outer$1.class 文件（后面细说）</code></pre>
+    </div>
+    <p>观察这 5 行：<b>类名、方法名、参数类型、@Override——全是上下文"本来就知道"的信息</b>。真正想表达的只有"a 的年龄减 b 的年龄"。Lambda 的思路：把已知信息全部省掉，只写意图：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>After.java</span><span>三连瘦身</span></div>
+      <pre><code>list.sort((a, b) -&gt; a.getAge() - b.getAge());        // Lambda：参数和意图
+list.sort(Comparator.comparingInt(User::getAge));   // 方法引用：连"减"都不用写了
+users.sort(comparing(User::getAge));                 // 静态导入后的极简形态</code></pre>
+    </div>
+
+    <h3 class="kp">2.2 语法速览</h3>
+    <pre class="diagram"><code>(参数列表) -&gt; { 方法体 }
+
+各种形态：
+  () -&gt; 42                        // 零参数，表达式体（自动 return）
+  x -&gt; x * x                      // 单参数可省括号
+  (a, b) -&gt; a + b                  // 多参数
+  (String s) -&gt; s.length()        // 显式类型（基本不用，编译器会推断）
+  (a, b) -&gt; {                      // 多语句块体：花括号 + 显式 return
+      int t = doSomething(a);
+      return t + b;
+  }</code></pre>
+
+    <h3 class="kp">2.3 前提：函数式接口（Lambda 的"类型"）</h3>
+    <p>关键问题：<code>(a, b) -> a - b</code> 这个东西，到底是什么类型？答案是——<b>它自己没有类型，它的类型由上下文决定</b>。Lambda 只能出现在一个地方：<b>函数式接口（Functional Interface）的赋值目标</b>上。函数式接口的定义：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>FunctionalInterface.java</span><span>有且仅有一个抽象方法</span></div>
+      <pre><code>@FunctionalInterface                     // 编译器检查：不是单抽象方法就报错
+interface Comparator&lt;T&gt; {
+    int compare(T o1, T o2);              // ★ 唯一的抽象方法（SAM）
+    // equals/hashCode 这种从 Object 继承的不算数；
+    // Java 8 后的 default / static 方法也不算数
+}
+
+// Lambda 的类型 = 目标位置的函数式接口：
+Comparator&lt;User&gt; c1 = (a, b) -&gt; a.getAge() - b.getAge();   // 这里它是 Comparator
+ToIntFunction&lt;User&gt; f1 = u -&gt; u.getAge();                 // 同样的写法，这里它又是另一个类型</code></pre>
+    </div>
+    <pre class="diagram"><code>理解 Lambda 的心智模型：
+
+  Lambda 本体      =  一段"无主"的行为（参数 → 结果）
+  函数式接口       =  给这段行为起的名字（契约：参数什么类型、返回什么类型）
+  目标类型推断     =  编译器看左边/上下文，把行为"装进"对应契约的盒子
+
+  (a, b) -&gt; a - b   本身没有类型；
+  放在 Comparator 位置 → 它就是 Comparator；
+  放在别的 SAM 位置   → 它就是那个接口。
+  —— 这就是"目标类型决定一切"，也是后面方法引用能简写的基础。</code></pre>
+
+    <h3 class="kp">2.4 变量捕获：为什么必须 effectively final</h3>
+    <p>Lambda 可以用外部局部变量，但有个著名限制：<b>被捕获的局部变量必须是 effectively final（事实上的 final——只赋值一次）</b>。为什么？</p>
+    <pre class="diagram"><code>模块 1 的钩子：方法局部变量在栈上，方法返回栈帧就没了。
+而 Lambda 的生命周期可能超出方法（被传走、被线程异步执行）。
+
+编译器的做法：把捕获的变量【值拷贝】进 Lambda 实例（同步进堆里）。
+  基本类型 → 拷贝值本身
+  引用类型 → 拷贝"引用"（指向的对象还是共享的）
+
+如果允许在 Lambda 外/内修改这个变量：
+  外面改了 → Lambda 里是旧拷贝，两边看到的值不一致；
+  里面改了 → 改的是堆里的拷贝，外面的栈变量纹丝不动。
+两边都会撒谎 —— 语义直接崩坏。
+
+所以 Java 的选择：禁修改。要么不许动（值恒定，拷贝永远可信），
+要么你自己包成数组/AtomicInteger/对象字段（改的是"引用指向的内容"，
+引用本身没变 —— 回收模块 1 的"引用的拷贝 vs 对象的共享"）。</code></pre>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Capture.java</span><span>经典坑：循环变量</span></div>
+      <pre><code>for (int i = 0; i &lt; 3; i++) {
+    new Thread(() -&gt; System.out.println(i)).start();   // ✗ 编译错误：i 在变
+}
+
+// 解法一（Java 8 时代）：拷进一个事实 final 的变量
+for (int i = 0; i &lt; 3; i++) {
+    int fi = i;                                        // 每轮新变量，只赋值一次
+    new Thread(() -&gt; System.out.println(fi)).start();  // ✓
+}
+// 解法二：用 IntStream.range(0, 3).forEach(i -&gt; ...)，i 是流的参数不是外部变量</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Lambda 是什么？——一段"无主行为"（参数→结果），自身无类型，必须装进"恰好一个抽象方法的接口"（函数式接口）里使用；类型由上下文推断。捕获的局部变量必须 effectively final，因为实际捕获的是值的拷贝。</p>
+    </div>
+
+    <details class="qa"><summary>Python 的 lambda 和 Java 的比，差在哪？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>Python 的 lambda 只能写<b>单个表达式</b>（<code>lambda x: x*2</code>，想写两行都不行）；Java 的 lambda 可以写多语句块（<code>{ ... }</code>），能力对齐匿名函数。变量捕获上 Python 反而更宽松（闭包捕获的是 cell，可读可写，还支持 <code>nonlocal</code>）——Java 用"只读捕获"换掉了闭包变量共享的所有并发坑。面试被问"两种语言的闭包差异"，答"Python 闭包可变、Java 捕获只读且是拷贝"就够专业。</p>
+    </div></details>
+
+    <details class="qa"><summary>实例字段能被 Lambda 修改吗？也算"变量捕获"吗？</summary><div class="qa-body">
+      <p>能，且不受 effectively final 限制——因为<b>字段不捕获，捕获的是 this</b>。lambda 里写 <code>this.count++</code>，实际是"我持有的 this 引用不变，改的是它指向对象的字段"——和 2.4 里"改引用指向的内容"是同一个原理。这也是 lambda 和匿名内部类在 <code>this</code> 语义上的关键差异点，下一节展开。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 3 Lambda 底层 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>Lambda 底层：不是语法糖 <span class="badge b-hard">原理高频</span></h2></div>
+
+    <p>面试官的经典开局："Lambda 是匿名内部类的语法糖吗？"<b>标准答案是：不是</b>。两者编译产物、运行机制、this 语义全都不一样。这一节把原理讲透，答出层次感。</p>
+
+    <h3 class="kp">3.1 先看证据：编译产物完全不同</h3>
+    <pre class="diagram"><code>写一个类，里面各来一个匿名内部类和一个 Lambda，javac 编译后：
+
+  class Outer {
+      Runnable a = new Runnable() { public void run() {...} };   // 匿名内部类
+      Runnable b = () -&gt; {...};                                   // Lambda
+  }
+
+编译产物对比：
+  匿名内部类：  编译期就生成 Outer$1.class  ← 真实存在的类文件，类加载器要加载它
+  Lambda：      没有任何额外 class 文件！    ← 编译期只在字节码里留了一条
+                                              invokedynamic 指令 + 一个私有静态方法
+
+验证：javap -p Outer 看不到 Lambda 对应的类，只能看到
+      private static void lambda$new$0()   ← 你的 lambda 体被挪进了这个方法</code></pre>
+    <p>也就是说：匿名内部类是<b>编译期就定型</b>的类；Lambda 是<b>运行时才生成</b>的实现——生成机制由 JVM 的 <code>invokedynamic</code> 指令驱动。</p>
+
+    <h3 class="kp">3.2 原理：invokedynamic + LambdaMetafactory</h3>
+    <p><code>invokedynamic</code>（简称 indy）是 JDK 7 引入的字节码指令，设计初衷是给<b>动态语言跑在 JVM 上</b>用的（Groovy、JRuby），特点是：<b>调用点第一次执行时，才决定"真正调用哪个方法"，之后把决定缓存下来</b>。Java 8 借它来实现 Lambda：</p>
+    <pre class="diagram"><code>Runnable r = () -&gt; doWork();   的执行时序：
+
+  编译期（javac）：
+    lambda 体          → 挪进私有方法 lambda$new$0()
+    赋值语句           → 编译成一条 invokedynamic 指令（指向 bootstrap 方法）
+
+  运行期（第一次执行到这行）：
+    invokedynamic 触发 bootstrap：调用 LambdaMetafactory.metafactory()
+      输入：函数式接口的 SAM 描述（方法签名） + 你的 lambda$new$0 的引用
+      动作：【现场生成一个实现类】（JDK 8 用内部 ASM 生成字节码，
+            JDK 15+ 换成隐藏类 HiddenClass），实现 SAM 方法，
+            方法体就是"转发调用 lambda$new$0"
+      产物：一个 CallSite，绑定了刚生成的实现类的构造器
+    用 CallSite 里的构造器 new 一个实例 → 装进 r
+
+  运行期（第二次及以后执行到这行）：
+    直接走缓存的 CallSite，不再走 bootstrap —— 路径已经焊死
+
+★ 无状态 Lambda 的彩蛋：不捕获任何变量的 lambda，
+  生成的实例是【单例缓存】的 —— 写 1 万个 () -&gt; 42，
+  运行时只会有一个对象在反复被复用（饿汉式复用，不是每次 new）。
+  捕获了变量的 lambda 才会每次 new（因为要装捕获的值）。</code></pre>
+    <div class="whycard-placeholder tipbox tb-hard">
+      <div class="tb-title">🔍 为什么绕这么大一圈，不直接像匿名内部类那样编译期生成？</div>
+      <p>三个理由：① <b>启动性能</b>——匿名内部类在编译期生成一堆小类，应用启动就要全部加载验证（想想一个大项目里成千上万个 lambda）；indy 让类<b>推迟到真正执行时才生成</b>，还允许 JIT 对无捕获 lambda 做单例缓存。② <b>解耦</b>——生成策略（用 ASM 还是 HiddenClass、要不要脱糖成私有方法）是 JDK 内部实现，未来可以换，字节码不用重编；匿名内部类的类文件一旦生成就焊死了。③ <b>语言中立</b>——indy 本来就是给动态语言设计的通用机制，lambda 只是它的第一个"官方 Java 应用"。</p>
+    </div>
+
+    <h3 class="kp">3.3 this 语义：最容易被问懵的差异</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ThisDiff.java</span><span>同一个位置打印 this</span></div>
+      <pre><code>public class Outer {
+    void demo() {
+        Runnable anon = new Runnable() {
+            public void run() {
+                System.out.println(this);      // 打出 Outer$1@xxxx —— 匿名类自己！
+                System.out.println(Outer.this);// 要拿到外围得这么写
+            }
+        };
+        Runnable lamb = () -&gt; System.out.println(this);  // 打出 Outer@xxxx —— 外围实例！
+    }
+}</code></pre>
+    </div>
+    <p>原理一句话：<b>匿名内部类是真的独立类，有独立的 this；Lambda 不是类，它只是外围类里的一个方法</b>（lambda$new$0），里面的 this 自然指向外围实例——术语叫<b>词法 this（lexical this）</b>：this 由"代码写在哪"决定，不由"运行时包在哪个对象里"决定。这也解释了 2.4 的遗留问题：lambda 里改 <code>this.count</code> 合法，因为它就是外围类的字段。</p>
+
+    <h3 class="kp">3.4 终极对比表（背这张）</h3>
+    <table>
+      <tr><th>维度</th><th>匿名内部类</th><th>Lambda</th></tr>
+      <tr><td>编译产物</td><td>编译期生成 <code>Outer$1.class</code></td><td>无 class 文件，字节码留 invokedynamic + 私有方法</td></tr>
+      <tr><td>实现生成时机</td><td>编译期</td><td>运行期首次执行时（LambdaMetafactory 动态生成）</td></tr>
+      <tr><td>实现机制</td><td>真类 + 类加载</td><td>indy 指令 + 动态生成的轻量类（JDK15+ 为 HiddenClass）</td></tr>
+      <tr><td>this 指向</td><td>匿名类自身（拿外围要 <code>Outer.this</code>）</td><td>外围类实例（词法 this）</td></tr>
+      <tr><td>能实现的接口</td><td>任意接口 / 抽象类（可含多个抽象方法）</td><td>仅函数式接口（单抽象方法）</td></tr>
+      <tr><td>实例数量</td><td>每次 new 一个</td><td>无捕获 lambda 单例复用；有捕获才 new</td></tr>
+      <tr><td> shadows 局部变量</td><td>可以声明与外围同名的局部变量（遮蔽）</td><td>不允许（lambda 里不允许声明遮蔽变量，保持词法透明）</td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Lambda 是匿名内部类的语法糖吗？——不是。匿名内部类编译期生成独立 class 文件、this 指向自身；Lambda 编译成 invokedynamic 指令，运行期由 LambdaMetafactory 动态生成实现（无捕获 lambda 单例复用），this 是词法的、指向外围类。且 Lambda 只能实现函数式接口。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：那 Lambda 性能比匿名内部类好吗？</div><div class="ca">首次调用有 bootstrap 开销（生成类，微秒~毫秒级）；热路径执行时性能持平甚至更好（无捕获单例复用 + JIT 可内联转发链）。冷启动敏感的场景（低延迟交易、CLI 工具）首次调用开销才需要在意，日常业务无感。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：怎么亲眼看到 lambda 没生成类？</div><div class="ca">javac 编译后 <code>ls *.class</code>：只有 Outer.class 没有 Outer$1（匿名内部类的对照组会有）；<code>javap -p Outer</code> 能看到 <code>lambda$xxx$0</code> 私有方法；<code>javap -v</code> 里能看到 invokedynamic 指令和 BootstrapMethods 表。面试说出"我会用 javap 验证"，原理可信度直接拉满。</div></div></div>
+      <div class="chain-item"><div class="cn">3</div><div class="cc"><div class="cq">追问：方法引用和 lambda 在字节码层面一样吗？</div><div class="ca">一样，都是 invokedynamic。区别只在 bootstrap 的参数：lambda 传"编译器生成的私有方法"，方法引用传"已有方法的句柄"（MethodHandle）。所以方法引用不是又一层魔法，只是"省得编译器再抄一遍"的写法。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 4 方法引用与函数式接口家族 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>方法引用与函数式接口家族</h2></div>
+
+    <h3 class="kp">4.1 方法引用：lambda 的极致简写</h3>
+    <p>当 lambda 体<b>只有一句、且这句恰好是在调用一个现成方法</b>时，可以进一步省略——连参数都不用写，直接点名那个方法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>MethodRef.java</span><span>四种形态</span></div>
+      <pre><code>// ① 类名::静态方法
+Function&lt;String, Integer&gt; f = Integer::parseInt;          // 等价 s -&gt; Integer.parseInt(s)
+
+// ② 对象::实例方法
+String prefix = "user-";
+Predicate&lt;String&gt; p = prefix::startsWith;               // 等价 s -&gt; prefix.startsWith(s)
+
+// ③ 类名::实例方法（★最特殊，4.2 专讲）
+BiPredicate&lt;String, String&gt; bp = String::startsWith;    // 等价 (s, arg) -&gt; s.startsWith(arg)
+
+// ④ 类名::new（构造器引用）
+Supplier&lt;ArrayList&lt;String&gt;&gt; sup = ArrayList::new;        // 等价 () -&gt; new ArrayList&lt;&gt;()</code></pre>
+    </div>
+
+    <h3 class="kp">4.2 类名::实例方法 为什么不别扭了</h3>
+    <p>③ 是最容易看懵的：<code>startsWith</code> 明明是实例方法，凭什么可以用"类名"去引用？规则是——<b>函数式接口的第一个参数，成为方法的调用者（接收者），剩下的参数依次传入</b>：</p>
+    <pre class="diagram"><code>BiPredicate&lt;String, String&gt; bp = String::startsWith;
+
+调用 bp.test("user:admin", ":admin")
+   等价于执行："user:admin".startsWith(":admin")
+                    ↑              ↑
+        第一个参数变成接收者    第二个参数是方法实参
+
+为什么这样设计？—— 让"对象的方法"也能当"函数"传：
+  Stream&lt;String&gt; 里每个元素都是接收者：
+  list.stream().map(String::toUpperCase)
+       每个流元素 s → s.toUpperCase()     —— 参数 s 自己当了主语
+没有这个规则，凡是涉及实例方法都得写回 lambda，方法引用的适用面砍一半。</code></pre>
+
+    <h3 class="kp">4.3 四大内置函数式接口（必背）</h3>
+    <p>JDK 在 <code>java.util.function</code> 包里预定义了几十个函数式接口，但<b>万变不离四大金刚</b>——记住四个抽象方法，全家都认识：</p>
+    <table>
+      <tr><th>接口</th><th>抽象方法</th><th>语义（记忆口诀）</th><th>典型场景</th></tr>
+      <tr><td><code>Function&lt;T,R&gt;</code></td><td><code>R apply(T t)</code></td><td>有进有出：进去 T 出来 R（加工厂）</td><td><code>map</code>：元素怎么变形</td></tr>
+      <tr><td><code>Consumer&lt;T&gt;</code></td><td><code>void accept(T t)</code></td><td>只进不出：消费 T，无返回（无底洞）</td><td><code>forEach</code>：拿到元素干点啥</td></tr>
+      <tr><td><code>Supplier&lt;T&gt;</code></td><td><code>T get()</code></td><td>不进就出：无中生有给一个 T（发电机）</td><td>惰性求值、工厂、<code>orElseGet</code></td></tr>
+      <tr><td><code>Predicate&lt;T&gt;</code></td><td><code>boolean test(T t)</code></td><td>进 T 出 boolean（裁判：行不行你说了算）</td><td><code>filter</code>：留还是丢</td></tr>
+    </table>
+    <pre class="diagram"><code>家族扩展规则（认识即可，不用背全）：
+  Bi 前缀     = 参数变两个：BiFunction&lt;T,U,R&gt;、BiConsumer、BiPredicate
+  XxxFunction = 类型特化（避开自动装箱）：ToIntFunction&lt;T&gt;、IntToLongFunction...
+  UnaryOperator&lt;T&gt; = Function 的"进同出"特例：T -&gt; T（如 String::trim）
+  BinaryOperator&lt;T&gt; = BiFunction 的"进同出"特例：(T,T) -&gt; T（reduce 的合并器！）
+
+为什么大量类型特化？—— 回收模块 4 的教训：泛型只能装引用类型，
+int 要 Integer（装箱），Stream 大数据量下装箱开销会被放大，
+所以库作者提供了 IntStream / ToIntFunction 这条"原生类型旁路"。</code></pre>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 面试问"你常用哪些函数式接口"</div>
+      <p>不要背全家桶。答法："四大核心是 Function/Consumer/Supplier/Predicate，对应 Stream 里 map/forEach/惰性供给/filter 的参数类型；实际开发里 <code>Function</code> 最常见——比如 <code>HashMap.computeIfAbsent(key, k -> new ArrayList<>())</code> 的第二个参数（回收模块 4：一行实现"键不存在则放入"的多值分组）。"</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>方法引用是什么？——lambda 体只有一句且恰好是调用现成方法时的简写：类::静态方法、对象::实例方法、类::实例方法（首参数当接收者）、类::new 四种形态；字节码层面和 lambda 相同（都是 invokedynamic，只是 bootstrap 参数从"编译器生成的私有方法"换成"已有方法的 MethodHandle"）。</p>
+    </div>
+
+    <details class="qa"><summary>@FunctionalInterface 注解不加行不行？加了有什么用？</summary><div class="qa-body">
+      <p>行——注解只是<b>编译期检查</b>，不加也能当函数式接口用（Runnable 从 Java 1.0 就没这注解照样接 lambda）。加上后编译器会替你把关：不小心加了第二个抽象方法、或父接口带来了冲突的抽象方法时<b>直接编译报错</b>，而不是等到 lambda 写不出来才发现。规范建议：给"设计出来就是要接 lambda"的接口都加上，属于把契约写成文档。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里的对应物？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>方法引用 = Python 的<b>绑定方法</b>：<code>str.upper</code>、<code>"x".startswith</code>、<code>len</code> 都是"函数当值传"的日常——<code>sorted(users, key=operator.attrgetter('age'))</code> 或 <code>key=lambda u: u.age</code> 就是 <code>comparing(User::getAge)</code> 的镜像。区别：Python 一切皆对象函数从来都是一等公民，Java 8 的这整套"函数式接口 + lambda"本质上是<b>在不破坏类型系统的前提下，把函数抬成一等公民的补丁</b>——这也是面试聊设计时能说出高度的一句。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 5 Stream ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>Stream：声明式数据流水线 <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">5.1 痛点：命令式循环的样板噪音</h3>
+    <p>"找出年龄大于 18 的用户，按名字排序，取出名字列表"——命令式写法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Imperative.java</span><span>意图被淹没在流程里</span></div>
+      <pre><code>List&lt;String&gt; result = new ArrayList&lt;&gt;();          // ① 先准备容器
+for (User u : users) {                            // ② 手动遍历
+    if (u.getAge() &gt; 18) {                        // ③ 过滤（if 套层皮）
+        result.add(u.getName());                  // ④ 变形（add 里面做映射）
+    }
+}
+result.sort(String::compareTo);                   // ⑤ 排序（另一轮操作）
+// 5 个步骤讲的是"怎么做"（怎么遍历、怎么放、怎么排），
+// 而"要什么"（大于18、按名排序、只要名字）被拆散埋在流程里</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Declarative.java</span><span>只说要什么</span></div>
+      <pre><code>List&lt;String&gt; result = users.stream()
+        .filter(u -&gt; u.getAge() &gt; 18)            // 要什么：大于 18
+        .sorted(Comparator.comparing(User::getName))  // 按名字排
+        .map(User::getName)                        // 只要名字
+        .collect(Collectors.toList());             // 装成列表</code></pre>
+    </div>
+    <p>这就是<b>命令式 vs 声明式</b>的差别：命令式写"机器怎么一步步做"，声明式写"我要什么样的结果"。Stream 把"遍历、暂存、排序"这些流程控制<b>全部收编进库</b>，你的代码只剩业务谓词。</p>
+
+    <h3 class="kp">5.2 心智模型：三段式流水线</h3>
+    <pre class="diagram"><code>一条完整的 Stream 流水线 = 三段：
+
+  【数据源】──►【中间操作 × N（惰性，只搭管道）】──►【终端操作（1 个，触发执行）】
+
+  users.stream()          .filter(...)  .map(...)  .sorted(...)     .collect(...)
+  └─ 数据源               └──────── 中间操作（返回新 Stream）        └─ 终端操作
+    集合/数组/            无状态：filter map flatMap peek           触发整条流水线
+    生成器/I/O channel    有状态：sorted distinct limit skip        汇聚成结果
+
+铁律一：中间操作不干活，只是把"工序"登记进管道 —— 没有终端操作，
+       这条流水线一行代码都不会执行（5.1 的代码去掉 collect 就什么都不发生）
+铁律二：终端操作只能有一个，触发后流就被"消费"了 —— 同一个 Stream
+       不能再 collect 一次（IllegalStateException，见 5.6）</code></pre>
+
+    <h3 class="kp">5.3 常用 API 速查</h3>
+    <table>
+      <tr><th colspan="2">中间操作（返回 Stream，惰性）</th></tr>
+      <tr><td><code>filter(Predicate)</code></td><td>过滤：留下 test 为 true 的</td></tr>
+      <tr><td><code>map(Function)</code></td><td>一对一变形：T → R</td></tr>
+      <tr><td><code>flatMap(Function)</code></td><td>一对多变形并摊平：T → Stream&lt;R&gt; → 拍扁（5.4 专讲）</td></tr>
+      <tr><td><code>distinct()</code></td><td>去重（按 equals，<b>有状态</b>）</td></tr>
+      <tr><td><code>sorted() / sorted(cmp)</code></td><td>排序（<b>有状态</b>：需要全量数据，见第 6 节）</td></tr>
+      <tr><td><code>limit(n) / skip(n)</code></td><td>截取前 n 个 / 跳过前 n 个（<b>短路</b>能力）</td></tr>
+      <tr><td><code>peek(Consumer)</code></td><td>偷看一眼（调试用，不改变元素）</td></tr>
+      <tr><th colspan="2">终端操作（触发执行，出结果）</th></tr>
+      <tr><td><code>collect(Collector)</code></td><td>汇聚：toList / toSet / toMap / groupingBy / joining…</td></tr>
+      <tr><td><code>reduce(BinaryOperator)</code></td><td>折叠：把流合并成一个值（求和/求积/拼接）</td></tr>
+      <tr><td><code>count / min / max</code></td><td>计数 / 最值（min/max 返回 Optional）</td></tr>
+      <tr><td><code>findFirst / findAny</code></td><td>找第一个 / 随便找一个（<b>短路</b>）</td></tr>
+      <tr><td><code>anyMatch / allMatch / noneMatch</code></td><td>谓词判定（<b>短路</b>：anyMatch 命中一个就停）</td></tr>
+      <tr><td><code>forEach(Consumer)</code></td><td>逐个消费（无序场景用 forEachOrdered）</td></tr>
+    </table>
+
+    <h3 class="kp">5.4 flatMap：一对多再摊平</h3>
+    <p><code>map</code> 是一对一：一个元素进来一个元素出去。但如果一个元素要变出<b>一组</b>元素（比如每个订单取它的全部商品），map 会得到"流的流"（<code>Stream&lt;Stream&lt;Item&gt;&gt;</code>）——flatMap 在 map 之后<b>把所有内层流摊平</b>成一条流：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>FlatMap.java</span><span>所有订单的全部商品</span></div>
+      <pre><code>List&lt;List&lt;Item&gt;&gt; orders = ...;
+
+// map 版：一对一，得到 Stream&lt;List&lt;Item&gt;&gt;，还得再剥一层
+orders.stream().map(Order::getItems);           // Stream&lt;List&lt;Item&gt;&gt;
+
+// flatMap 版：一对多 + 摊平
+orders.stream()
+      .flatMap(o -&gt; o.getItems().stream())      // 每个订单 → 一条商品流
+      .collect(toList());                       // 所有商品合成一条流再收集
+
+// 拆字符串的经典应用：
+List&lt;String&gt; words = Arrays.asList("hello world", "java stream").stream()
+        .flatMap(s -&gt; Arrays.stream(s.split(" ")))   // 每句 → 多个单词
+        .collect(toList());                          // [hello, world, java, stream]</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>flatMap = 列表推导的双 for：<code>[w for s in texts for w in s.split()]</code>；map = <code>[f(x) for x in xs]</code>；filter = <code>[x for x in xs if p(x)]</code>。区别在你写 Python 时"惰性/及早"由选 <code>[]</code> 还是 <code>()</code> 决定，Java 里由"有没有终端操作"决定——见下一节。</p>
+    </div>
+
+    <h3 class="kp">5.5 collect 与 Collectors：汇聚的艺术</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Collectors.java</span><span>日常高频六件套</span></div>
+      <pre><code>// ① 基础汇聚
+List&lt;String&gt; names = users.stream().map(User::getName).collect(toList());
+Set&lt;String&gt;  uniq  = users.stream().map(User::getName).collect(toSet());
+
+// ② toMap：key 冲突会直接炸（IllegalStateException: Duplicate key）
+//    必须给第三个参数：冲突时怎么合并 —— 高频坑！
+Map&lt;Long, User&gt; byId = users.stream().collect(
+        toMap(User::getId, u -&gt; u, (a, b) -&gt; a));        // 重复 id：留先出现的
+
+// ③ groupingBy：分组（等价 SQL 的 GROUP BY，替代 Map&lt;K, List&lt;V&gt;&gt; 手写循环）
+Map&lt;String, List&lt;User&gt;&gt; byCity = users.stream().collect(groupingBy(User::getCity));
+
+// ④ groupingBy + 下游收集器（多级聚合的精髓）
+Map&lt;String, Long&gt; countByCity = users.stream().collect(
+        groupingBy(User::getCity, counting()));            // 每组人数
+Map&lt;String, Double&gt; avgAge = users.stream().collect(
+        groupingBy(User::getCity, averagingInt(User::getAge)));
+
+// ⑤ partitioningBy：按谓词一分为二（key 就是 boolean）
+Map&lt;Boolean, List&lt;User&gt;&gt; adults = users.stream()
+        .collect(partitioningBy(u -&gt; u.getAge() &gt;= 18));
+
+// ⑥ joining：字符串拼接（比手写 StringBuilder 干净）
+String s = names.stream().collect(joining(", ", "[", "]"));</code></pre>
+    </div>
+
+    <h3 class="kp">5.6 两个高频陷阱</h3>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 陷阱一：流只能消费一次</div>
+      <p><code>Stream</code> 不是集合，更像一个<b>只能读一次的迭代器</b>（很多源如生成器、IO 通道根本无法"倒带"）。对同一个流调两次终端操作 → 第二次抛 <code>IllegalStateException: stream has already been operated upon or closed</code>。要多次用就再 <code>list.stream()</code> 拿一条新的——<b>流是"管道图纸"，集合才是"库存"</b>。</p>
+    </div>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 陷阱二：peek 不是终端操作</div>
+      <p>调试时写了 <code>stream.peek(System.out::println)</code> 却什么都没打印？因为 peek 是中间操作，<b>没有终端操作整条流水线都不执行</b>（惰性求值，下一节原理）。它必须搭配终端操作才能"流起来"——顺便，peek 里做业务逻辑是反模式，它的设计意图就是调试观察。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Stream 是什么？——声明式的数据流水线：数据源 → 中间操作（惰性、返回新 Stream）→ 终端操作（唯一、触发执行）。中间操作不碰数据、只登记工序；终端操作一发令，数据一次性流过全管道。流只能消费一次。</p>
+    </div>
+
+    <details class="qa"><summary>Stream 和集合到底什么区别？什么时候不该用 Stream？</summary><div class="qa-body">
+      <p>集合是<b>装数据</b>的容器（在内存里、可反复遍历）；Stream 是<b>对数据的计算描述</b>（不存数据、一次性、可来自无限生成器）。不该用的场景：① 需要过程中随时访问/修改中间状态（Stream 管道里拿不到"当前下标"）；② 循环体里有复杂分支跳转（break/continue 多层嵌套）；③ 数据量极小且 lambda 捕获大量外部变量——普通 for 更直白。<b>判断标准：流水线是"纯数据变换"就用 Stream，一旦掺杂流程控制就该回 for</b>。</p>
+    </div></details>
+
+    <details class="qa"><summary>reduce 怎么用？和 collect 什么区别？</summary><div class="qa-body">
+      <p>reduce 是"把 N 个变 1 个"的折叠：<code>nums.stream().reduce(0, Integer::sum)</code>（初始值 + 合并函数）。区别在于<b>可变归约 vs 不可变归约</b>：reduce 每次都产生新值（String 拼接会复制 N 次，O(n²)）；<code>collect</code> 是可变归约——往同一个 StringBuilder 里 append，O(n)。所以规约成 <code>List/Map/String</code> 永远用 collect，规约成 <code>数值/Optional</code> 用 reduce。这个区分在并行流里还有正确性含义（不可变归约天然并行安全）。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 6 Stream 原理 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>Stream 原理：惰性求值与并行 <span class="badge b-hard">原理高频</span></h2></div>
+
+    <h3 class="kp">6.1 惰性求值：不推不动，一推全通</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>LazyDemo.java</span><span>亲眼验证惰性</span></div>
+      <pre><code>Stream&lt;Integer&gt; s = Stream.of(1, 2, 3, 4, 5)
+        .filter(x -&gt; { System.out.println("filter " + x); return x % 2 == 0; })
+        .map(x -&gt;     { System.out.println("map " + x);    return x * 10; });
+
+System.out.println("—— 到这里为止，一行 filter/map 都没打印过 ——");
+
+s.forEach(x -&gt; System.out.println("输出 " + x));   // 终端操作：此刻才开始动</code></pre>
+    </div>
+    <p>为什么这么设计？三个理由：① <b>合并遍历</b>——所有操作在一次遍历里流水完成，不用为每步生成中间集合（对比命令式的 for+if+newList）；② <b>短路成为可能</b>——见 6.3；③ <b>描述与执行分离</b>——同一份"图纸"可以被串行执行、也可以被并行执行（6.4），集合框架的遍历做不到这一点。</p>
+
+    <h3 class="kp">6.2 实现机制：Sink 回调链</h3>
+    <p>"一次遍历跑完所有操作"在源码层面是怎么实现的？答案：<b>把流水线反向串成回调链（Sink 链）</b>：</p>
+    <pre class="diagram"><code>.filter(even).map(x*10).forEach(print) 的执行结构：
+
+终端操作 forEach 触发时，JDK 从尾到头把每道工序包成 Sink（带回调的"水槽"）：
+
+  Spliterator（源迭代器，模块化数据源）
+        │ tryAdvance(e) —— 每推一个元素进来：
+        ▼
+   ┌─ Sink①（filter）──accept(e)：不满足条件就【丢弃】（链到此断掉）
+   │                        满足 → 往下传
+   ▼
+   └─ Sink②（map）────accept(e)：算 x*10 → 往下传
+        ▼
+   └─ Sink③（forEach）─accept(e)：打印
+
+关键点：
+  ① 每个元素是【纵向】流过全部工序 —— 1 号元素从头走到尾，才轮到 2 号
+     （对比命令式：所有元素先过完 filter 存入中间 list，再全部过 map……横向分批）
+  ② 不满足 filter 的元素在 Sink① 就被丢弃，根本流不到后面的 map
+  ③ 没有中间集合 —— 元素一直"在传送带上"，不落地</code></pre>
+    <p>这个"元素纵向流过全管道"就是 Stream 高效的本质：命令式的多步操作 = <b>多趟遍历 + N 个中间集合</b>；Stream = <b>一趟遍历 + 零中间集合</b>（sorted 这类有状态操作除外，它必须落地缓冲）。</p>
+
+    <h3 class="kp">6.3 短路操作：流水线的刹车</h3>
+    <pre class="diagram"><code>// 无限流 + 短路：不可能"先处理完全部数据"
+Stream.iterate(1, i -&gt; i + 1)          // 1, 2, 3, ... 无限流
+      .filter(i -&gt; i % 3 == 0)         // 3 的倍数
+      .limit(5)                        // ★ 短路刹车：拿够 5 个立刻停
+      .forEach(System.out::println);   // 打印 3,6,9,12,15 后终止
+
+短路家族：limit / takeWhile（J9）
+         findFirst / findAny
+         anyMatch / allMatch / noneMatch
+
+原理：短路 Sink 在条件满足时通知上游"不用再推了"
+（cancellationRequested），Spliterator 停止 tryAdvance —— 整条
+流水线提前熄火。这也解释了为什么中间操作要区分【无状态】和【有状态】：
+  无状态（filter/map）：来一个处理一个，可流式、可短路；
+  有状态（sorted/distinct）：必须【攒齐全量】才能出结果
+    —— sorted 不看到最后一个元素，怎么知道谁排第一？
+    —— 有状态操作是流水线上的"蓄水池"，切断了短路传播、
+       也伤害并行度（第 6.4 节）。</code></pre>
+
+    <h3 class="kp">6.4 并行流：一行 .parallel() 背后</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ParallelDemo.java</span><span>同一份图纸，并行执行</span></div>
+      <pre><code>long total = users.parallelStream()                 // 或 stream().parallel()
+        .filter(u -&gt; u.getAge() &gt; 18)
+        .mapToLong(User::getScore)
+        .sum();                                     // 描述与执行分离的红利</code></pre>
+    </div>
+    <p>原理三件套（对应模块 6/6B 的知识）：</p>
+    <ol>
+      <li><b>任务切分</b>：数据源包装成 <code>Spliterator</code>（splitable-iterator），<code>trySplit()</code> 把数据对半切、递归分治，直到块足够小；</li>
+      <li><b>执行池</b>：切出的任务丢进 <code>ForkJoinPool.commonPool()</code>——JVM 全局共享的 Fork/Join 线程池（回收模块 6：线程数默认 CPU 核数 - 1）；</li>
+      <li><b>结果合并</b>：每块独立跑完流水线，reduce/collect 把各块结果两两合并（combiner）。</li>
+    </ol>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 并行流四大陷阱（面试重灾区）</div>
+      <p><b>① 共享可变状态</b>：<code>forEach(list::add)</code> 在并行下 ArrayList 直接坏——要汇聚结果必须用 collect/reduce（无锁合并），而不是 forEach+共享容器；<b>② IO 操作吃光公共池</b>：并行流里查数据库/调接口，阻塞的 worker 占满 commonPool，<b>全 JVM 所有并行流一起饿死</b>（IO 请回模块 6 的自定义线程池 + CompletableFuture）；<b>③ 有状态操作拖后腿</b>：sorted 需要全量聚合，并行优势归零；<b>④ 小数据量负优化</b>：切分与合并的协调开销 > 并行收益（经验值：元素数万级、单元素计算微秒级以上才值得）。</p>
+    </div>
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>并行流原理？——Spliterator.trySplit 把数据递归对半切成分治任务，提交到全局共享的 ForkJoinPool.commonPool 并行执行，各块结果用 combiner 合并。适合"纯 CPU 计算 + 大数据量 + 无共享可变状态"；有 IO、有状态操作、小数据量都不适合。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：parallelStream 线程数能配吗？</div><div class="ca">commonPool 的默认并行度 = CPU 核数 - 1，可用系统属性 <code>java.util.concurrent.ForkJoinPool.common.parallelism</code> 调整（全局生效，改的是所有用户的池）。想给某个流水线专用线程池，得绕过 parallel() 手动提交到自己的 ForkJoinPool 里执行（<code>customPool.submit(() -> stream...)</code>）——能说出"commonPool 是共享的、会被别人影响"就是加分回答。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：为什么 forEach + 共享 list 会坏，collect 就没事？</div><div class="ca">forEach 的 Consumer 被多线程同时调，ArrayList 非线程安全（模块 4/6：并发写丢更新）；collect 是"可变归约"，JDK 的收集器为并行设计了 per-thread 累积容器（如 toList 每个线程攒自己的 List），最后 combiner 一次性合并——把"并发写"变成"各自写+串行合并"，无锁且正确。</div></div></div>
+    </div>
+
+    <h3 class="kp">6.5 CompletableFuture：把编排带进异步 <span class="badge b-high">高频</span></h3>
+    <p>模块 6 埋过钩子说"CompletableFuture 是模块 7 的内容"——因为它是 Java 8 函数式（lambda）和 Java 7 并发（Future）的合体：用回调式的链式 API 解决老 Future 的两大残废：</p>
+    <pre class="diagram"><code>老 Future（模块 6 见过）的两个致命伤：
+  ① get() 是【阻塞】的 —— 想拿结果就得原地等，异步了个寂寞
+  ② 任务之间【无法编排】 —— "A 完成后用 A 的结果跑 B，B 完成后合并 C/D"
+     用老 Future 只能层层 get() 嵌套（阻塞套阻塞）
+
+CompletableFuture 的答案：把"下一步干什么"【提前登记成回调】——
+  f.thenApply(x -&gt; ...)      结果到了自动加工（map 语义）
+  f.thenCompose(x -&gt; f2)     结果到了自动启动下一个异步（flatMap 语义）
+  f.thenCombine(g, merger)   两路异步都到了自动合并
+  CompletableFuture.allOf(f1, f2, f3)   等全完成（CountDownLatch 的异步版）
+全程【零阻塞】：你登记的是"流程图"，执行是事件驱动的。</code></pre>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>AsyncPipeline.java</span><span>典型异步编排</span></div>
+      <pre><code>// 查用户 + 查订单 并行，合并成详情 —— 谁也不阻塞谁
+CompletableFuture&lt;User&gt; userF =
+        CompletableFuture.supplyAsync(() -&gt; queryUser(id));          // 异步任务
+CompletableFuture&lt;List&lt;Order&gt;&gt; orderF =
+        CompletableFuture.supplyAsync(() -&gt; queryOrders(id));
+
+CompletableFuture&lt;Detail&gt; detailF =
+        userF.thenCombine(orderF, (user, orders) -&gt;                 // 两路合并
+                new Detail(user, orders));
+
+detailF.thenAccept(d -&gt; render(d))                                  // 结果到了自动消费
+       .exceptionally(ex -&gt; { log.error("失败", ex); return null; }); // 异常兜底
+
+// ★ 最重要的工程细节（回收模块 6 的坑）：
+// supplyAsync 不传线程池 → 默认 ForkJoinPool.commonPool()（CPU 核数-1）
+// 里面跑的是【查库/调接口这种 IO 阻塞活】→ 吃光公共池 → 全 JVM 的并行流陪葬！
+// IO 任务必须显式给线程池：
+CompletableFuture.supplyAsync(() -&gt; queryUser(id), ioExecutor);     // 自定义线程池
+
+// thenApply vs thenCompose（面试爱问，纯 Optional/Stream 的既视感）：
+f.thenApply(x -&gt; transform(x))        // 同步加工：T → R           （map）
+f.thenCompose(x -&gt; asyncStep(x))      // 异步串联：T → CF&lt;R&gt; 摊平   （flatMap）</code></pre>
+    </div>
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>CompletableFuture 是什么？——回调式的异步编排工具：把"A 完成后干什么"登记成 thenApply/thenCompose/thenCombine 的链条，事件驱动、零 get() 阻塞。默认线程池是 ForkJoinPool.commonPool（IO 任务必须换自定义池），thenApply 是 map、thenCompose 是 flatMap、allOf 是异步版 CountDownLatch。</p>
+    </div>
+    <details class="qa"><summary>并行流和 CompletableFuture 都用 commonPool，什么时候用谁？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p><b>并行流 = 数据并行</b>（一大坨数据切成块同时算，分治模型）；<b>CompletableFuture = 任务并行</b>（几个不同任务各自跑、之间有依赖编排，DAG 模型）。一堆元素统一变换 → parallelStream；查三个接口再汇总 → CompletableFuture.allOf。Python 对应物：前者像 multiprocessing.Pool 的 map，后者就是你熟的 <code>asyncio.gather</code> / <code>loop.run_in_executor</code>——连"IO 别占 CPU 池"的告诫（别在 event loop 里跑阻塞调用）都一一对得上。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 7 Optional ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>Optional：把 NPE 提前到编译期 <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">7.1 痛点：null 是十亿美元的错误</h3>
+    <p>发明引用类型的计算机科学家 Tony Hoare（快速排序之父）晚年公开道歉："1965 年我发明了 null 引用……这是我犯的<b>十亿美元级的错误</b>。"null 的问题不在"空"本身，而在<b>类型系统对它视而不见</b>：</p>
+    <pre class="diagram"><code>String findUser(Long id) { ... }   // 返回 String —— 但可能返回 null
+
+调用方拿到返回值，类型是 String，编译器担保"这是个字符串"，
+结果一调 .length() —— 运行时 NPE 爆炸。
+
+"可能没有"这个信息【存在于程序员的脑子里】，不存在于类型里：
+  编译器不知道 → 不能帮你检查
+  后来维护的同事不知道 → 忘判 null
+  你自己三天后也不知道 → NPE 在深夜生产环境等着
+
+Optional&lt;String&gt; 的本质：把"可能没有"从【脑子】搬进【类型系统】——
+返回类型写 Optional&lt;String&gt;，调用方【必须】打开盒子才能用值，
+打开的动作天然逼你面对"两种情况"。</code></pre>
+
+    <h3 class="kp">7.2 正确用法：返回值类型专用</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>OptionalFlow.java</span><span>链式取值 vs if-null 地狱</span></div>
+      <pre><code>// 老写法：嵌套 if-null 地狱（每一层都可能炸）
+if (user != null) {
+    Address addr = user.getAddress();
+    if (addr != null) {
+        String city = addr.getCity();
+        if (city != null) { ... }
+    }
+}
+
+// Optional 链：和 Stream.map 同源的管道思维
+String city = findUser(id)                              // Optional&lt;User&gt;
+        .map(User::getAddress)                          // Optional&lt;Address&gt;：空则跳过
+        .map(Address::getCity)                          // Optional&lt;String&gt;
+        .orElse("未知城市");                             // 兜底：全链任一环节为空都用它
+
+// of / ofNullable / empty 的区别（创建端）
+Optional&lt;User&gt; a = Optional.of(user);                  // user 为 null 直接 NPE（明确"不该为空"时用）
+Optional&lt;User&gt; b = Optional.ofNullable(user);         // 允许为 null → 装成空盒子
+Optional&lt;User&gt; c = Optional.empty();                   // 显式的空盒子</code></pre>
+    </div>
+    <p><code>map</code> 里的逻辑：盒子有值 → 对值变形、装回新盒子；盒子是空 → <b>什么都不做，返回空盒子</b>——空值像管道里的"幽灵"直接穿过全链，最后在 orElse 处被兜住。嵌套的 Optional 展平用 <code>flatMap</code>（和 Stream 同款语义）。</p>
+
+    <h3 class="kp">7.3 高频陷阱：orElse vs orElseGet <span class="badge b-trap">必考</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>OrElseTrap.java</span><span>一个参数求值时机问题</span></div>
+      <pre><code>String result = optionalUser
+        .map(User::getName)
+        .orElse(queryDefaultFromDb());    // ✗ orElse 的参数是【值】—— 立刻求值！
+
+// 无论盒子有没有值，queryDefaultFromDb() 都会执行：
+//   盒子有值 → 查了白查，数据库白白挨一刀（性能事故）
+//   盒子为空 → 查询结果被用上（碰巧正确）
+
+// 正解：orElseGet —— 参数是 Supplier（回 4.3 的"发电机"），【惰性求值】
+String result = optionalUser
+        .map(User::getName)
+        .orElseGet(() -&gt; queryDefaultFromDb());   // 只有盒子为空才执行查询</code></pre>
+    </div>
+    <pre class="diagram"><code>记忆锚点（回收 4.3 四大金刚）：
+  orElse(T other)         参数是【值】     —— 方法调用的参数永远先求值（模块 2 的坑）
+  orElseGet(Supplier&lt;T&gt;)  参数是【发电机】 —— 值需要时才现场发电
+
+什么时候 orElse 也行？—— 兜底值是字面量/常量：
+  .orElse("默认值")        // 求值零成本，两者等价
+只要兜底值【有计算成本】（查库、new 大对象、读文件），必须 orElseGet。</code></pre>
+
+    <h3 class="kp">7.4 反模式清单（说得出这些 = 真用过）</h3>
+    <table>
+      <tr><th>反模式</th><th>为什么错</th><th>正确做法</th></tr>
+      <tr><td><code>isPresent() + get()</code></td><td>等价于 <code>!= null</code> + 直接用，只是换了个更啰嗦的 null 检查，没吃到类型收益</td><td>map/filter/orElse 链式表达</td></tr>
+      <tr><td>拿 Optional 做<b>字段</b></td><td>字段可空 = 类没序列化好；Optional 不可序列化，JPA/JSON 全出问题</td><td>字段该空就空，getter 返回时再包 Optional</td></tr>
+      <tr><td>拿 Optional 做<b>方法参数</b></td><td>三个参数三个 Optional，调用方痛苦且编译器不强制（还能传 null）</td><td>用重载/默认参数语义，或 @Nullable 注解</td></tr>
+      <tr><td><code>Optional&lt;List&lt;T&gt;&gt;</code> 当返回值</td><td>两种"空"语义重叠（空盒子 vs 空列表）</td><td>返回空集合 <code>Collections.emptyList()</code>——空列表是明确的"没有"</td></tr>
+      <tr><td>Optional 装<b>基本类型</b></td><td><code>Optional&lt;Integer&gt;</code> 装箱</td><td>JDK 提供了 OptionalInt/OptionalLong/OptionalDouble</td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Optional 是什么？——把"可能没有"编码进返回类型，逼调用方在编译期面对空值分支的包装类；专用领域是<b>返回值</b>，用 map/flatMap/orElse 链式消费，不碰 isPresent+get、不当字段不当参数。orElse 参数立即求值、orElseGet 惰性求值——有成本的兜底必须用后者。</p>
+    </div>
+
+    <details class="qa"><summary>Optional 能彻底消灭 NPE 吗？</summary><div class="qa-body">
+      <p>不能，它<b>只是把"可能没有"显式化，消灭的是"忘了判空"这一类</b>。Optional 本身也可能是 null（<code>Optional&lt;String&gt; o = null</code> 完全合法），所以工厂方法要规范地用 ofNullable；第三方库/老代码返回的也可能随时是 null。工程上的完整答案是：Optional 管<b>自己 API 的出参入参契约</b> + <code>Objects.requireNonNull</code> 管不变量 + @Nullable/@NonNull 注解管边界 + IDE 静态分析兜底——分层防御。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里你怎么处理这个问题的？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>三条对应物：① <code>Optional[str]</code> 类型注解——但纯注解不强制，要 mypy/pyright 检查才等价于 Java 编译器；② 兜底惯用 <code>user.city if user else default</code> 或 <code>getattr(x, "city", default)</code>，惰性语义天然安全（这题在 Python 里反而不容易踩坑）；③ Kotlin/Swift 的 <code>?</code> 和 <code>?:</code> 才是 Optional 语义的语言级完全体。面试可以补一句："Java 用库的方式做了别的语言做进语法的事"——显示你对语言设计的理解。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 8 默认方法 ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>接口的默认方法与冲突裁决 <span class="badge b-hard">原理高频</span></h2></div>
+
+    <h3 class="kp">8.1 痛点：已发布的接口没法演化</h3>
+    <pre class="diagram"><code>Java 7 时代的世界：
+  interface Collection&lt;E&gt; 已发布十年，全宇宙无数实现类
+
+  Java 8 想加 stream() —— 问题来了：
+  ├─ 加抽象方法？所有实现类（你项目里的、老开源库里的）全部编译报错
+  │  —— 接口是【契约】，契约加条款，所有签了字的类都得补实现
+  └─ 不加？Stream 无处安放，函数式革命死在第一步
+
+解法：default 方法 —— 带着实现体进接口：
+  interface Collection&lt;E&gt; {
+      default Stream&lt;E&gt; stream() {
+          return StreamSupport.stream(spliterator(), false);
+      }   // 实现类不写也有默认行为；想优化的自己覆盖（ArrayList 覆盖了）
+  }
+
+代价：接口从【纯契约】变成【契约 + 部分实现】
+—— 菱形继承问题（多继承冲突）随之而来，需要裁决规则（8.3）</code></pre>
+    <p>顺带的配套：Java 8 还允许接口带 <b>static 方法</b>（工具方法直接挂接口上，如 <code>Comparator.comparing</code>）；Java 9 进一步允许 <b>private 方法</b>（给多个 default 方法复用私有逻辑）。</p>
+
+    <h3 class="kp">8.2 菱形问题：两份默认实现，听谁的？</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>DiamondConflict.java</span><span>三条裁决规则</span></div>
+      <pre><code>interface A { default String hello() { return "A"; } }
+interface B { default String hello() { return "B"; } }
+
+// 冲突：C 同时继承 A、B，两个同名 default
+class C implements A, B {
+    // ✗ 不写 hello() 直接编译错误：
+    //   "class C inherits unrelated defaults for hello() from types A and B"
+
+    // 规则三：冲突必须由你显式裁决——要么覆盖，要么点名委托
+    public String hello() {
+        return B.super.hello() + " wins";      // ★ X.super.m() 语法：点名用哪个爹的版本
+    }
+}
+
+// 规则一（类优先）：父类的具体方法 &gt; 接口的默认方法
+class Base { public String hello() { return "Base"; } }
+class D extends Base implements A {}            // hello() = "Base"，不冲突，编译通过
+
+// 规则二（更具体的接口优先）：子接口的 default 胜过父接口
+interface SubA extends A { default String hello() { return "SubA"; } }
+class E implements SubA, A {}                   // hello() = "SubA"（编译器选更具体的）</code></pre>
+    </div>
+    <pre class="diagram"><code>裁决优先级（从高到低）：
+  ① 你自己覆盖的                          （最高，一锤定音）
+  ② 父类（class）的具体方法                （类优先：类层次永远压接口一头）
+  ③ 更具体的子接口的 default              （SubA extends A → SubA 赢）
+  ④ 平级冲突（A vs B，谁也不具体）         编译报错，逼你显式选边：X.super.m()
+
+为什么"类优先"？—— 兼容性铁律：Java 8 发布前，已有的类都继承自各种父类；
+如果接口 default 能压过父类方法，升级 JDK 8 就可能【悄悄改变线上类的行为】。
+规则一保证了：加 default 方法，永不改变既有类的行为 —— 演化安全。</code></pre>
+
+    <h3 class="kp">8.3 抽象类 vs 接口：Java 8 之后怎么选</h3>
+    <table>
+      <tr><th>能力</th><th>抽象类</th><th>接口</th></tr>
+      <tr><td>实例字段（状态）</td><td>✓</td><td>✗（只有 static final 常量）</td></tr>
+      <tr><td>构造器</td><td>✓</td><td>✗</td></tr>
+      <tr><td>具体方法</td><td>✓</td><td>✓ default/static/private（Java 8/9）</td></tr>
+      <tr><td>多继承</td><td>✗ 单继承</td><td>✓ 实现多个（<b>类型的可组合性</b>）</td></tr>
+      <tr><td>访问控制</td><td>成员可 protected</td><td>方法只 public</td></tr>
+    </table>
+    <p><b>选型一句话</b>（回收模块 3）：接口定义"能做什么"（能力契约，可组合多个：Comparable + Serializable + Runnable）；抽象类共享"是什么"（骨架 + 状态 + protected 复用，如 AbstractList 之于 ArrayList）。Java 8 让接口能带实现，模糊了界限，但<b>状态和构造器永远属于类</b>——模板方法需要中间状态时（AQS 的 owner 字段！回收模块 6B 第五幕），仍然只能用抽象类。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>默认方法是什么？——接口里带 default 的有实现方法，为的是"已发布接口可以安全演化"（stream() 进 Collection 而不炸全世界的实现类）。冲突裁决三规则：类优先 → 子接口优先 → 平级冲突编译报错、必须覆盖或 X.super.m() 显式点名。</p>
+    </div>
+
+    <details class="qa"><summary>抽象类也能有默认实现，为什么不干脆都用抽象类？</summary><div class="qa-body">
+      <p>两个硬约束：① <b>单继承瓶颈</b>——一个类只能 extends 一个抽象类，但能 implements 无限个接口；给 Collection 全家加 stream() 如果用抽象类，已经继承了别的抽象类的集合类就无路可走；② <b>演化扩散</b>——抽象类位于继承链中间，加方法影响所有子类布局；接口 default 只在"没人实现这个方法时"兜底，已实现的类纹丝不动。一句话：default 方法本质是<b>面向"接口演化"的设计</b>，不是"给接口加工具"的语法福利——后者的正统写法是 static 方法。</p>
+    </div></details>
+
+    <details class="qa"><summary>default 方法能重写 Object 的方法吗（比如 toString）？</summary><div class="qa-body">
+      <p>不能。编译器明文禁止接口给 <code>toString/equals/hashCode</code> 提供 default——因为每个类都从 Object 继承了这些方法，按"类优先"规则，Object 的版本永远赢，接口里的 default 永远是死代码，禁掉是为了避免错觉（看起来写了实际永远不生效）。这也是一条很好的"面试聊细节"素材。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 9 java.time ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>新日期时间：java.time</h2></div>
+
+    <h3 class="kp">9.1 老 API 三宗罪</h3>
+    <table>
+      <tr><th>罪状</th><th>表现</th><th>呼应模块</th></tr>
+      <tr><td>可变 + 线程不安全</td><td><code>date.setHours(3)</code> 直接改内部状态；SimpleDateFormat 共享即错乱</td><td>模块 6/6B 的 SimpleDateFormat 惨案</td></tr>
+      <tr><td>设计混乱</td><td><code>Date</code> 类名叫日期，实际是"时刻"（毫秒数）；<code>Calendar</code> 月份从 <b>0 开始</b>（1 月是 0）；年份从 1900 起算</td><td>——</td></tr>
+      <tr><td>时区处理原始</td><td>SimpleDateFormat 线程不安全的根源正是内部共享的 Calendar + 时区状态</td><td>模块 6B 第七幕 SDF 惨案</td></tr>
+    </table>
+    <p>java.time（照抄了业界口碑最好的 Joda-Time，作者就是同一人 Stephen Colebourne）用一条核心设计原则解决全部三宗罪：<b>不可变（immutable）</b>。</p>
+
+    <h3 class="kp">9.2 家族地图</h3>
+    <pre class="diagram"><code>java.time 包按"你关心什么"分家：
+
+【人类时间：挂历/手表视角】（无时区语义，就是你看到的数字）
+  LocalDate     2026-09-23        （日期：生日、纪念日 —— 不关心几点）
+  LocalTime     19:30:05          （时间：每天打卡 —— 不关心哪天）
+  LocalDateTime 2026-09-23 19:30  （日期+时间：日常 90% 场景）
+  ZonedDateTime LocalDateTime+时区 （"东京 2026-09-23 20:00"：跨时区会议）
+
+【机器时间：时间线视角】（一个绝对刻度，无日历含义）
+  Instant       1770000000.123 秒（从 1970-01-01T00:00:00Z 起的纳秒数 —— Unix 时间戳）
+  Duration      PT1H30M           （两时刻之间隔多久：时分秒粒度）
+  Period        P1Y2M3D           （两日期之间隔多久：年月日粒度）
+
+【工具】
+  DateTimeFormatter   格式化/解析（不可变 → 线程安全，static final 随便共享）
+  TemporalAdjusters   "下个周五""当月最后一天"这种日历运算
+
+速判：存库/分布式传时间 → Instant（UTC 时间线，无歧义）；
+     展示给用户 → 转成用户时区的 LocalDateTime/ZonedDateTime。</code></pre>
+
+    <h3 class="kp">9.3 不可变设计：所有操作返回新对象</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>NewTime.java</span><span>对比老 API 的"原地改"</span></div>
+      <pre><code>// 老 API：原地修改（共享即灾难的根源）
+Date d = new Date();
+d.setHours(3);                          // d 变了，引用 d 的所有地方跟着变
+
+// 新 API：返回新对象，原对象永不变化
+LocalDateTime t = LocalDateTime.of(2026, 9, 23, 19, 30);
+LocalDateTime nextDay = t.plusDays(1);          // 新对象
+LocalDateTime firstOfMonth = t.withDayOfMonth(1); // with = 调整某个字段，也是新对象
+// t 始终是 2026-09-23 19:30 —— 像 String 一样安全（回收模块 1 的 String 不可变）
+
+// 格式化：不可变 → 线程安全 → 可以 static final 全局共享
+private static final DateTimeFormatter FMT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+// 直接并发使用，没有 SimpleDateFormat 的任何坑（模块 6 的惨案在这里终结）
+
+// 互操作：老代码的 Date 桥接
+Instant i = oldDate.toInstant();
+Date back = Date.from(i);
+
+// 计算
+Duration between = Duration.between(start, end);   // 隔多久
+long days = ChronoUnit.DAYS.between(a, b);         // 按天计数</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>java.time 的核心是什么？——全部不可变（每个操作返回新对象），从根上治好 Date/SimpleDateFormat 的线程安全问题；按语义分家：LocalDateTime 管"挂历"（人类时间）、Instant 管"时间线"（机器时间，UTC 存储首选）、DateTimeFormatter 不可变可全局共享。</p>
+    </div>
+
+    <details class="qa"><summary>为什么说 Instant 和 LocalDateTime 是"机器时间 vs 人类时间"？</summary><div class="qa-body">
+      <p>Instant 是<b>时间线上的一个绝对刻度</b>（Epoch 纳秒），全球同一刻只有一个值，没有"几点"的含义——直到你选定一个时区，它才能翻译成"北京时间 19:30 / 伦敦 12:30"。LocalDateTime 是<b>挂历读数</b>：只有"2026-09-23 19:30"这组数字，不知道在哪个时区，就不锚定时间线上任何一点（北京时间 19:30 和伦敦 19:30 是两个不同的 Instant）。所以分布式系统存 Instant/UTC 时间戳（无歧义），展示层才按用户时区转 LocalDateTime——把这句话讲清楚，比背 API 高一个段位。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的时间处理和这个像吗？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>设计哲学完全同款：你天天用的 <code>datetime</code> 里 <code>naive datetime</code>（无时区）≈ LocalDateTime，<code>aware datetime</code> ≈ ZonedDateTime，<code>datetime.utcnow()/timestamp()</code> ≈ Instant；<code>timedelta</code> ≈ Duration。而且 Python 的 datetime 也是不可变风格（返回新对象）、strptime/strftime 也是无状态可共享的。区别：Java 把"日期/时间/日期时间/时刻"拆成了四个独立类型，Python 全挤在一个 datetime 类里靠"填不填字段"区分——你可以反过来吐槽 Python 的设计让 <code>datetime.time()</code> 和 <code>datetime.time</code> 撞名，这种对比在面试里很出彩。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 10 Java 9~21 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>Java 9~21 版本地图 + 小结 <span class="badge b-high">渐热</span></h2></div>
+
+    <p>面试对 Java 9+ 的预期是"<b>知道哪个版本有什么 + 有两个能展开讲</b>"。版本地图先背骨架，然后 record 和 sealed 值得展开（它们是"用一行解决模块 3 手撕题"的语言级答案）。</p>
+
+    <h3 class="kp">10.1 版本地图（8 → 21）</h3>
+    <pre class="diagram"><code>Java 8  (2014, LTS)  ★本模块主体：Lambda / Stream / Optional / java.time / 接口默认方法
+                      （还有：HashMap 红黑树化 → 模块 4；元空间取代永久代 → 模块 5）
+Java 9  (2017)       模块化 JPMS（知道即可：module-info.java，按模块暴露/依赖）
+                      接口私有方法；JShell；集合工厂 of()
+Java 10 (2018)       var 局部变量类型推断（10.2 重点辨析）
+Java 11 (2018, LTS)  String 增强（isBlank/strip/lines/repeat）；
+                      HttpClient 标准化；var 进 lambda 参数
+Java 14/15           switch 表达式转正（箭头语法 + yield，10.3）；
+                      文本块 """ （10.3）；Records 预览
+Java 16 (2021)       record 转正（10.4 重点）
+Java 17 (2021, LTS)  sealed 密封类转正（10.5 重点）；强封装 JDK 内部 API
+Java 21 (2023, LTS)  ★虚拟线程（协程级轻量并发 → 详细原理回模块 6）；
+                      结构化并发/模式匹配 for switch（预览转正）
+
+LTS 规律：8 → 11 → 17 → 21（每 3 年左右一个），企业级选型只看 LTS。</code></pre>
+
+    <h3 class="kp">10.2 var：不是动态类型！<span class="badge b-trap">Python 人专属坑</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>VarDemo.java</span><span>编译期推断，类型焊死</span></div>
+      <pre><code>var list = new ArrayList&lt;String&gt;();    // 编译器推断：ArrayList&lt;String&gt;
+list.add("ok");
+// list = new LinkedList&lt;String&gt;();  // ✗ 编译错误：类型已经焊死是 ArrayList&lt;String&gt;
+
+// var 只能用于【局部变量】（且必须有初始化式让编译器推断）：
+var x = 10;             // ✓ 方法内
+// var y;                // ✗ 无初值，推断不出来
+// var z = null;         // ✗ null 推不出类型
+// class C { var f = 1; }         // ✗ 字段不行
+// void m(var p) {}               // ✗ 参数不行（Java 11+ lambda 参数例外）
+
+// 反面教材：var map = service.query(config.transform(key));
+// 推断出什么类型？读代码的人不知道 —— var 的使用原则：
+// 右侧类型【一眼可见】才用（new XXX、工厂方法名见名知义），否则写全名</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 给你的专属提醒</div>
+      <p>Python 里变量是<b>标签</b>（随时贴到别的对象上），Java 的 var 完全不是：<code>var i = 10; i = "str";</code> 编译直接报错——它只是<b>把"写类型"这个动作外包给编译器</b>，编译产物里的类型和手写 <code>ArrayList&lt;String&gt;</code> 一模一样（字节码层面完全相同，var 不进 class 文件）。一句话：<b>var 是"少打字"，不是"弱类型"</b>。面试被问 var，答"编译期糖，字节码无痕迹"即满分。</p>
+    </div>
+
+    <h3 class="kp">10.3 switch 表达式与文本块</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>NewSyntax.java</span><span>少踩两类坑的现代化写法</span></div>
+      <pre><code class="nohl">// switch 表达式（14/15）：多值返回 + 无穿透 + 穷尽检查
+String label = switch (day) {
+    case MONDAY, TUESDAY -&gt; "工作日";          // 箭头：无穿透（忘 break 的 bug 灭绝）
+    case SATURDAY, SUNDAY -&gt; "周末";
+    default -&gt; {                              // 多语句用块 + yield 返回值
+        log(day);
+        yield "其他";
+    }
+};                                            // 整个 switch 是个表达式，能赋值
+
+// 文本块（15）：三引号，最小缩进自动剥离
+String json = """
+        {
+          "id": 1,
+          "name": "java"
+        }""";   // 公共缩进去掉，内容从第二行的实际最小缩进开始算</code></pre>
+    </div>
+    <p><b>Python 对比</b>：switch 表达式 = <code>match-case</code>（Python 3.10），连"箭头+默认分支"的形态都接近；文本块 = 三引号字符串——但 Python 不剥离缩进，Java 的最小缩进算法反而是更精致的版本。</p>
+
+    <h3 class="kp">10.4 record：一行解决模块 3 的手撕题 <span class="badge b-high">渐热</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>RecordDemo.java</span><span>纯数据载体的声明式写法</span></div>
+      <pre><code>// 模块 3 手撕过的四件套：构造器 + getter + equals + hashCode（+ toString）
+// record 一行全包：
+public record Point(int x, int y) {}
+
+// 编译器自动生成：
+//   全参构造器 Point(int x, int y)
+//   访问器 x() / y()              ← 注意：不叫 getX()！
+//   equals / hashCode             ← 基于全部字段（和 Arrays.equals/mix 语义）
+//   toString                      ← "Point[x=1, y=2]"
+
+// 紧凑构造器：参数校验/规范化的钩子（没有参数列表，直接在构造器体写逻辑）
+public record Range(int lo, int hi) {
+    public Range {                              // 紧凑形式
+        if (lo &gt; hi) throw new IllegalArgumentException("lo &gt; hi");
+        // 结束时自动 this.lo = lo; this.hi = hi;
+    }
+}
+
+// record 的三条铁律（都是"不可变"推出来的）：
+//   ① 字段隐式 final —— 没有 setter，改值 = new 一个新的
+//   ② 不能继承类（隐式 extends Record）也不能被继承（隐式 final）
+//   ③ 仍可实现接口 —— 想加行为就写默认方法或静态工厂
+Point p = new Point(1, 2);
+Point q = new Point(1, 2);
+p.equals(q);        // true —— 结构相等，模块 3 的语义比较，白送</code></pre>
+    </div>
+    <p><b>什么时候用</b>：DTO、值对象、Map 的复合 key（equals/hashCode 白送——回收模块 3 分桶图）、Stream 的中间结果载体。和 Lombok 的分工：record 是<b>语言级、不可变、全字段参与 equals</b>；<code>@Data</code> 是可变 JavaBean 补全（getter/setter/toString），面向 MyBatis 这类需要 setter 的旧框架生态——新项目新代码，纯数据优先 record。</p>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>record ≈ <code>dataclass(frozen=True)</code>：一行声明、自动 repr/eq、不可变；紧凑构造器 ≈ <code>__post_init__</code> 校验。区别是 record 的生成物在<b>字节码里真实存在</b>（反编译能看到 equals/hashCode 方法体），dataclass 是运行时动态往类上挂方法——这个对比能自然引出"Java 的编译期 vs Python 的运行时"元话题。</p>
+    </div>
+
+    <h3 class="kp">10.5 sealed：把"多态的可能性"关进笼子</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>SealedDemo.java</span><span>继承者白名单</span></div>
+      <pre><code>// 模块 3 的老问题：switch 一个接口的子类，永远不敢删 default ——
+// 明天谁又 new 了一个实现类呢？编译器不知道"全部可能性"。
+
+// sealed：把可能性关进笼子（permits 白名单）
+public sealed interface Shape permits Circle, Square, Triangle {}
+//              ↑ 密封                ↑ 只准这三个实现/继承
+record Circle(double r) implements Shape {}
+record Square(double w) implements Shape {}
+record Triangle(double b, double h) implements Shape {}
+// 白名单外的类 implements Shape → 直接编译错误
+
+// 配合 switch 模式匹配（Java 21）：穷尽检查，不用 default
+double area(Shape s) {
+    return switch (s) {
+        case Circle c    -&gt; Math.PI * c.r() * c.r();
+        case Square sq   -&gt; sq.w() * sq.w();
+        case Triangle t  -&gt; 0.5 * t.b() * t.h();
+    };  // ★ 漏一个分支编译报错！编译器知道 Shape 的全部可能性了
+        //   未来新增 permits 成员，所有旧 switch 会【编译期集体报警】
+}</code></pre>
+    </div>
+    <p><b>和三件套的对照</b>（回收模块 3 的继承语义）：<code>final</code> = 谁都不许继承；<code>sealed</code> = 白名单里的人许；普通类/接口 = 谁都许。sealed 的本质是把"开放扩展"从<b>全开放</b>变成<b>可声明的有限集合</b>——代数数据类型（ADT）思想进入 Java，函数式语言玩了几十年的东西。<b>Python 对比</b>：没有直接对应物，最接近的是 <code>Literal["a", "b"]</code> + <code>match-case</code> 的组合，或 Enum 限定成员——所以这个概念对你是新的，但接口很小：sealed + permits + 穷尽 switch，一屏讲完。</p>
+
+    <h3 class="kp">10.6 全模块速查</h3>
+    <div class="summary-grid">
+      <div class="sum-card"><h5>Lambda / 方法引用</h5><ul>
+        <li>Lambda = 装进函数式接口的无主行为；类型由上下文推断</li>
+        <li>不是语法糖：invokedynamic + LambdaMetafactory 运行时生成；无捕获单例复用；this 是词法的</li>
+        <li>捕获变量必须 effectively final（捕获的是值拷贝）</li>
+        <li>方法引用四形态：类::静态 / 对象::实例 / 类::实例（首参当接收者）/ 类::new</li>
+      </ul></div>
+      <div class="sum-card"><h5>四大函数式接口</h5><ul>
+        <li>Function&lt;T,R&gt; apply：有进有出（map）</li>
+        <li>Consumer accept：只进不出（forEach）</li>
+        <li>Supplier get：无中生有（惰性/orElseGet）</li>
+        <li>Predicate test：进 T 出 boolean（filter）</li>
+        <li>Bi 前缀两参 / XxxFunction 避装箱 / xxOperator 进同出</li>
+      </ul></div>
+      <div class="sum-card"><h5>Stream</h5><ul>
+        <li>三段式：源 → 中间（惰性）→ 终端（触发）</li>
+        <li>Sink 链：元素纵向流过全管道，一趟遍历零中间集合</li>
+        <li>短路：limit/findFirst/anyMatch；有状态操作（sorted）切断短路</li>
+        <li>流只能消费一次；peek 必须配终端操作</li>
+        <li>toMap 冲突炸、必须给 merge 函数</li>
+      </ul></div>
+      <div class="sum-card"><h5>并行流</h5><ul>
+        <li>Spliterator.trySplit 分治 → ForkJoinPool.commonPool</li>
+        <li>适合：纯 CPU + 大数据 + 无共享可变状态</li>
+        <li>四陷阱：共享容器 / IO 阻塞 commonPool / 有状态 / 小数据量</li>
+        <li>汇聚结果用 collect（per-thread 容器 + combiner），不用 forEach+共享 list</li>
+      </ul></div>
+      <div class="sum-card"><h5>Optional</h5><ul>
+        <li>定位：返回值类型专用，把"可能没有"编码进类型</li>
+        <li>链式：map/flatMap/filter/orElse</li>
+        <li>★orElse 参数立即求值，orElseGet(Supplier) 惰性</li>
+        <li>反模式：isPresent+get、字段、参数、Optional&lt;List&gt;</li>
+      </ul></div>
+      <div class="sum-card"><h5>默认方法</h5><ul>
+        <li>动机：已发布接口安全演化（stream() 进 Collection）</li>
+        <li>裁决：类优先 → 子接口优先 → 平级冲突必须 X.super.m()</li>
+        <li>禁 default Object 方法（类优先下永远死代码）</li>
+        <li>接口 vs 抽象类：状态和构造器永远属于类</li>
+      </ul></div>
+      <div class="sum-card"><h5>java.time</h5><ul>
+        <li>全不可变 → 线程安全，formatter 可 static final 共享</li>
+        <li>LocalDateTime=挂历；Instant=时间线（UTC 存储）；Duration/Period</li>
+        <li>操作返回新对象：plus/with；老 Date 用 toInstant 桥接</li>
+      </ul></div>
+      <div class="sum-card"><h5>Java 9~21</h5><ul>
+        <li>var：编译期推断、仅局部变量、不是动态类型（字节码无痕）</li>
+        <li>switch 表达式：箭头无穿透 + yield；文本块三引号</li>
+        <li>record：纯数据载体，四件套白送，不可变；紧凑构造器做校验</li>
+        <li>sealed + permits：继承白名单 + 穷尽 switch（无 default）</li>
+        <li>虚拟线程（21）→ 原理回模块 6</li>
+      </ul></div>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 本章回收清单（检验读没读通）</div>
+      <p>① Lambda 捕获 effectively final 的根因 = 模块 1 的值传递（栈变量拷贝）；② 类型特化接口（ToIntFunction）的存在理由 = 模块 4 的泛型装箱；③ collect 并行安全的机制 = 模块 6B 第八幕线程池的 per-thread 思想；④ DateTimeFormatter 线程安全 = 模块 6 的 SDF 惨案的官方解药 + 模块 1 String 不可变；⑤ record 自动 equals/hashCode = 模块 3 分桶图的语义；⑥ sealed 穷尽检查 = 模块 3 多态的"可能性管理"。六条都能自己复述，Java 8+ 这关稳了。</p>
+    </div>
+
+    <div class="pagenav">
+      <a href="06b-concurrency.html">← 模块 6B：并发大白话版</a>
+      <a class="disabled">模块 8：异常与 IO（待更新）</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="回到顶部">↑</button>
+
+<script>
+/* 简易 Java 语法高亮（关键词/字符串/注释/数字） */
+function highlightJava(src) {
+  return src.replace(/(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b(?:public|private|protected|static|final|class|interface|extends|implements|void|int|long|boolean|double|float|char|byte|short|new|return|if|else|for|while|do|try|catch|finally|throw|throws|import|package|this|super|null|true|false|synchronized|volatile|transient|abstract|enum|instanceof|default|break|continue|var|record|sealed|permits|yield)\b)|(\b\d+(?:\.\d+)?[LlFfDd]?\b)/gm,
+  function (m, com, str, kw, num) {
+    if (com) return '<span class="tok-com">' + com + '</span>';
+    if (str) return '<span class="tok-str">' + str + '</span>';
+    if (kw) return '<span class="tok-kw">' + kw + '</span>';
+    if (num) return '<span class="tok-num">' + num + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram') && !el.classList.contains('nohl')) el.innerHTML = highlightJava(el.textContent);
+});
+
+/* 目录滚动联动 + 回到顶部按钮 */
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+/* Q&A 批量展开/收起 */
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+
+</body>
+</html>

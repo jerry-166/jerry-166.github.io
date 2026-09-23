@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 6B：并发编程·大白话版（从惨案到武器）</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.85; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== 顶部 Hero ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; max-width: 860px; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+
+/* ===== 模块导航条 ===== */
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+/* ===== 主体布局 ===== */
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+/* ===== 左侧目录 ===== */
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 章节 ===== */
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 30px 0 12px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+/* ===== 徽章 ===== */
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+
+/* ===== 表格 ===== */
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+/* ===== 代码块 ===== */
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+/* ===== 6B 专属叙事组件 ===== */
+/* 四问导航：每一幕开头，告诉你本幕要搞明白的四件事 */
+.storynav { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 18px 0; }
+.storynav .sq { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+.storynav .sq b { color: var(--primary); display: block; font-size: 11.5px; letter-spacing: 1px; margin-bottom: 3px; }
+
+/* 类比卡：白话锚点 */
+.analogy { background: #f0fdfa; border: 1px solid #99f6e4; color: #115e59; border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; }
+.analogy .al-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.analogy p, .analogy li { color: inherit; margin-bottom: 4px; }
+
+/* 凭什么卡：往下多问一层 */
+.whycard { background: var(--hard-bg); border: 1px solid #ddd6fe; color: #5b21b6; border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; }
+.whycard .wy-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.whycard p, .whycard li { color: inherit; margin-bottom: 4px; }
+
+/* 边界卡：这个武器能干嘛/不能干嘛（下一幕的引子） */
+.edge { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 14px 18px; margin: 18px 0 8px; font-size: 14px; }
+.edge .ed-title { font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.edge .ed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
+.edge .ed-grid ul { margin: 4px 0 0 18px; }
+.edge li { color: inherit; margin-bottom: 3px; }
+@media (max-width: 700px) { .edge .ed-grid { grid-template-columns: 1fr; } }
+
+/* 提示框（沿用） */
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+/* 一句话回答 */
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+/* 面试 Q&A */
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* 其他 */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 6B / 9（通俗重写版）</div>
+  <h1>并发编程·大白话版：每个武器都因为一场惨案而诞生</h1>
+  <div class="sub">
+    这本书和 <a href="06-concurrency.html" style="color:var(--primary)">模块 6</a> 讲的是同一批知识点，但讲法完全不同：<b>模块 6 是知识地图</b>（按主题罗列，适合复习时速查），<b>本书是故事线</b>——每一个概念出现之前，必先有一场"惨案"，惨案逼出根因，根因逼出武器，武器的"没解决的部分"再逼出下一个武器。读的时候你不需要背任何东西，只需要跟着问四个问题：<b>①为什么会出现？②什么场景撞上？③底层怎么发生的？④它解决了什么、没解决什么？</b>全部读完，整条因果链自己会长在脑子里。
+  </div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <a href="06-concurrency.html">6 并发编程（速查版）</a>
+  <span class="cur">6B 并发·大白话</span>
+  <span>7 Java 8+ 新特性</span>
+  <span>8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s0">00 开场：一个作坊的烦恼</a>
+    <a href="#s1">第一幕 可见性：改了，他看不见</a>
+    <a href="#s2">第二幕 原子性：改到一半被抢白板</a>
+    <a href="#s3">第三幕 有序性：眼看不一定为实</a>
+    <a href="#s4">第四幕 CAS：乐天派的不排队方案</a>
+    <a href="#s5">第五幕 AQS：公共排队叫号机</a>
+    <a href="#s6">第六幕 等与唤醒：线程怎么说话</a>
+    <a href="#s7">第七幕 ThreadLocal：不共享就没伤害</a>
+    <a href="#s8">第八幕 线程池：用工制度</a>
+    <a href="#s9">第九幕 协作三件套与死锁</a>
+    <a href="#s10">尾声：整条演进链</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部 Q&amp;A</button>
+      <button id="btn-collapse">收起全部 Q&amp;A</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 0 开场 ================= -->
+  <section class="sec" id="s0">
+    <div class="sec-head"><span class="sec-no">00</span><h2>开场：一个作坊的烦恼</h2></div>
+
+    <p>先别管任何术语。想象你开了个小作坊，雇了一个工人，给他一块<b>白板</b>（就是内存）：所有任务、数字、状态都写在白板上，他干完活把结果写回白板。一切都好——因为<b>只有一个视角</b>，他看到的就是全部真相。</p>
+    <p>后来生意好了，你雇了第二个、第三个工人（多线程）。他们还是<b>共用同一块白板</b>。麻烦从这一刻开始，而且所有的麻烦都可以归结为下面这三句话：</p>
+
+    <div class="storynav">
+      <div class="sq"><b>麻烦一 · 可见性</b>工人干活前习惯把白板上的数<b>抄到自己的便利贴</b>上算。你改了白板，他还在看自己那张旧便利贴。</div>
+      <div class="sq"><b>麻烦二 · 原子性</b>"把白板上的 5 改成 6"其实是<b>三步动作</b>：看一眼 → 心算 → 写回去。三步中间被别人插一脚，就乱了。</div>
+      <div class="sq"><b>麻烦三 · 有序性</b>每个工人会<b>自作聪明调整干活顺序</b>。一个人的时候结果没差，多人的时候就互相穿帮。</div>
+    </div>
+
+    <p>Java 的整个并发工具箱，就是围绕这三个麻烦打造的。更妙的是，<b>工具之间有一条清晰的演进链</b>——每个新工具都是上一个工具"没解决的问题"逼出来的：</p>
+
+    <pre class="diagram"><code>惨案①：改了 flag，另一个线程的死循环停不下来（看不见）
+   └──► volatile ——"我改的东西，所有人都必须立刻看见"
+            │  ✗ 没解决：i++ 还是丢更新（改到一半被打断）
+            ▼
+惨案②：两个线程各加 10 万次，结果少了
+   └──► synchronized（会议室）——"一次只进一个人，包治三性"
+            │  ✗ 没解决：挂起+唤醒太贵，短活儿不值得开会
+            ▼
+惨案③：为了一句 i++ 开会议室，排队的人越排越多
+   └──► CAS（乐观重试）——"我先看看没被改，没改我就换"
+            │  ✗ 没解决：多个工具都要排队/等条件，各写各的太浪费
+            ▼
+   └──► AQS（公共排队机）——"排队挂起唤醒，我统一承包"
+            │  ✗ 场景变体：干脆不想共享了 / 要养一群常驻工人
+            ▼
+   └──► ThreadLocal（每人一本笔记本）  └──► 线程池（用工制度）
+                                              └──► 协作三件套（打卡/等人/坑位）</code></pre>
+
+    <p>这本书就沿着这条链走。每一幕的结构都一样：<b>惨案现场 → 解剖根因 → 武器登场 → 它凭什么有效 → 边界（引出下一幕）</b>。</p>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 和 Python 的关系（你的背景）</div>
+      <p>CPython 有 GIL——相当于作坊规定"任何时刻只许一个工人动白板"，三个麻烦被这个规定大幅压制（但没消灭：<code>x += 1</code> 照样丢更新，因为它也是三步）。Java 没有这个规定，<b>三个麻烦全部裸露</b>，全部要你自己处理。这也是为什么 Java 并发是面试重灾区而 Python 不是——不是 Java 程序员更厉害，是 Java 把问题交给了你。</p>
+    </div>
+  </section>
+
+  <!-- ================= 1 可见性 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>第一幕 可见性：改了，他看不见 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>多核 CPU 各自带缓存 + 编译器优化，允许"改了不立刻生效"。</div>
+      <div class="sq"><b>② 什么场景</b>一个线程改开关变量，另一个线程的循环永远感知不到。</div>
+      <div class="sq"><b>③ 怎么发生</b>三层解剖：没写回 → 没重读 → JIT 直接把读优化没了。</div>
+      <div class="sq"><b>④ 解决了什么</b>volatile：立刻可见。✗ 但 i++ 依然丢 → 第二幕。</div>
+    </div>
+
+    <h3 class="kp">1.1 惨案现场</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>StopFail.java</span><span>一段可能永远不结束的程序</span></div>
+      <pre><code>public class StopFail {
+    // 一个开关。主线程负责关，worker 线程负责看
+    static boolean running = true;          // 注意：没有 volatile
+
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -&gt; {
+            while (running) { }             // 只要开关还开着就空转
+            System.out.println("worker 停下了");
+        });
+        worker.start();
+
+        Thread.sleep(1000);                 // 确保 worker 已经跑起来
+        running = false;                    // ★ 主线程关掉开关
+        System.out.println("主线程已把 running 改成 false");
+        worker.join(3000);                  // 最多等 3 秒
+        System.out.println("worker 状态: " + worker.getState()); // 很可能还是 RUNNABLE
+    }
+}</code></pre>
+    </div>
+    <p>按直觉：主线程把 <code>running</code> 改成 <code>false</code>，worker 下一圈检查就该退出。实际运行大概率是：<b>worker 永远转下去</b>。主线程明明改了，worker 就是"看不见"。</p>
+
+    <h3 class="kp">1.2 解剖：到底哪里断了？</h3>
+    <p>直觉的假设是"改了 = 所有人都看得到新值"。这个假设在两层上都不成立。我们一层层往下挖：</p>
+
+    <h4>第一层：主线程改了，但可能还没写到"公共区域"</h4>
+    <p>真实的硬件世界里，CPU 每个核都有自己的一块<b>高速缓存</b>（比内存快几十倍）。改一个变量，硬件的默认策略是：<b>先改自己核的缓存，什么时候写回内存，看心情（等这行缓存要被挤掉时才回写）</b>。这个设计是为了快——每次写都直连内存，CPU 得闲死。</p>
+
+    <h4>第二层：worker 每次都在读，但读的是自己核的缓存</h4>
+    <p>同理，worker 线程跑在另一个核上，它读 <code>running</code> 时，默认也是从<b>自己核的缓存</b>里拿——而它这边的缓存里 <code>running</code> 一直是 true（第一次读进来的），没人通知它"这行数据已经变了"。</p>
+
+    <div class="analogy">
+      <div class="al-title">🗺 类比：白板与便利贴</div>
+      <p><b>主内存 = 教室的大白板</b>（所有人共用）；<b>CPU 缓存 = 每人手里的便利贴</b>（自己看得快）。规则默认是：要改数，先抄到便利贴上改；改完不马上抄回白板；要看数，先看便利贴上有没有，有就不去白板。于是：主线程在自己便利贴上把 flag 改成 false，worker 看的是自己那张写着 true 的旧便利贴——<b>两个人都没错，错的是"没有同步机制"</b>。</p>
+    </div>
+
+    <h4>第三层（更隐蔽）：JIT 会把读直接优化掉</h4>
+    <p>还有更狠的。worker 循环里每一次都在读 <code>running</code>，但 JIT（即时编译器）盯了一会儿发现：<b>循环体内没有任何代码修改 running</b>，于是它"好心"做了个优化——把循环变成等价的 <code>if (running) while (true) { }</code>：只读一次，之后根本不再读。<b>这不是 bug，是 JVM 允许的合法优化</b>——在它的世界观里，没有同步动作就代表"没人会改它"。</p>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 为什么"我本地跑能停下来"不能证明没问题</div>
+      <p>解释执行（JIT 还没介入）时每次循环真的去读内存，程序可能"碰巧"停了；JIT 编译后就是真死循环。并发 bug 的可恶之处：<b>它看运行时机和优化程度的心情</b>。"跑了几次没复现"在并发问题面前毫无证明力。</p>
+    </div>
+
+    <h3 class="kp">1.3 武器登场：volatile</h3>
+    <p>现在需求很明确：我需要一个开关，告诉 JVM——"这个变量，<b>写的人要立刻刷到主存，读的人必须每次去主存拿最新值，编译器不许把它优化掉</b>"。这个开关就是 <code>volatile</code> 关键字：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>StopFixed.java</span><span>加一个词，世界恢复正常</span></div>
+      <pre><code>public class StopFixed {
+    static volatile boolean running = true;   // ★ 就加这一个词
+
+    public static void main(String[] args) throws Exception {
+        Thread worker = new Thread(() -&gt; {
+            while (running) { }                // 现在：每次循环都会从主存重新读
+            System.out.println("worker 停下了"); // 1 秒后必然打印
+        });
+        worker.start();
+        Thread.sleep(1000);
+        running = false;                      // 写：立刻刷回主存
+        worker.join();
+    }
+}</code></pre>
+    </div>
+    <p><b>volatile 做的事用一句话说：把这个变量的读写从"便利贴模式"切换到"白板模式"。</b>具体拆开是三件事：</p>
+    <ol>
+      <li><b>写操作</b>：不等缓存被挤掉，立刻刷回主内存；</li>
+      <li><b>连带通知</b>：硬件层面广播"这行数据我改了"，让其他核把相关的旧缓存<b>作废</b>（下文"凭什么"细讲）；</li>
+      <li><b>读操作</b>：每次都强制从主内存重新读，且 JIT 被禁止做"只读一次"的优化。</li>
+    </ol>
+
+    <div class="whycard">
+      <div class="wy-title">🔍 凭什么"作废别人缓存"就能保证一致？——MESI 一句话</div>
+      <p>多核 CPU 之间有个硬件协议叫 <b>MESI 缓存一致性协议</b>：每个缓存行有四个状态（改过/独占/共享/无效），核心规则是——<b>一个核要改某数据前，必须先在总线上广播"我要独占它"，其他核听到就把自己的这行缓存标记为无效</b>。所以"作废"不是 Java 做的，是 CPU 之间的硬件级通信。volatile 只是<strong>每次读写都主动触发这套机制</strong>，普通变量则任由硬件"看心情"同步。到这里就够了，再往下（总线嗅探、缓存行伪共享）面试也不问，问了你也答得上来这句。</p>
+    </div>
+
+    <h3 class="kp">1.4 内存屏障：volatile 凭什么还能"禁止重排"？（补完最后一块拼图）</h3>
+    <p>很多资料说"volatile 保证可见性和有序性，因为它插入了内存屏障"——然后就没有然后了，屏障本身是什么从来没人讲。<b>把屏障想象成插在指令流中间的一条警戒线</b>：</p>
+    <pre class="diagram"><code>没有屏障时，CPU/编译器为了快，可以把指令搬家（重排）：
+
+   你写的代码              CPU 实际可能执行的顺序
+   ──────────              ──────────────────────
+   A: 普通写 x = 1    ─┐
+   B: volatile写 flag=true │ 可以被换成：先执行 B 再执行 A（A 被搬到 B 后面）
+                        │
+有了屏障（警戒线）：
+   A: 普通写 x = 1
+   ┄┄┄┄┄ StoreStore 屏障 ┄┄┄┄┄   ◄─ 警戒线：线前的写不许搬到线后
+   B: volatile写 flag=true
+   ┄┄┄┄┄ StoreLoad 屏障 ┄┄┄┄┄   ◄─ 最强的线：谁都别想过（成本也最高）</code></pre>
+    <p>它不是什么抽象概念，就是<b>CPU 真实提供的一类指令（fence 指令）</b>，编译器在 volatile 读写的前后插入它们。四种屏障各管一个方向：</p>
+    <table>
+      <tr><th>屏障</th><th>插在哪</th><th>管什么（不许谁越过警戒线）</th></tr>
+      <tr><td>StoreStore</td><td>volatile <b>写之前</b></td><td>前面的普通<b>写</b>不许搬到 volatile 写之后</td></tr>
+      <tr><td>StoreLoad</td><td>volatile <b>写之后</b></td><td>volatile 写之后的<b>读</b>不许搬到写之前（最贵、最强）</td></tr>
+      <tr><td>LoadLoad</td><td>volatile <b>读之后</b></td><td>volatile 读之后的<b>读</b>不许搬到读之前</td></tr>
+      <tr><td>LoadStore</td><td>volatile <b>读之后</b></td><td>volatile 读之后的<b>写</b>不许搬到读之前</td></tr>
+    </table>
+    <p><b>为什么要管这么细？</b>回头看 1.1 的惨案延伸：光"flag 可见"还不够——如果 x=1 这个普通写被搬到了 flag=true 后面，别人看到 flag 变了、回头读 x 却读到 0，等于白干。屏障保证"写完所有准备数据，最后才举旗"，举旗（volatile 写）本身成了<strong>一个公告点</strong>：公告之前的所有写入，看到公告的人都能看到。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>volatile 是什么？——把一个变量的读写从"各自缓存看心情同步"切换为"每次写立刻上白板并作废别人的便利贴、每次读强制看白板"，并在读写点插入警戒线（屏障）不许指令乱搬。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：volatile 解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>可见性：写立刻所有人可见</li>
+            <li>有序性：屏障禁止关键位置重排</li>
+            <li>状态开关、一写多读的标志位</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li><b>i++ 这种多步操作依然丢更新</b>——三步还是三步，volatile 只保证每步读到的是新值，不保证三步不被打断</li>
+            <li>→ 这就是下一幕的惨案</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>volatile 修饰的 i++ 为什么还是丢？用便利贴说一遍</summary><div class="qa-body">
+      <p>i++ = 拿到便利贴（读，现在保证是最新的 5）→ 心算 6（在你手里）→ 写回白板 6。两个线程<b>先后拿到同一张写着 5 的便利贴</b>（都合法——第二个拿的时候第一个还没写回），都算出 6，都写回 6。两次加法，结果只加了 1 次。<b>volatile 解决的是"看到的是不是最新的"，不解决"看到之后到写回之前，别人改没改"</b>——这中间的空档就是原子性问题。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里有这个惨案吗？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>Python 程序员几乎撞不上：GIL 保证同一时刻只有一个线程在执行字节码，而且 CPython 的变量读写本身是单条原子字节码，flag 语义下不存在"改了看不见"（全局锁 = 全局同步点）。所以 Python 里根本没有 volatile 这个概念。你的肌肉记忆里"改了就是改了"，到 Java 里要重新长一根神经。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 2 原子性 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>第二幕 原子性：改到一半被抢白板 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>"改一个数"在人眼里是一步，在机器眼里是多步，多步就能被打断。</div>
+      <div class="sq"><b>② 什么场景</b>计数、先查再改（if 后 set）、一次改两个变量——全是复合操作。</div>
+      <div class="sq"><b>③ 怎么发生</b>i++ 拆成取数-算-放回三步，两线程交错推演一遍全懂。</div>
+      <div class="sq"><b>④ 解决了什么</b>synchronized 会议室：三性全包。✗ 但开会（挂起）贵 → 第四幕。</div>
+    </div>
+
+    <h3 class="kp">2.1 惨案现场</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>CounterFail.java</span><span>两个线程各加 10 万，结果少了</span></div>
+      <pre><code>public class CounterFail {
+    static int count = 0;
+
+    public static void main(String[] args) throws Exception {
+        Runnable task = () -&gt; {
+            for (int i = 0; i &lt; 100000; i++) {
+                count++;                 // 看起来一步，其实是三步
+            }
+        };
+        Thread t1 = new Thread(task);
+        Thread t2 = new Thread(task);
+        t1.start(); t2.start();
+        t1.join(); t2.join();
+        System.out.println(count);       // 期望 200000，实际每次都不同，且 &lt; 200000
+    }
+}</code></pre>
+    </div>
+
+    <h3 class="kp">2.2 解剖：把 i++ 拆开看</h3>
+    <p><code>count++</code> 这一行代码，编译成字节码是三条指令（对应模块 1 讲过的操作数栈操作）：<b>① 取数</b>（getstatic，把 count 的值搬到自己的栈上）→ <b>② 算</b>（加 1）→ <b>③ 放回</b>（putstatic，把结果写回去）。把两个线程的执行交错排一下，惨案就现形了：</p>
+    <pre class="diagram"><code>时刻   线程 A                     线程 B                  白板上的 count
+────────────────────────────────────────────────────────────────────
+ t1   ①取数：读到 5                                        5
+ t2                              ①取数：读到 5             5   ← B 读的还是 5！
+ t3   ②算：5+1=6                                          5
+ t4                              ②算：5+1=6                5
+ t5   ③放回：写 6                                          6
+ t6                              ③放回：写 6                6   ← 覆盖！
+────────────────────────────────────────────────────────────────────
+结果：两次自增，白板只涨了 1。t2 那一步"读到 5"就是致命空档。</code></pre>
+    <p>注意：<b>这里没有任何一行代码"写错"</b>，也不需要什么罕见优化——两个线程正常、合法地交错执行，结果就是错的。这比第一幕的惨案更普遍：连 JIT 优化都不需要参与。</p>
+
+    <div class="analogy">
+      <div class="al-title">🗺 类比：白板上改数字</div>
+      <p>“把白板上的 5 改成 6”在你眼里是一个动作，实际是三个：<b>扭头看一眼（取数）→ 心里算（加 1）→ 转身写（放回）</b>。两个工人同时做这个动作：都扭头看到了 5，都心算出 6，都转身写下 6——白板上明明该是 7。麻烦不在"写"这个动作本身，在<b>看到和写回之间存在时间差</b>。</p>
+    </div>
+
+    <h3 class="kp">2.3 这类问题远不止 i++</h3>
+    <p>凡是"一步的逻辑，多步的实现"都中招，面试和实战最常见的三种：</p>
+    <table>
+      <tr><th>类型</th><th>样子</th><th>哪里被插队</th></tr>
+      <tr><td>读-改-写</td><td><code>count++</code> / <code>x += 1</code></td><td>读和写之间，别人的写被你覆盖</td></tr>
+      <tr><td>先查后做（check-then-act）</td><td><code>if (map.get(k) == null) map.put(k, v);</code></td><td>检查完到放入前，别人已放入 → 两次初始化</td></tr>
+      <tr><td>多变量联动</td><td><code>low = 0; high = size - 1;</code>（两个变量必须同时变）</td><td>改了 low 还没改 high，别人读到"一半新一半旧"的组合</td></tr>
+    </table>
+
+    <h3 class="kp">2.4 武器登场：synchronized（会议室）</h3>
+    <p>需求也很明确：把"看-算-写"这三步<b>打包成一个不可分割的整体</b>，执行期间别人不许插队。最直接的思路：给这段代码配一个<b>会议室</b>，谁要执行这段代码，先拿会议室钥匙，拿不到就在外面等，干完出来把钥匙还了——同一时刻会议室里只有一个人。</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>CounterFixed.java</span><span>三步被打包成一步</span></div>
+      <pre><code>public class CounterFixed {
+    static int count = 0;
+    static final Object LOCK = new Object();   // 一把明确的、大家共用的钥匙
+
+    public static void main(String[] args) throws Exception {
+        Runnable task = () -&gt; {
+            for (int i = 0; i &lt; 100000; i++) {
+                synchronized (LOCK) {       // 进会议室：拿钥匙
+                    count++;                // 三步在会议室里，外面没人能插队
+                }                           // 出会议室：还钥匙
+            }
+        };
+        // ... 两线程各跑 10 万次，结果必然 200000
+    }
+}</code></pre>
+    </div>
+
+    <h3 class="kp">2.5 会议室凭什么包治三性？（不是巧合，是三条保证）</h3>
+    <p>很多人背"synchronized 保证原子性、可见性、有序性"，但说不清为什么一把锁能捎带管了另外两件事。拆开看它实际承诺的三条，三性全是推论：</p>
+    <ol>
+      <li><b>一次只进一个人</b>（互斥）→ 三步没人插队 → <b>原子性 ✓</b></li>
+      <li><b>进门的人，看到的一定是上一个人留下的最终状态</b>（JMM 规定：解锁前的所有写，对后续拿到同一把锁的人可见）→ 上一个人出门前必须把白板刷新 → <b>可见性 ✓</b></li>
+      <li><b>会议室里永远只有一个人</b> → 他看自己一个人的代码，怎么重排都是 as-if-serial（单人视角）→ <b>有序性 ✓</b>（临界区内）</li>
+    </ol>
+    <div class="whycard">
+      <div class="wy-title">🔍 凭什么"出门前必须刷白板"？——谁规定的？</div>
+      <p>不是硬件自动的，是 <b>JMM（Java 内存模型）的明文规定</b>：对同一个锁，<b>解锁操作 happens-before 后续的加锁操作</b>。JVM 在生成解锁指令时插入屏障强制把工作内存刷回主存，加锁时强制重新读主存。你可以把 JMM 理解成"作坊的安全生产规范"——它规定了各种同步工具（锁、volatile、线程 start/join）必须满足的可见性承诺，HotSpot 按规范实现。第一幕的 volatile、这一幕的锁，背后都是这份规范的具体条款。</p>
+    </div>
+
+    <h3 class="kp">2.6 用会议室：最容易踩的三个坑</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>LockTraps.java</span><span>钥匙给错了人，会议室白建</span></div>
+      <pre><code>// 坑一：每人自带一把钥匙 —— 两个线程各 new 一个 Task，synchronized 修饰的
+// work() 锁的是 this（各自的实例），等于两个会议室各进各的，互斥完全失效
+class Task implements Runnable {
+    public synchronized void work() { count++; }   // 锁 this
+}
+new Thread(new Task()).start();   // 线程1 进的是 task1 的会议室
+new Thread(new Task()).start();   // 线程2 进的是 task2 的会议室 —— 没互斥！
+// 修：static synchronized（锁类对象，全局一间会议室）或锁共享的 LOCK
+
+// 坑二：每次现造一把新钥匙 —— 锁对象每次都是新的，等于每次换个会议室门
+synchronized (new Object()) { count++; }          // ❌ 锁了个寂寞
+// 修：private static final Object LOCK = new Object();
+
+// 坑三：一把钥匙开两扇门 —— 加锁的对象和解锁的对象不是同一个
+synchronized (LOCK_A) { ... } 里再 synchronized (LOCK_B)，语义混乱且容易死锁</code></pre>
+    </div>
+    <p>判断口诀只有一句话：<b>所有需要互斥的代码，必须竞争同一把钥匙（同一个对象）</b>。实例方法锁 this、静态方法锁类对象、代码块锁括号里那个——先想清楚"我的这些线程，抢的是同一间会议室吗？"</p>
+
+    <h3 class="kp">2.7 会议室的内部构造（底层，讲到够用）</h3>
+    <p>每个 Java 对象头里有一小块空间（Mark Word），会根据"这间会议室的火爆程度"切换形态——这就是著名的<b>锁升级</b>，用人话讲就是会议室的三档管理策略：</p>
+    <pre class="diagram"><code>第 1 档 · 偏向锁：会议室只被同一个人反复用
+   ── 在门上挂个牌子"XX 专用"，他来了直接进，连登记都免了
+   ── 实现对象头里记下线程 ID，同一线程再来：验牌直接进（最快）
+
+第 2 档 · 轻量级锁：来了第二个人，但两人错峰用
+   ── 牌子作废，改用"占位条"：谁进谁把门牌摘下来挂自己工位上
+   ── 后来者在门外【原地等一小会儿】（自旋），不走去睡觉
+   ── 适合：进去的人很快出来，等一下就轮到了
+
+第 3 档 · 重量级锁：真竞争，一堆人抢
+   ── 自旋变成白烧 CPU，改为正式排队：
+      抢不到的线程被操作系统【挂起睡觉】，轮到再被叫醒
+   ── 挂起/唤醒要走内核（用户态↔内核态切换，微秒级）—— 这是"重"的来源
+   ── 实现对象头指向一个 Monitor（C++ 结构：持锁线程/阻塞队列/等待区/重入计数）
+
+只能升不能降：无锁 → 偏向 → 轻量 → 重量（JDK6 引入；JDK15 起默认废弃偏向，
+因为撤销牌子需要全局停下来，现代应用普遍多线程，不划算）</code></pre>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 面试叙述框架</div>
+      <p>先纠偏再展开："synchronized 并不天然重——JDK6 之后它有自适应的锁升级，低竞争时停留在偏向/轻量级（自旋等一下就过去），真竞争才膨胀成重量级挂起排队。'<code>synchronized</code> 就是慢'是十年前的过时印象。"</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：会议室解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>原子 / 可见 / 有序，三性全包</li>
+            <li>可重入（同线程重复拿自己的锁不死锁）</li>
+            <li>绝大多数场景的正确选择</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li><b>太贵</b>：高竞争下挂起+唤醒（内核切换），为一句 i++ 开会不值</li>
+            <li>等锁时不能被中断、不能超时、不能试一下就走</li>
+            <li>→ 短平快的临界区需要更便宜的方案 → 第四幕 CAS</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>"可重入"是什么意思？为什么必须有？</summary><div class="qa-body">
+      <p>同一个人已经拿着会议室钥匙，又想进另一间<b>需要同一把钥匙</b>的会议室（A 方法加锁后调用 B 方法，B 也加了同一把锁）——如果他进不去，就被自己锁死在门口（死锁）。可重入 = <b>钥匙认人不认次数</b>：同一线程可以反复进入，内部计数器 +1，出来一次 -1，归零才真正还钥匙。任何生产级锁都必须可重入，否则正常的方法调用链都会把自己玩死。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 3 有序性 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>第三幕 有序性：眼看不一定为实 <span class="badge b-hard">难点</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>编译器和 CPU 为了快，会调整指令顺序（重排）——单人没事，多人穿帮。</div>
+      <div class="sq"><b>② 什么场景</b>初始化标志+数据、DCL 单例——"先准备数据再举旗"的代码被打乱。</div>
+      <div class="sq"><b>③ 怎么发生</b>三个搬代码的家伙 + 一张两线程交错时序表。</div>
+      <div class="sq"><b>④ 解决了什么</b>happens-before 判断标准 + volatile 屏障封堵 → DCL 收官。</div>
+    </div>
+
+    <h3 class="kp">3.1 惨案现场</h3>
+    <pre class="diagram"><code>线程 A 执行：                线程 B 执行：
+  a = 1;    // 先准备数据       if (b == 2) {          // 看到旗子举起
+  b = 2;    // 再举旗           assert a == 1;         // 却发现数据没准备好！
+                              //（b==2 成立，a 却是 0 —— 断言失败）
+
+逻辑上"举旗之前数据必然就绪"，但线程 B 亲眼看到了反例。
+这不是 B 眼花，是 A 那两行的执行顺序被偷偷换过了。</code></pre>
+
+    <h3 class="kp">3.2 解剖：谁在动你的代码</h3>
+    <p>你写的代码顺序，和 CPU 实际执行的顺序，<b>经常不一样</b>。有三个家伙都有权限搬动你的指令，动机只有一个——快：</p>
+    <table>
+      <tr><th>搬手</th><th>它干了什么</th><th>举例</th></tr>
+      <tr><td>编译器/JIT</td><td>重排字节码/机器码顺序</td><td>把你先写的 load 挪到 store 后面（读内存很慢，先让它排队）</td></tr>
+      <tr><td>CPU 乱序执行</td><td>一条指令等数据时，先执行后面不依赖它的指令</td><td>食堂打饭：你等红烧肉，先让后面的人打汤</td></tr>
+      <tr><td>写合并/缓存</td><td>多次写合并成一次生效</td><td>便利贴上改三次，最后才抄回白板一次</td></tr>
+    </table>
+    <p><b>为什么单人没事？</b>有一条铁律保护单线程：<b>as-if-serial</b>——无论怎么搬，单线程的执行结果必须和顺序执行一模一样（编译器会分析依赖，有依赖的绝不搬）。所以你看自己代码永远"正常"。<b>多线程为什么穿帮？</b>as-if-serial 只分析<b>单线程内部</b>的依赖，它不知道线程 B 依赖"a 在 b 之前"这种<b>跨线程的约定</b>——这个约定它看不见，就顺手搬了。</p>
+
+    <h3 class="kp">3.3 那到底怎么判断"谁先谁后"？——happens-before</h3>
+    <p>重排不能禁绝（性能崩溃），可见性逐个分析不现实。JMM 的解法是立一份<b>契约</b>，名字叫 <b>happens-before（先行发生）</b>。它的大白话定义：</p>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：快递时效承诺</div>
+      <p>happens-before <b>不是</b>"物理上谁先执行"（快递实际怎么运输、走哪条线、哪个先装车，你不关心也不可控），而是<b>承诺</b>："只要 A happens-before B，那么 A 产生的效果，B 一定看得见"（你在 A 时刻下的单，B 时刻查物流必然查得到）。至于中间是直飞还是绕路——随它去，反正结果给你保证。<b>它是"可见性的保证书"，不是"执行顺序的描述"</b>。</p>
+    </div>
+    <p>没有 happens-before 关系的两个操作（比如上面的 a=1 和线程 B 的读），JMM 一律<b>不做任何承诺</b>——读新读旧、顺序乱不乱，都合法。这种"无保证区域"有个正式名字：<b>数据竞争（data race）</b>，写出 data race 的程序等于把命运交给编译器的心情。</p>
+    <p>四条最常用的规则（一共八条，这四条覆盖 90% 的面试题）：</p>
+    <table>
+      <tr><th>规则</th><th>大白话</th></tr>
+      <tr><td>程序顺序</td><td>单线程里，按代码顺序前面的操作 hb 后面的（as-if-serial 的契约版）</td></tr>
+      <tr><td>锁规则</td><td>同一把锁：上一个人<b>解锁</b> hb 下一个人<b>加锁</b>（第二幕"进门看到最新"的法源）</td></tr>
+      <tr><td>volatile 规则</td><td>对 volatile 的<b>写</b> hb 后续对它的<b>读</b>（第一幕"举旗必被看见"的法源）</td></tr>
+      <tr><td>传递性</td><td>A hb B 且 B hb C ⇒ A hb C（链条可以串）</td></tr>
+    </table>
+    <p><b>用法示范</b>（第二幕遗留的问题现在能正式回答了）："线程 A 锁内改了 x，解锁；线程 B 加同一把锁后读 x，能读到吗？"——写 x hb 解锁（程序顺序），解锁 hb 加锁（锁规则），加锁 hb 读 x（程序顺序），三段用传递性一串：<b>写 x hb 读 x，能读到</b>。以后遇到任何可见性问题，别凭感觉，拿规则串一遍。</p>
+
+    <h3 class="kp">3.4 收官之战：DCL 单例——第一幕+第三幕知识的合体应用</h3>
+    <p>懒汉式单例最著名的写法（双重检查锁），是"为什么需要 volatile"的最佳实战。先看代码：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Singleton.java</span><span>每一行都不能少</span></div>
+      <pre><code>public class Singleton {
+    private static volatile Singleton instance;   // ★ volatile 在这里救命
+
+    private Singleton() {}
+
+    public static Singleton getInstance() {
+        if (instance == null) {                    // ① 第一次检查（不拿锁的快路径）
+            synchronized (Singleton.class) {       // ② 拿会议室钥匙
+                if (instance == null) {            // ③ 第二次检查（拿到钥匙后再确认）
+                    instance = new Singleton();    // ④ 惨案发生地
+                }
+            }
+        }
+        return instance;
+    }
+}
+// 两次检查各自的作用：
+// ① 让"对象已存在"之后的每次调用完全无锁（性能大头）
+// ③ 防止等钥匙期间别人已经建好（两个线程同时通过①，一个建完，另一个进
+//    会议室后若不复查会再建一个）——正确性</code></pre>
+    </div>
+    <p>问题出在 <code>instance = new Singleton()</code> 这一行。它看起来一步，实际三步：<b>a. 分配内存 → b. 构造函数初始化字段 → c. 把地址赋给 instance</b>。<b>b 和 c 之间没有单线程依赖</b>（赋值不依赖字段内容），所以 JIT 可以合法地把顺序换成 a → c → b。换完之后：</p>
+    <pre class="diagram"><code>线程 A（拿着钥匙）                    线程 B（在 ① 处张望）
+ a. 分配内存
+ c. instance = 地址 ────────────────► B 看到 instance != null！
+    （对象还没初始化，字段全零值）        直接 return instance
+                                        → 拿到一个【半成品】→ 用字段就 NPE
+ b. 初始化字段（晚了）
+
+volatile 的屏障此时干什么（回收第一幕的表）：
+ 写 instance 之前有 StoreStore 屏障 —— b（普通写）不许搬到 c（volatile 写）之后
+ ⇒ 线程 B 要么看到 null（老实去拿钥匙），要么看到完整对象。
+ 半成品状态被屏障封死在门内。</code></pre>
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>DCL 为什么必须 volatile？——new 不是原子操作且"赋值"和"初始化"可被重排，无 volatile 时其他线程可能拿到"地址已赋、字段未初始化"的半成品；volatile 写前的屏障把初始化焊死在赋值之前。</p>
+    </div>
+
+    <details class="qa"><summary>还有别的单例写法吗？不想操心 volatile 行不行？</summary><div class="qa-body">
+      <p>行，而且更推荐背这个——<b>静态内部类</b>（原理是模块 5 的钩子：类加载的 clinit 由 JVM 保证只执行一次、多线程下天然互斥，等于 JVM 替你加了锁）：</p>
+      <p><code>private static class Holder { static final Singleton INSTANCE = new Singleton(); }</code><br>
+      <code>public static Singleton getInstance() { return Holder.INSTANCE; }</code></p>
+      <p>懒加载由"内部类第一次被引用才加载"实现，线程安全由"clinit 加锁"实现，<b>零锁代码零 volatile</b>。防御要求最高的场景（防反射、防反序列化再建实例）用<b>枚举</b>——JVM 层面禁止反射创建枚举实例，是 Effective Java 的推荐答案。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 4 CAS ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>第四幕 CAS：乐天派的不排队方案 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>重量级锁排队 = 挂起+唤醒（微秒级），而 i++ 本身只要纳秒——为纳秒的活付微秒的排队费，不划算。</div>
+      <div class="sq"><b>② 什么场景</b>高并发计数、状态开关转换、并发容器的内部实现——全是"读-改-写"就一句的短活。</div>
+      <div class="sq"><b>③ 怎么发生</b>CAS = CPU 一条原生指令："还是我看到的那个值吗？是就换，不是就失败"。失败就重看一眼重来。</div>
+      <div class="sq"><b>④ 解决了什么</b>无锁的原子更新 + 原子类全家桶。✗ ABA / 自旋烧 CPU / 只能管一个变量。</div>
+    </div>
+
+    <h3 class="kp">4.1 惨案现场：会议室太贵了</h3>
+    <p>第二幕的结尾留了个钩子：<b>为一句 i++ 开会议室，到底贵在哪？</b>算一笔账。把一个线程"挂起睡觉再叫醒"（重量级锁排队），需要用户态↔内核态来回切换，开销在<b>微秒级（1~10μs）</b>；而 i++ 这句活本身，纳秒级（~1ns）就干完了。也就是说：</p>
+    <pre class="diagram"><code>干活的成本：        ████████ 1 纳秒
+排队（挂起+唤醒）的成本： ████████████████ 1000+ 纳秒（微秒级）
+
+→ 活儿越短，"开会"越荒谬。10 个线程挤在会议室门口，
+  每人等 1 微秒就为了改 1 纳秒的数 —— CPU 大部分时间在办理"排队手续"。
+
+而现实中这种"短到荒谬"的临界区到处都是：计数器、限流、状态标志翻转、
+并发容器内部的一次指针替换 —— 全是"一句读-改-写"。</code></pre>
+    <p>直觉的出路：既然活儿这么短，<b>抢不到就别去睡觉了，原地重试一下</b>——指不定下一纳秒就轮到了。这个"原地重试"的思路要成立，必须有一个前提：<b>"看一眼旧值 → 换成新值"这两步能被硬件打包成不可分割的一步</b>。这个前提 CPU 真的提供了，它叫 CAS。</p>
+
+    <h3 class="kp">4.2 换个脑子：悲观派与乐观派</h3>
+    <p>在见代码之前，先把两种世界观摆出来——它们贯穿整个并发、数据库、分布式，不只是 Java：</p>
+    <table>
+      <tr><th></th><th>悲观派（synchronized）</th><th>乐观派（CAS）</th></tr>
+      <tr><td>世界观</td><td>冲突<b>一定会</b>发生，先锁门再说</td><td>冲突<b>大概率不</b>发生，先干，撞了再重来</td></tr>
+      <tr><td>作坊里的形象</td><td>会议室：进门前先拿钥匙</td><td>白板前直接动手，写回时核对一下</td></tr>
+      <tr><td>没冲突时</td><td>照样付拿钥匙/还钥匙的手续费</td><td>零额外开销，一次成功</td></tr>
+      <tr><td>有冲突时</td><td>后来的人睡觉，被叫醒再试</td><td>后来的人<b>当场失败</b>，重看一眼重试</tr>
+      <tr><td>适合</td><td>临界区长、竞争激烈</td><td>临界区极短、竞争温和</td></tr>
+    </table>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：多人协作文档的"保存冲突"</div>
+      <p>你打开一份共享文档时它显示<b>版本 5</b>。你改了半天点保存，系统核对："现在还是版本 5 吗？"——是，你的修改直接生效；不是（有人已经存过版本 6 了），<b>你的保存被拒绝，需要重新拉最新版再改一遍</b>。注意这个设计的精髓：<b>拒绝你的时候告诉你"有变化"，但不锁文档、不妨碍别人编辑</b>。Git 冲突、数据库乐观锁（UPDATE ... WHERE version=5）、CAS，全是这一个思想的不同马甲。</p>
+    </div>
+
+    <h3 class="kp">4.3 武器登场：CAS 的三件套</h3>
+    <p>CAS（Compare-And-Swap，比较并交换）的完整定义就一句话：</p>
+    <pre class="diagram"><code>CAS(内存位置 V, 我记下的旧值 A, 想写成的新值 B)
+   ├─ 此刻 V 里的值 == A ？  →  把 V 写成 B，返回 true（我赌对了，没人动过）
+   └─ 此刻 V 里的值 != A ？  →  什么都不做，返回 false（有人插队了，我重来）
+
+整个"核对+替换"由 CPU 一条指令完成（x86 上是 lock cmpxchg），
+硬件保证核对和替换之间【没有任何人能插一脚】 —— 原子性的来源</code></pre>
+    <p>用它重写计数器，就是 JDK 里 <code>AtomicInteger.incrementAndGet()</code> 的真实逻辑（简化后）：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>AtomicInteger.java（JDK 源码简化）</span><span>注意：还是三步，但最后一步带"核对"</span></div>
+      <pre><code>public final int incrementAndGet() {
+    int current, next;
+    do {
+        current = this.get();      // ① 看一眼：读到现在的值（比如 5）
+        next = current + 1;        // ② 心算：5 + 1 = 6
+    } while (!compareAndSet(current, next));  // ③ 换！核对"还是 5 吗"
+                                              //    不是 5 → 整个重来（回到①）
+    return next;
+}</code></pre>
+    </div>
+    <p>对照第二幕的解剖：i++ 还是"取数 → 算 → 放回"三步，<b>volatile 版失败在第三步是无脑覆盖</b>；CAS 版的第三步是<b>带着核对的条件覆盖</b>——"只有白板上还是我记下的那个 5，我的 6 才允许写上去"。像在便利贴背面写上"我对的是 5"，柜台收单时核对一遍，对不上就打回重写。这样即使中途被人插队，也不会把别人的成果覆盖掉——要么成功，要么完好无损地失败重来。</p>
+
+    <h3 class="kp">4.4 凭什么有效：硬件的原子指令</h3>
+    <div class="whycard">
+      <div class="wy-title">🔍 "比较和交换之间没人插队"是谁保证的？</div>
+      <p>不是 Java，是 CPU。x86 提供 <code>lock cmpxchg</code> 指令：LOCK 前缀让这个核<b>独占那个缓存行</b>再执行比较交换——正是第一幕讲过的 MESI 协议那套硬件广播机制（"我要独占，其他核把旧便利贴作废"）。Java 里 <code>Unsafe.compareAndSwapInt()</code> 是个 native 方法，直接映射到这条指令。所以 CAS 的原子性和 volatile 的可见性，硬件根源是<b>同一套</b>：一个是"独占地改"，一个是"改完立刻广播"。</p>
+    </div>
+
+    <h3 class="kp">4.5 原子类全家桶：CAS 的产品化</h3>
+    <p>JDK 把"volatile + CAS + 自旋"这个组合封装成了一整包工具（java.util.concurrent.atomic 包），按场景选：</p>
+    <table>
+      <tr><th>类</th><th>管什么</th><th>典型用法</th></tr>
+      <tr><td><code>AtomicInteger / AtomicLong</code></td><td>一个数字的原子读改写</td><td>计数器、发号器（<code>incrementAndGet</code>）</td></tr>
+      <tr><td><code>AtomicReference&lt;V&gt;</code></td><td>一个<b>对象引用</b>的原子替换</td><td>原子地换掉整个配置对象/链表头</td></tr>
+      <tr><td><code>AtomicStampedReference&lt;V&gt;</code></td><td>带<b>版本号</b>的引用</td><td>ABA 的解药（见 4.6 洞一）</td></tr>
+      <tr><td><code>LongAdder</code></td><td>高并发纯计数专精</td><td>统计计数、热点计数（见 4.6 洞二）</td></tr>
+      <tr><td><code>AtomicIntegerFieldUpdater</code></td><td>给已有字段"加装"原子操作</td><td>不能改类定义时（少见，知道即可）</td></tr>
+    </table>
+    <p><b>AtomicReference 顺便解决了"只能管一个变量"的一部分</b>：两个变量要联动原子地变，就把它们<b>打包进一个不可变对象</b>（final 字段），用一次 CAS 整体换引用——旧引用换成新引用是原子的，两个字段作为整体一起被换掉，不存在"换了一半"。</p>
+
+    <h3 class="kp">4.6 乐观派的三个洞</h3>
+    <p>CAS 不是银弹，它有三个天生的坑，面试常拿它们当追问：</p>
+
+    <h4>洞一：ABA——"没人动过"和"动过又改回来了"分不清</h4>
+    <p>CAS 只核对"现在是不是我记的值"，它<b>不知道这个值中间经历过什么</b>。</p>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：冰箱里的可乐</div>
+      <p>你出门前冰箱里有一罐可乐，回来看到<b>还是一罐可乐</b>，于是断定"没人动过"。真相：室友喝掉了，又买了一罐同款放回去。对"喝没喝过"这件事，你的检验完全失效。变量从 A 被改成 B 又改回 A，CAS 的持有者毫无察觉——<b>值相同 ≠ 没被动过</b>。</p>
+    </div>
+    <p>纯数字计数无所谓（A→B→A 再 +1 结果也无所谓）。要命的是<b>引用</b>场景：无锁栈的经典事故——线程 1 记下栈顶是节点 A，准备 CAS 换成 A.next；期间 A 和 B 都被弹出又 A 被重新压入，线程 1 一核对"栈顶还是 A？"——成功！但此时 A.next 已经变了，栈被接歪了。<b>解药：加版本号</b>——<code>AtomicStampedReference</code> 每次修改都盖一个新戳，CAS 同时核对值和戳，可乐上贴生产日期，看罐子不看日期的时代结束了。（Java 有 GC 兜底，引用复用问题比 C++ 少得多，但面试必须能讲清。）</p>
+
+    <h4>洞二：自旋烧 CPU——竞争一激烈，全员空转</h4>
+    <p>失败重试是 do-while 死循环。10 个线程挤一个 <code>AtomicLong</code>，竞争激烈时<b>大量线程在循环里空烧 CPU</b>，成功者只有少数——乐观派对"高竞争"过敏。<b>解药：LongAdder——别挤一个柜台，开一排柜台</b>：</p>
+    <pre class="diagram"><code>AtomicLong（单柜台）：                    LongAdder（柜台阵列）：
+        ┌────────────┐                    ┌──────┐ ┌──────┐ ┌──────┐
+ t1..t10 ──►│  count 递增 │ 全员排队重试      │base  │ │Cell[0]│ │Cell[1]│ ...
+        └────────────┘                    └──────┘ └──────┘ └──────┘
+  10 个线程挤 1 个热点                       不同线程被散到不同 Cell 各自加
+  失败率 ∝ 竞争人数                          读时 sum = base + 所有 Cell 之和
+
+思路：把"一个热点变量"拆成"一叠分片"，写压力被摊薄，
+     冲突概率随分片数下降 —— 空间换时间。
+代价：sum() 是"汇总瞬间的近似值"（弱一致），不适合要求精确读的场景。
+选型口诀：写多读少用 LongAdder，读写均衡/要精确瞬时值用 AtomicLong。</code></pre>
+
+    <h4>洞三：只能管一个变量、一段"能重来"的逻辑</h4>
+    <p>CAS 的本质是<b>原子地换一个值</b>。如果临界区是多步逻辑（查两张表、再发一条消息），"失败了整个重来"要么做不到（消息已发出，没法收回），要么重来成本比排队还贵。这时乐观派就该让位——<b>老实回第二幕的会议室</b>。一句话：<b>CAS 是"读-改-写一句"的极致优化，不是锁的替代品</b>。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>CAS 是什么？——CPU 一条原生的"比较并交换"指令：写回前核对该值没被别人动过，没动过才生效，动过就整个重来。悲观锁（synchronized）先锁门再干活，CAS（乐观派）先干活、提交时核对，失败重试。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：CAS 解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>短临界区的原子更新，无需挂起排队</li>
+            <li>原子类全家桶 / 并发容器内部的地基</li>
+            <li>高竞争计数：LongAdder 摊薄热点</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li>复杂临界区（多步、不可重来的逻辑）→ 仍需锁</li>
+            <li>"抢不到就<b>排队</b>、轮到了<b>叫醒</b>"这套管理 CAS 完全没有</li>
+            <li>→ 锁、信号量、门栓都需要排队机 → 下一幕 AQS</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>synchronized 和 AtomicInteger 怎么选？</summary><div class="qa-body">
+      <p>看临界区的<b>长度和可重来性</b>：临界区就一句"读-改-写"、重试无副作用 → 原子类（无锁、高吞吐）；临界区有多步逻辑、或包着一组必须整体完成的操作 → 锁。另外注意很多场景两者结合：并发容器内部节点替换用 CAS，宏观操作加细粒度锁。</p>
+    </div></details>
+
+    <details class="qa"><summary>CAS 的自旋和第二幕"轻量级锁自旋"是一回事吗？</summary><div class="qa-body">
+      <p>思想同源（抢不到不睡觉、原地重试）、实现不同层：AtomicInteger 里的自旋是<b>你自己代码里的 do-while</b>（Java 层）；轻量级锁的自旋是<b>JVM 在 synchronized 内部</b>替你做的。可以看成同一个"乐观等待"模式在两个层面的复用——面试这么串一句，比背两个孤立概念高一个段位。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里见过这个思想吗？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>你没写过裸 CAS（CPython 内部才碰得到），但你一定用过它的马甲：Git 冲突（版本对不上就拒绝合并）、数据库乐观锁（<code>UPDATE t SET v=?, version=version+1 WHERE id=? AND version=?</code>，影响行数为 0 就是"被插队了，重来"）、Redis 事务的 WATCH/MULTI。思想是通用的：<b>提交时核对，失败重来</b>。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 5 AQS ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>第五幕 AQS：公共排队叫号机 <span class="badge b-hard">难点</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>锁、信号量、门栓……全都需要"抢不到就排队挂起、轮到了叫醒"，这套逻辑每个工具自己写一遍 = 重复且容易写错。</div>
+      <div class="sq"><b>② 什么场景</b>ReentrantLock / Semaphore / CountDownLatch / 线程池的 Worker——JUC 半壁江山的地基。</div>
+      <div class="sq"><b>③ 怎么发生</b>一句话：一个 volatile int state（CAS 抢）+ 一条双向等待队列（抢不到入队睡觉，释放时叫醒队头）。</div>
+      <div class="sq"><b>④ 解决了什么</b>统一排队基建 + 比 synchronized 多的四样能力。✗ "等条件成立"要另一套 → 第六幕。</div>
+    </div>
+
+    <h3 class="kp">5.1 这幕的"惨案"不是 bug，是重复劳动</h3>
+    <p>先自己动手造一个锁，感受一下坑有多深。第四幕学完 CAS，你可能会写出这样的东西：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>SpinLock.java</span><span>能跑，但三处硬伤</span></div>
+      <pre><code>class SpinLock {
+    private volatile int state = 0;                 // 空闲 0 / 占用 1
+
+    public void lock() {
+        while (!cas(0, 1)) { }                      // 抢不到就原地死等
+    }
+    public void unlock() {
+        state = 0;                                  // 走的时候开门
+    }
+}</code></pre>
+    </div>
+    <p>功能上它能互斥，但三个硬伤立刻暴露：</p>
+    <ol>
+      <li><b>等的人烧 CPU</b>：抢不到的线程在 while 里空转，第四幕刚讲过"自旋对高竞争过敏"；</li>
+      <li><b>没有先来后到</b>：新来的线程可能永远抢过老实的排队者——某个线程<b>饿死</b>；</li>
+      <li><b>不可重入</b>：拿着锁的线程再调一个内部也 lock 的方法，直接把自己锁死。</li>
+    </ol>
+    <p>要修这三个洞，你需要：一个<b>排队的队列</b>（解决先来后到）、一套<b>挂起/唤醒</b>的办法（解决烧 CPU）、一个<b>重入计数</b>（解决自锁）。写完这一套，你会发现——<b>信号量需要一模一样的一套，倒计时门栓需要一模一样的一套，线程池的工作队列也需要</b>。每个同步工具都自带一套排队机，明显是浪费。</p>
+    <p>于是 Doug Lea（JUC 的作者）把"排队、挂起、唤醒、取消、容错"这一整套<b>通用骨架</b>抽出来写成一个类，各种同步工具只需要回答两个问题："什么算抢到？什么算放掉？"——这就是 <b>AQS（AbstractQueuedSynchronizer，抽象队列同步器）</b>。名字吓人，拆开就是四个词：<b>抽象</b>（模板，等你来填空）、<b>队列</b>（排队的地方）、<b>同步</b>（协调多线程）、<b>器</b>（一个类）。</p>
+
+    <h3 class="kp">5.2 AQS 只有两大零件</h3>
+    <pre class="diagram"><code>零件一：state —— 一个 volatile int（含义由子类定义）
+   ReentrantLock:    state = 重入次数        （0 空闲，2 = 持有者进来了两层）
+   Semaphore:        state = 剩余许可证数    （5 = 还能放 5 个人同时进）
+   CountDownLatch:   state = 还没倒数的门闩数（3 = 还有 3 个计数没完成）
+   共同点：改 state 全靠 CAS（第四幕），读靠 volatile 可见性（第一幕）
+
+零件二：CLH 双向等待队列 —— 抢不到的人在哪等
+   抢锁失败的线程被包成一个 Node，挂到队列尾巴上
+   Node 里的线程用 LockSupport.park() 挂起 ——【真正去睡觉，不烧 CPU】
+   持锁者释放时，叫醒（unpark）队列头部第一个还睡着的 → 它醒来重新抢</code></pre>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：银行叫号机</div>
+      <p><b>state = 柜台窗口数</b>（还剩几个窗口空着）；<b>队列 = 取号等待区</b>（取了号的人<b>坐在椅子上睡</b>，不是站着干耗——这就是 park 挂起比自旋文明的地方）；<b>park() = 叫号前你先眯一觉</b>；<b>unpark() = 广播叫号</b>，被叫醒的人站起来去窗口办业务（重新尝试 CAS 抢 state）。叫号机不关心你办什么业务——<b>业务你自己填</b>（tryAcquire），排队的规矩它统一包办（acquire）。</p>
+    </div>
+
+    <h3 class="kp">5.3 骨架与血肉：模板方法的分工</h3>
+    <p>AQS 的用法是"继承它，填两个空"。它把方法分成两层，分工极其清楚：</p>
+    <table>
+      <tr><th>层</th><th>方法</th><th>谁写</th><th>管什么</th></tr>
+      <tr><td rowspan="2">血肉（业务）</td><td><code>tryAcquire() / tryRelease()</code></td><td><b>你</b>（子类）</td><td>"什么算抢到、什么算放掉"——state 怎么变、什么条件下算成功</td></tr>
+      <tr><td><code>tryAcquireShared() / tryReleaseShared()</code></td><td><b>你</b>（子类）</td><td>共享模式的版本（允许多人同时"抢到"，如信号量）</td></tr>
+      <tr><td rowspan="2">骨架（通用）</td><td><code>acquire() / release()</code></td><td><b>AQS</b>（父类）</td><td>调你的 tryAcquire，失败 → 入队 → park 挂起；释放 → 叫醒队头</td></tr>
+      <tr><td>队列维护、取消、中断处理</td><td><b>AQS</b>（父类）</td><td>所有容易写错的脏活</td></tr>
+    </table>
+    <p>这正是设计模式里的<b>模板方法模式</b>：父类定流程（"先试抢 → 不行就排队睡 → 被叫醒再试"），子类填空（"试抢怎么算成功"）。你写过的每一个 <code>ReentrantLock.lock()</code>，进到源码里都是 <code>sync.acquire(1)</code> → <code>tryAcquire(1)</code>（ReentrantLock 填的空）→ 失败则排队睡觉。</p>
+
+    <h3 class="kp">5.4 实战解剖：ReentrantLock 就是 AQS 的一道填空题</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ReentrantLock 核心逻辑（简化）</span><span>可重入 = owner 是自己就 state+1</span></div>
+      <pre><code>// tryAcquire 的填空：什么算抢到？
+boolean tryAcquire(int acquires) {
+    int c = getState();
+    if (c == 0) {                                  // 空闲
+        if (cas(0, acquires)) {                    // CAS 抢
+            owner = currentThread();               // 门上挂牌：谁在用
+            return true;
+        }
+    } else if (owner == currentThread()) {         // 已持有且是自己 → 可重入！
+        setState(c + acquires);                    // 只加计数，不用 CAS（独占中没人能改）
+        return true;
+    }
+    return false;                                  // 抢不到 → AQS 骨架让你排队睡觉
+}
+
+// tryRelease 的填空：什么算放掉？
+boolean tryRelease(int releases) {
+    int c = getState() - releases;
+    if (owner != currentThread()) throw new IllegalMonitorStateException();
+    if (c == 0) { owner = null; setState(0); return true; } // 计数归零才真放锁
+    setState(c); return false;                     // 重入层没退完，还占着
+}</code></pre>
+    </div>
+    <p><b>公平与非公平的区别只有一句话</b>：非公平版 tryAcquire 开头先"无礼地"直接 CAS 插一次队（<code>if (c == 0) → cas</code>，不看队列）；公平版先问一句 <code>hasQueuedPredecessors()</code>——"队列里有人排队吗？有人我就老老实实去队尾"。</p>
+    <div class="whycard">
+      <div class="wy-title">🔍 为什么默认是非公平？插队不是不讲武德吗？</div>
+      <p>吞吐量。刚释放锁的瞬间，如果队列里的人还睡着（唤醒要花微秒），而恰好有个新线程刚到（CPU 正热着），非公平直接把锁给它——<b>省掉一次挂起+唤醒的往返</b>。代价是排队的老线程可能一直被插队（饿死）。公平锁先来后到，但每次都要走"唤醒队头"的慢流程，吞吐明显更低。<b>公平是奢侈品，默认卖性价比</b>——这也呼应一个更大的原则：并发工具的性能大头往往不在"抢锁"本身，而在"等待者的管理方式"。</p>
+    </div>
+
+    <h3 class="kp">5.5 synchronized vs ReentrantLock：什么时候用谁</h3>
+    <table>
+      <tr><th></th><th>synchronized</th><th>ReentrantLock</th></tr>
+      <tr><td>实现层次</td><td>JVM 内置（monitor 指令）</td><td>Java 代码写的（基于 AQS + CAS）</td></tr>
+      <tr><td>性能</td><td colspan="2">JDK6 锁升级后基本持平，不构成选型理由</td></tr>
+      <tr><td>自动释放</td><td>✓ 出了代码块自动还（异常也不怕）</td><td>✗ 必须手动 <code>finally { unlock() }</code>，忘写 = 永久持锁</td></tr>
+      <tr><td>可中断等锁</td><td>✗ 抢锁时不能被打断</td><td>✓ <code>lockInterruptibly()</code> 等锁时能响应中断</td></tr>
+      <tr><td>超时放弃</td><td>✗</td><td>✓ <code>tryLock(3, SECONDS)</code> 等不到就走（治死锁的药）</td></tr>
+      <tr><td>公平锁</td><td>✗ 只有非公平</td><td>✓ <code>new ReentrantLock(true)</code></td></tr>
+      <tr><td>多条件队列</td><td>✗ 一个锁一个等待区</td><td>✓ 多个 <code>Condition</code> 分开等（第六幕）</td></tr>
+    </table>
+    <p><b>选型一句话</b>：默认 synchronized（写不坏、自动释放）；只在需要"可中断 / 超时 / 公平 / 多条件队列"这四样中的某一样时，才上 ReentrantLock——而且必须配 try-finally。</p>
+
+    <h3 class="kp">5.6 手撕加分：20 行用 AQS 造一把锁</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Mutex.java</span><span>面试现场手写版（非重入）</span></div>
+      <pre><code>class Mutex {
+    private final Sync sync = new Sync();
+
+    // 继承 AQS，只填两个空："什么算抢到 / 什么算放掉"
+    private static class Sync extends AbstractQueuedSynchronizer {
+        @Override
+        protected boolean tryAcquire(int acquires) {
+            return compareAndSetState(0, 1);   // 抢到 state 0→1 就算赢
+        }
+        @Override
+        protected boolean tryRelease(int releases) {
+            setState(0);                        // 此时独占，直接写，无需 CAS
+            return true;
+        }
+    }
+    public void lock()   { sync.acquire(1); }   // 抢不到？骨架让你排队睡觉
+    public void unlock() { sync.release(1); }   // 释放时骨架自动叫醒队头
+}</code></pre>
+    </div>
+    <p>这就是 AQS 设计的漂亮之处：<b>你写的 8 行是业务判断，排队挂起唤醒那些最容易写错的 800 行，父类全包了</b>。Semaphore 的空是"state 是许可证数，减到 -1 就算抢不到"；CountDownLatch 的空是"state 减到 0 才放行"——同一台叫号机，换个业务规则而已。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>AQS 是什么？——一个"volatile state（CAS 改）+ CLH 双向等待队列（park 挂起 / unpark 唤醒）"的公共排队机：子类定义 state 的含义和抢放规则（tryAcquire/tryRelease），排队挂起唤醒的通用骨架它全包。ReentrantLock、Semaphore、CountDownLatch 都是它的填空题。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：AQS 解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>"抢不到就排队、轮到了叫醒"的统一基建</li>
+            <li>可中断 / 超时 / 公平 / 多条件队列四大能力</li>
+            <li>JUC 各同步工具的地基（一通百通）</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li>它只管"排队拿许可"，不管"<b>等一个条件成立</b>"（队列非空、连接归还）</li>
+            <li>条件等待需要"睡去等信号、醒了重新抢锁"的配合机制</li>
+            <li>→ 这套"线程说话"的原语 → 第六幕</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>队列里挂起的线程，到底是怎么被挂起和唤醒的？</summary><div class="qa-body">
+      <p><code>LockSupport.park() / unpark(thread)</code>——JDK 里最底层的"睡觉/叫醒"原语（内部走 Unsafe，对应操作系统的挂起原语）。AQS 入队后循环里 park 自己；持锁者释放时会找到队头第一个有效节点 unpark 它。park/unpark 的细节和它比 wait/notify 先进在哪，第六幕专门讲——AQS 的排队为什么可靠，答案全在那。</p>
+    </div></details>
+
+    <details class="qa"><summary>为什么等待队列要设计成双向链表？单向不行吗？</summary><div class="qa-body">
+      <p>三个刚需：① 唤醒时要找<b>后继</b>节点（释放锁叫醒下一个人）——要 next 指针；② 节点取消/超时要把自己从队列里摘掉，得同时改前驱的 next 和后继的 prev——要 prev 指针；③ 排队中的线程要反复检查"<b>我是不是队头</b>"（只有队头才被赋予抢锁资格）——从自己往前看一眼前驱是否是哨兵节点。单向链表做不到 ②③，所以双向。</p>
+    </div></details>
+
+    <details class="qa"><summary>CountDownLatch 和 AQS 什么关系？<span class="badge b-high">追问率高</span></summary><div class="qa-body">
+      <p>它就是"共享模式"的填空题：state = 计数值。<code>countDown()</code> = <code>releaseShared</code>（CAS 把 state 减 1）；<code>await()</code> = <code>acquireSharedInterruptibly</code>（tryAcquireShared 的填空是 <code>return getState() == 0 ? 1 : -1;</code>——state 不为 0 就去排队睡觉）。state 减到 0 的那次 release 会把队列里所有等待者一起叫醒——这就是"倒数结束、全员放行"的实现。第九幕还会从"使用者视角"再讲一遍三件套。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 6 等与唤醒 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>第六幕 等与唤醒：线程怎么说话 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>线程之间不只是抢资源，还要"打招呼"：队列空了生产者得睡，队列满了消费者得睡，等条件成立再干。</div>
+      <div class="sq"><b>② 什么场景</b>生产者-消费者（最经典）、任务队列、连接池借还——一切"等条件"的协作。</div>
+      <div class="sq"><b>③ 怎么发生</b>wait 进等待区睡觉并交出钥匙，notify 叫醒一个人；Condition = AQS 版等待区；park/unpark = 最底层的睡觉叫醒原语。</div>
+      <div class="sq"><b>④ 解决了什么</b>线程协作时序。✗ 有些数据根本不该共享 → ThreadLocal。</div>
+    </div>
+
+    <h3 class="kp">6.1 惨案现场：忙等烧穿 CPU</h3>
+    <p>生产者往队列里放任务，消费者从队列里取。消费者的第一版直觉写法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>BusyWait.java</span><span>两种写法都不行</span></div>
+      <pre><code>// 写法一：死盯着看
+while (queue.isEmpty()) { }        // 队列空就一直空转 —— 一个核被烧满，什么都没干
+
+// 写法二：隔一会儿看一眼
+while (queue.isEmpty()) {
+    Thread.sleep(100);             // CPU 是省了，但任务平均要白等 50ms
+}                                  // 睡 1ms？又烧 CPU。左右不是人</code></pre>
+    </div>
+    <p>两难的根源：<b>消费者不知道"什么时候队列会有东西"，只能反复查看</b>。真正需要的是一种机制——"我先去睡（不占 CPU），<b>等生产者放东西的时候主动叫醒我</b>"。也就是线程之间要能<b>说话</b>：一方睡去等信号，另一方发信号。</p>
+
+    <h3 class="kp">6.2 武器登场：wait / notify 三件套</h3>
+    <p>Object 类上挂了三个土生土长的方法（对，是 Object——任何对象都能当"等待区"）：</p>
+    <table>
+      <tr><th>方法</th><th>大白话</th><th>细节（面试坑点）</th></tr>
+      <tr><td><code>wait()</code></td><td>我去等待区睡觉，<b>钥匙还回前台</b></td><td>睡着时<b>不占锁</b>；被叫醒后要<b>重新排队抢钥匙</b>，拿到才从 wait 那行继续往下走</td></tr>
+      <tr><td><code>notify()</code></td><td>叫醒等待区里的<b>一个</b>人</td><td>叫谁由 JVM 决定（不确定）；发信号的人<b>自己还在持锁</b>——被叫的人要等他出了临界区才能动</td></tr>
+      <tr><td><code>notifyAll()</code></td><td>把等待区的人<b>全叫醒</b></td><td>全部醒来重新抢钥匙，抢到的干活，没抢到的回去睡</td></tr>
+    </table>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：前台叫号</div>
+      <p>wait = 跟前台说"条件不满足，我去休息区睡了"，<b>顺手把会议室钥匙还回去</b>（还钥匙是关键！不还，别人永远进不了会议室，条件永远变不了）。notify = 前台朝休息区喊一嗓子"有情况！"。被喊醒的人<b>不能直接冲进会议室</b>——他得重新排队拿钥匙，拿到了，从当初睡着的那行代码继续执行，<b>并且必须重新检查条件</b>（喊你起来不代表条件就是为你准备的）。</p>
+    </div>
+    <div class="whycard">
+      <div class="wy-title">🔍 铁律：为什么 wait/notify 必须写在 synchronized 里？</div>
+      <p>不写会直接抛 <code>IllegalMonitorStateException</code>，但面试要的是"为什么这样设计"。推演一遍不持锁会发生什么：消费者查了队列（空），<b>还没来得及 wait</b>，生产者放了东西并 notify——这声叫醒落空（没人睡着）。随后消费者才睡去，<b>从此没人再叫它</b>——即使队列里一直有货。这就是臭名昭著的<b>丢失唤醒（lost wakeup）</b>。持锁的意义：<b>"检查条件"和"睡去"之间不许有人插队改条件、发信号</b>——把这两步打包成原子的，丢失唤醒在结构上就不可能发生。JMM 也给了配套承诺：notify 发生在解锁前 → 被唤醒者重新加锁后必然看到信号发出前的所有改动（第三幕锁规则的又一次应用）。</p>
+    </div>
+
+    <h3 class="kp">6.3 两个经典坑（笔试和面试的常驻嘉宾）</h3>
+    <h4>坑一：醒来后用 if 还是 while 重查条件？</h4>
+    <pre class="diagram"><code>✗ if (queue.isEmpty()) wait();  take();
+   醒来直接往下拿 → 拿的时候可能又空了！
+
+为什么：① notifyAll 叫醒的不止你一个——第一个抢到钥匙的把唯一的元素拿走了，
+        你抢到钥匙时队列又空了（条件被别人"用掉了"）；
+      ② JVM 允许"没人叫你、你自己醒"（虚假唤醒 spurious wakeup，底层机制决定，
+        规范明文允许）。
+✓ while (queue.isEmpty()) wait();  take();
+   醒来【重新检查】，条件真满足才往下走 —— 一句话：wait 只负责睡，
+   条件判断永远是自己的责任，每醒一次查一次。</code></pre>
+    <h4>坑二：notify 还是 notifyAll？</h4>
+    <p>notify 只叫醒一个，但如果这把钥匙的等待区里<b>睡着两种人</b>（生产者等"不满"、消费者等"不空"），notify 可能叫醒的是<b>不该醒的那种</b>——他醒来一查条件不满足，又睡回去了，而<b>真正该醒的人没被叫到</b>，永远睡死。<b>保守正确的答案：notifyAll</b>——全叫醒，让条件自己筛选（配合 while 重查）。代价是多几场钥匙争夺，但换正确性，值。</p>
+
+    <h3 class="kp">6.4 手撕：生产者-消费者完整版（面试高频）</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>BoundedBuffer.java</span><span>每一行都有讲究</span></div>
+      <pre><code>class BoundedBuffer&lt;T&gt; {
+    private final Queue&lt;T&gt; queue = new LinkedList&lt;&gt;();
+    private final int capacity;
+
+    public BoundedBuffer(int capacity) { this.capacity = capacity; }
+
+    public synchronized void put(T item) throws InterruptedException {
+        while (queue.size() == capacity)   // ① while 不是 if：醒来重查（坑一）
+            wait();                        // ② 满：去休息区睡，钥匙还前台
+        queue.add(item);
+        notifyAll();                       // ③ 叫醒所有人：有货可取了
+    }                                      //    （为什么不是 notify？坑二）
+
+    public synchronized T take() throws InterruptedException {
+        while (queue.isEmpty())
+            wait();                        // 空：去睡
+        T item = queue.poll();
+        notifyAll();                       // 有空位可放了
+        return item;
+    }
+}</code></pre>
+    </div>
+    <p>对着代码把整个舞蹈走一遍：消费者 A 发现空 → wait（还钥匙、去睡）→ 生产者 B 拿到钥匙 → 放入元素 → notifyAll（朝休息区喊）→ B 出会议室还钥匙 → A 被唤醒、重新排队拿钥匙 → 拿到 → <b>while 重查：非空 ✓</b> → 取走元素 → notifyAll（叫生产者可以再放）→ 出门。每一方"睡"之前都还了钥匙，所以另一方总能进得去改条件——这就是这套机制不死的秘密。</p>
+
+    <h3 class="kp">6.5 进化版：Condition——AQS 时代的等待区</h3>
+    <p><code>ReentrantLock</code> 配套的等待机制叫 <code>Condition</code>，方法名换了一套马甲，语义一一对应：</p>
+    <table>
+      <tr><th>Object（synchronized 配套）</th><th>Condition（ReentrantLock 配套）</th><th>语义</th></tr>
+      <tr><td><code>obj.wait()</code></td><td><code>condition.await()</code></td><td>睡去并释放锁</td></tr>
+      <tr><td><code>obj.notify()</code></td><td><code>condition.signal()</code></td><td>叫醒一个</td></tr>
+      <tr><td><code>obj.notifyAll()</code></td><td><code>condition.signalAll()</code></td><td>叫醒所有</td></tr>
+    </table>
+    <p>Condition 的<b>真正进步</b>在于：<b>一把锁可以开多个等待区</b>。回看 6.3 坑二——生产者和消费者混在一个等待区是 notifyAll 保守的根源。Condition 直接把两种人<b>分开睡</b>：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ArrayBlockingQueue 的思路（简化）</span><span>两个等待区，精准叫醒</span></div>
+      <pre><code>private final ReentrantLock lock = new ReentrantLock();
+private final Condition notFull  = lock.newCondition();  // 生产者睡这屋
+private final Condition notEmpty = lock.newCondition(); // 消费者睡那屋
+
+public void put(T item) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+        while (queue.size() == capacity) notFull.await();  // 满：去"不满屋"睡
+        queue.add(item);
+        notEmpty.signal();          // 只叫"非空屋"的消费者 —— 精准，不用全员惊动
+    } finally {
+        lock.unlock();
+    }
+}
+// take() 对称：空了去 notEmpty 睡，取完 signal 不满屋</code></pre>
+    </div>
+    <p>这就是 JDK 的 <code>ArrayBlockingQueue</code> 内部真实结构（它也是线程池工作队列的候选实现——第八幕会接上）。</p>
+
+    <h3 class="kp">6.6 最底层：LockSupport.park / unpark</h3>
+    <p>第五幕欠的账现在还：AQS 队列里挂起线程用的到底是什么？——<code>LockSupport.park() / unpark(thread)</code>，JDK 里最底层的睡觉/叫醒原语（wait/notify 和 Condition 底下也各有实现，AQS 直接用它）。它和 wait/notify 有一个<b>本质区别</b>：</p>
+    <pre class="diagram"><code>wait/notify：必须先睡后叫。
+   你还没睡，我先 notify 了 —— 这声叫唤【凭空消失】，你再睡就没人叫你了
+   （就像闹钟只响一次，你还没上床它先响了 —— 丢失唤醒）
+
+park/unpark：叫醒可以提前发，像一张【起床券】。
+   unpark(thread) 给目标线程发一张券；线程 park 时先摸口袋：
+   有券 → 掏出来直接走人，根本不睡；没券 → 睡，等别人发券
+   券不叠加：口袋里最多一张，先发十张也只算一张
+
+   → "先叫后睡"不丢信号。这就是 AQS 敢把"入队"和"挂起"分两步做的底气：
+     入队完、还没睡着的瞬间，就算别人已经 unpark 过了，券还在口袋里，
+     park 一次看一眼券直接通过 —— 竞态窗口被券填平了。</code></pre>
+    <p>另外注意 unpark 是<b>按线程点名</b>的（<code>unpark(某个线程)</code>），而 notify 只是"朝等待区喊一嗓子"不知道叫谁——这也是 AQS 能实现"精确叫醒队头"的基础。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>wait/notify 是什么？——锁配套的"说话"机制：wait = 释放锁、进等待区睡；notify = 叫醒等待者去重新抢锁。必须持锁调用（防止检查条件到睡去之间被插队导致丢失唤醒），醒来必须 while 重查条件（虚假唤醒 + notifyAll 多人抢条件）。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：等与唤醒解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>忙等两难 → 睡觉等信号，CPU 零消耗</li>
+            <li>生产者-消费者 / 任务队列的完整协作</li>
+            <li>Condition：多等待区精准叫醒</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li>前提是"数据要共享"——但有些数据<b>人各一份</b>才对</li>
+            <li>给不该共享的数据加锁排队 = 白白付出</li>
+            <li>→ 换个思路：不共享 → 下一幕 ThreadLocal</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>sleep 和 wait 到底差在哪？每次都混</summary><div class="qa-body">
+      <p>四点：<b>① 锁</b>：sleep 抱着钥匙睡（不放锁），wait 睡前还钥匙；<b>② 归属</b>：sleep 是 Thread 的静态方法（跟锁无关），wait 是 Object 的方法（必须配合 synchronized）；<b>③ 唤醒</b>：sleep 定时醒（或被中断），wait 只能被 notify/notifyAll/中断唤醒；<b>④ 用途</b>：sleep 是"我歇会儿"（不涉及协作），wait 是"条件不满足，等消息"（协作）。一句话：sleep 是午休，wait 是等叫号。</p>
+    </div></details>
+
+    <details class="qa"><summary>既然有 wait/notify，为什么还要发明 Condition？</summary><div class="qa-body">
+      <p>三个理由：① <b>多条件队列</b>——一把锁多个等待区，生产者消费者分开睡、精准叫醒（6.5 的核心价值）；② <b>配套能力</b>——Condition 天生和 ReentrantLock 的可中断、超时能力对齐（await 支持限时和响应中断，wait 的超时版不支持中断区分）；③ <b>实现统一</b>——Condition 队列和 AQS 的同步队列用的是同一套 Node/park 基础设施，一个被 await 的线程被 signal 后会从条件队列<b>转移到</b>同步队列去排队抢锁，工程上优雅得多。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里怎么写生产者消费者？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>你几乎从没手写过这套——<code>queue.Queue</code> 内部已经把条件变量（threading.Condition）封装好了，<code>q.put()</code> 满了自动睡、<code>q.get()</code> 空了自动等。Java 也有 <code>ArrayBlockingQueue</code> / <code>LinkedBlockingQueue</code>（就是 6.5 那段代码的成品），实际工程里<b>没人手写 BoundedBuffer</b>——但面试要你手写，考的就是你懂不懂"睡与唤醒的配合细节"（while 重查、锁的交接、丢失唤醒）。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 7 ThreadLocal ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>第七幕 ThreadLocal：不共享就没伤害 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>有些数据天生"人各一份"——共享是伪需求，为它加锁排队是白白付出。</div>
+      <div class="sq"><b>② 什么场景</b>traceId 全链路透传、SimpleDateFormat、Spring 事务绑定连接、用户上下文。</div>
+      <div class="sq"><b>③ 怎么发生</b>每个线程自带一个口袋（ThreadLocalMap），ThreadLocal 只是钥匙——数据根本不集中存在 ThreadLocal 里。</div>
+      <div class="sq"><b>④ 解决了什么</b>无锁的线程隔离。✗ 线程池里线程不死 → value 泄漏 → remove()。</div>
+    </div>
+
+    <h3 class="kp">7.1 惨案现场：两种都难受的写法</h3>
+    <p>前六幕的所有武器都默认一件事：<b>数据就是要共享的</b>。但看这个场景——<code>SimpleDateFormat</code> 不是线程安全的（内部有个共享的 Calendar，多线程同时 format 会互相污染，日期串位），你需要每个线程都能安全地用它格式化日期。摆在面前的两条路都难受：</p>
+    <pre class="diagram"><code>方案一：全局一个 SDF + synchronized
+   → 所有线程的日期格式化排队 —— 为"人各一份才合理"的数据开会议室，荒谬
+
+方案二：每次用到就 new 一个
+   → 线程安全了，但 SDF 创建成本高（解析格式串、建 Calendar），
+     高频调用下 GC 压力大
+
+两个方案的共同错误：都没意识到——
+【这个对象根本不需要共享！】每个线程自己有一个，互不干扰，才是天理。</code></pre>
+    <p>同款场景其实到处都是：Web 服务里"当前登录用户"、日志的 traceId、Spring 事务里绑定的数据库连接——它们都有的共同点：<b>一个线程内全程要带着，线程之间各用各的</b>。你可能会想"当成参数一路传下去"？可以，但十层方法调用层层透传，签名全被污染（这叫<b>参数污染</b>）。需要一个"每个线程自己的随身口袋"。</p>
+
+    <h3 class="kp">7.2 武器登场：ThreadLocal</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>SdfHolder.java</span><span>一个词，两个世界</span></div>
+      <pre><code>public class SdfHolder {
+    // 每个线程第一次 get 时，用自己的格式串 new 一个专属于它的 SDF
+    private static final ThreadLocal&lt;SimpleDateFormat&gt; SDF =
+            ThreadLocal.withInitial(() -&gt; new SimpleDateFormat("yyyy-MM-dd"));
+
+    public static String format(Date d) {
+        return SDF.get().format(d);    // get() 拿到的永远是【当前线程自己那份】
+    }
+}</code></pre>
+    </div>
+    <p>效果：线程 A 和线程 B 各自拿到<b>不同的</b> SDF 实例，互不干扰，<b>零锁零等待</b>。这就是 ThreadLocal 的定位——它<b>不解决共享问题，而是取消共享</b>。</p>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：工牌挂绳</div>
+      <p>公司发挂绳（<code>ThreadLocal</code> 对象），每个员工自己往上面挂自己的工牌（value）。谁看挂绳上挂着什么，取决于<b>谁在看</b>——你摸到的永远是自己的工牌。<b>最大的误解在这里</b>：很多人以为 ThreadLocal 是个"中央储物柜"（数据集中存在 ThreadLocal 里），错——<b>挂绳只是钥匙/标签，真正的口袋缝在每个员工自己的衣服里</b>（数据存在每个线程对象身上）。方向是"线程存数据"，不是"ThreadLocal 存线程"。</p>
+    </div>
+
+    <h3 class="kp">7.3 底层解剖（面试核心考点）</h3>
+    <p>把 <code>SDF.get()</code> 一步步展开，看清数据到底存在哪：</p>
+    <pre class="diagram"><code>Thread 类内部有个字段（关键！）：
+   class Thread {
+       ThreadLocal.ThreadLocalMap threadLocals;   // ← 每个线程自带的口袋
+   }
+
+SDF.get() 的执行链：
+   ① 拿到当前线程对象          Thread.currentThread()
+   ② 打开这个线程自己的口袋      t.threadLocals
+   ③ 用 SDF（这个 ThreadLocal 对象）当 key 查表 → 拿到 value
+
+口袋的结构（ThreadLocalMap，一个定制哈希表）：
+   Entry extends WeakReference&lt;ThreadLocal&gt; {
+       Object value;         // ★ key 是弱引用，value 是普通的强引用
+   }
+
+所以多个 ThreadLocal（挂绳 A、挂绳 B）在同一线程口袋里互不冲突；
+同一条挂绳在不同线程口袋里各有各的 value —— 二维：线程 × ThreadLocal。</code></pre>
+
+    <h3 class="kp">7.4 泄漏链：线程池 + ThreadLocal 的著名事故</h3>
+    <p>为什么 Entry 的 key 要设计成<b>弱引用</b>？弱引用的定义（模块 5 的钩子）：只被弱引用指着的东西，GC 一来就收走。这看起来像"防止泄漏"的善意设计，但配上<b>线程池</b>就出事了。一步一步推：</p>
+    <pre class="diagram"><code>前提场景：threadLocal.set(一个大对象)，用完把 threadLocal = null 扔了
+
+  线程池的核心线程 ——【几乎永生】（干完活不死，回池子等下一个任务）
+        │
+        ▼ 强引用（线程对象活着，口袋就活着）
+   Thread.threadLocals（口袋）
+        │
+        ▼ 强引用
+   Entry[] 数组
+        ├─ Entry.key  → 弱引用 → 外部没人引用 ThreadLocal 了 → GC 把 key 收走
+        │              （Entry 变成 key=null 的"脏条目"）
+        └─ Entry.value → ★强引用★ → 只要 Entry 活着，这个大对象就永远不可回收
+
+  → 线程不死 / Entry 不被替换 / 没人清理 → value 成了"幽灵数据"，堆里越积越多 → OOM</code></pre>
+    <div class="whycard">
+      <div class="wy-title">🔍 弱引用救了 key，为什么救不了 value？这个设计图什么？</div>
+      <p>如果把 key 也设成强引用：外部 <code>threadLocal = null</code> 之后，Entry 还死死拽着 ThreadLocal 对象——<b>连 key 带一堆 Entry 全都回收不了，泄漏更彻底</b>。设计者的算盘是：key 用弱引用，外部一放手 key 就变 null，ThreadLocalMap 在后续 get/set 时<b>顺手清理 key 为 null 的脏条目</b>（源码里的 expungeStaleEntry），自愈一下。但在"线程永生"的线程池里，<b>没人再碰这张表，自愈代码根本没机会跑</b>——value 的强引用成了漏网之鱼。一句话：<b>弱引用是兜底不是保险，根治只有一个动作——用完 remove()</b>。</p>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>正确姿势</span><span>线程池场景必写</span></div>
+      <pre><code>try {
+    USER_CONTEXT.set(currentUser);        // 进来：塞自己的
+    // ... 十层业务方法里随时 USER_CONTEXT.get() 拿到当前用户，无需透传
+    doBusiness();
+} finally {
+    USER_CONTEXT.remove();                // ★ 出去：掏空口袋，切断 value 的强引用
+}                                         //   线程回池子时口袋是空的，下个人接着用</code></pre>
+    </div>
+
+    <h3 class="kp">7.5 它撑起了哪些你天天用却没见过的东西</h3>
+    <table>
+      <tr><th>框架</th><th>用 ThreadLocal 藏了什么</th><th>为什么非它不可</th></tr>
+      <tr><td>Spring 事务</td><td>当前线程绑定的 Connection</td><td>同一事务里多次 DAO 调用必须拿到<b>同一个连接</b>才能一起提交/回滚——藏在当前线程口袋里，业务代码零感知</td></tr>
+      <tr><td>日志 MDC</td><td>traceId</td><td>一次请求穿过的所有层，日志都自动带上同一个 traceId——全链路追踪的基石</td></tr>
+      <tr><td>用户上下文</td><td>当前登录用户</td><td>Controller 鉴权一次，Service/DAO 十层直接 get，参数零透传</td></tr>
+    </table>
+    <p>面试把 Spring 事务这条讲出来很加分：<b>为什么同一个 @Transactional 方法里的多次数据库操作是同一个连接？</b>——事务开始时把连接 <code>set</code> 进 ThreadLocal，事务结束 remove。这也顺便解释了一个坑：<b>事务方法内部另起新线程，新线程拿不到那个连接</b>（口袋是线程自己的，别人的口袋你摸不着），事务在新线程里天然失效。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>ThreadLocal 是什么？——线程私有的随身口袋：数据存在每个 Thread 自己的 ThreadLocalMap 里（ThreadLocal 只是查询用的 key），天生线程隔离、零锁。坑：线程池的线程永生，value 强引用回收不了 → 用完必须 finally remove()。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：ThreadLocal 解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>"人各一份"数据的零锁隔离</li>
+            <li>上下文透传（traceId / 用户 / 连接）</li>
+            <li>非线程安全工具类的复用（SDF）</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li>它<b>回避</b>并发问题，不<b>解决</b>共享问题——真要共享还得回前三幕</li>
+            <li>父线程的口袋，子线程摸不着（跨线程传递要特殊机制）</li>
+            <li>→ 线程本身的管理（创建/复用/销毁）还没人管 → 下一幕线程池</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>ThreadLocal 是用来解决并发安全问题的吗？</summary><div class="qa-body">
+      <p><b>不是</b>——这是个经典面试陷阱。它解决的是"数据需不需要共享"的问题：<b>能不共享的，隔离掉（ThreadLocal）；必须共享的，同步好（锁/CAS/原子类）</b>。两条路解决两类问题，混着答会显得概念不清。判断标准：数据天然属于单个线程执行流 → ThreadLocal；数据是全局事实（计数、库存、缓存）→ 同步机制。</p>
+    </div></details>
+
+    <details class="qa"><summary>子线程能拿到父线程 ThreadLocal 里的值吗？<span class="badge b-hard">追问率高</span></summary><div class="qa-body">
+      <p>普通 ThreadLocal 不能（口袋各是各的）。有个特例 <code>InheritableThreadLocal</code>：创建子线程的瞬间，把父线程口袋里的内容<b>复制一份</b>给子线程。但注意它的死穴：<b>线程池里线程是复用的，不是新创建的</b>——复制只发生在 new Thread 那一刻，池里的老线程早就出生了，永远复制不到。所以"线程池 + 上下文传递"要靠阿里的 <code>TransmittableThreadLocal</code>（在任务提交时做快照、执行时回放）——知道这个链条，比背结论高一个段位。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 里有对应物吗？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>一模一样的概念：<code>threading.local()</code>，Flask 的 <code>flask.g</code> / request 上下文、SQLAlchemy 的 session 都是靠它做的线程绑定。FastAPI 的 <code>contextvars</code> 是它 asyncio 时代的进化版（协程感知，还能正确处理任务切换——对应解决"池化复用导致上下文错乱"的问题，思想同 TransmittableThreadLocal）。你已经在 Python 里用过这套思路无数次，Java 只是把它讲得更底层（弱引用、泄漏链）。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 8 线程池 ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>第八幕 线程池：用工制度 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>线程是贵资源（创建要分配约 1MB 栈 + 内核登记），来一个任务招一个人、干完就开除 = 疯狂招聘解雇。</div>
+      <div class="sq"><b>② 什么场景</b>服务端处理请求、异步任务、并行计算——一切"任务到达速率不可控"的地方。</div>
+      <div class="sq"><b>③ 怎么发生</b>七个参数 = 一套用工制度；任务提交走四级判定链；工人没活干时在队列上"睡等"。</div>
+      <div class="sq"><b>④ 解决了什么</b>复用削峰 + 资源管控。✗ 参数配置玄学 → 按业务画像 + 监控调优。</div>
+    </div>
+
+    <h3 class="kp">8.1 惨案现场：线程不是白来的</h3>
+    <p>最直觉的写法："一个请求来了，new 一个线程去处理"：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>PerRequestThread.java</span><span>流量一高就完蛋</span></div>
+      <pre><code>public void handleRequest(Request req) {
+    new Thread(() -&gt; process(req)).start();   // 每个请求一个新线程
+}</code></pre>
+    </div>
+    <p>流量小时没事，高峰一来（比如秒杀，每秒 1 万个请求），三宗罪同时爆发：</p>
+    <ol>
+      <li><b>创建/销毁的成本</b>：每个线程创建要分配栈内存（默认约 1MB）、向 OS 登记，用完销毁——纯浪费，线程本身可以复用；</li>
+      <li><b>线程数爆炸</b>：1 万个线程 = 10GB 栈内存起步 → <b>OOM</b>；就算内存够，CPU 就那么几个核，上万个线程来回切换，<b>上下文切换的开销超过干活本身</b>；</li>
+      <li><b>没有闸门</b>：系统过载时无法自我保护，上游压力原样灌进数据库。</li>
+    </ol>
+    <p>解法在现实世界早就有了：<b>工厂</b>。养一批固定工人（复用），活儿多了排队（削峰），实在太多就加临时工（弹性），加满了就拒绝接单（自我保护）。这套用工制度写成代码，就是线程池。</p>
+
+    <h3 class="kp">8.2 武器登场：七个参数就是一套用工制度</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ThreadPoolExecutor 构造器</span><span>阿里规约：别用 Executors，手动 new</span></div>
+      <pre><code>public ThreadPoolExecutor(
+    int corePoolSize,                  // 正式工：养着不裁，没活也待命
+    int maximumPoolSize,               // 总人数上限：正式工 + 临时工
+    long keepAliveTime, TimeUnit unit, // 临时工的"待业容忍期"：闲这么久就裁掉
+    BlockingQueue&lt;Runnable&gt; workQueue, // 排队大厅：正式工都忙时，任务在这等
+    ThreadFactory threadFactory,       // 招人手续：起名（查线程 dump 时救命）、设 daemon
+    RejectedExecutionHandler handler   // 拒客策略：大厅满 + 临时工满时怎么办
+)</code></pre>
+    </div>
+    <p>四个拒绝策略（保安打发新客的方式）：</p>
+    <table>
+      <tr><th>策略</th><th>行为</th><th>适用</th></tr>
+      <tr><td><code>AbortPolicy</code>（默认）</td><td>抛 <code>RejectedExecutionException</code>，让调用方感知并处理</td><td>任务不允许丢，有上层兜底逻辑</td></tr>
+      <tr><td><code>CallerRunsPolicy</code></td><td>让<b>提交任务的人自己干</b>（提交线程自己执行任务）</td><td>天然<b>反压</b>：上游被拖慢 → 自动少提交 —— 生产系统常用</td></tr>
+      <tr><td><code>DiscardPolicy</code></td><td>悄悄扔掉新任务，不抛异常</td><td>任务可丢（如日志刷屏），危险默认别用</td></tr>
+      <tr><td><code>DiscardOldestPolicy</code></td><td>扔掉<b>队列里等最久</b>的，给新任务腾位</td><td>新的比旧的值钱（行情推送类）</td></tr>
+    </table>
+
+    <h3 class="kp">8.3 灵魂考点：任务提交的四级判定链</h3>
+    <p>面试必背，且<b>80% 的人第一次都答错顺序</b>——不是"人满了就加人"，而是<b>"队排满了才加人"</b>：</p>
+    <pre class="diagram"><code>execute(task) 提交一个任务，走四级判定链：
+
+ ① 正式工招满了吗？（当前线程数 &lt; corePoolSize）
+      └─ 否 → 新招一个正式工，把任务直接交给他（不入队！）
+      └─ 是 ↓
+ ② 排队大厅塞得下吗？（workQueue.offer(task)）
+      └─ 是 → 任务排队，等某个工人干完手头的活来接
+      └─ 否（大厅满）↓
+ ③ 临时工到上限了吗？（当前线程数 &lt; maximumPoolSize）
+      └─ 否 → 新招一个临时工，立刻干活
+      └─ 是（人也满）↓
+ ④ 拒绝策略 handler.rejectedExecution(task, this)
+      （大厅满 + 临时工满 = 五个拒绝条件全中，保安出场）
+
+★ 反直觉点：先排队（②）、后扩容（③）！
+  直觉以为"任务多了加人"，实际是"队列都塞不下了才肯加临时工"。
+  推论：用无界队列（如 LinkedBlockingQueue 默认构造）时，
+       ② 永远为真 → ③④ 永远走不到 → maximumPoolSize 形同虚设！</code></pre>
+    <div class="whycard">
+      <div class="wy-title">🔍 为什么设计成"先排队、后扩容"？（面试加分点）</div>
+      <p>正式工（核心线程）是<b>养着要成本的</b>（内存 + 调度），扩容是最后手段。优先让任务在队列里等——排队是廉价的缓冲（一个引用而已），加线程是昂贵的扩编（MB 级内存 + 上下文切换税）。跟现实一致：活儿多了先让订单排着，真排不下了才招临时工。<b>代价</b>是响应变慢（排队 = 延迟），所以延迟敏感型系统会用 SynchronousQueue（零容量、直接交接）绕过排队——newCachedThreadPool 就是这么配的，任务一来直接给临时工，代价是线程数可能无限膨胀。</p>
+    </div>
+
+    <h3 class="kp">8.4 工人的生老病死（把前几幕全部串起来）</h3>
+    <p>线程池里的每个工人（Worker）本质就是一个被管理起来的 Thread，它的一生长这样：</p>
+    <pre class="diagram"><code>Worker 的主循环（简化）：
+   while (true) {
+       task = 队列.take();     // 领任务：队列空就【睡在队列上等】
+       task.run();             // 干活（注意是 run 不是 start：复用线程，不开新的）
+   }
+
+★ take() 阻塞等待 = 第六幕的条件等待（空了睡、有任务被叫醒）
+  —— 正式工永远不退出循环，所以核心线程"不死"：没活干就睡在 take() 上，
+     零 CPU 消耗（不是空转！），任务一来就被唤醒。
+
+★ 临时工的循环用 poll(keepAliveTime)：
+   限时等待 —— 限时间内没等到任务（没人需要我）→ 退出循环 → 线程销毁
+   （corePoolSize 范围内的工人用无限期 take，范围外的用限时 poll —— 同一段代码，
+     一个布尔参数 allowCoreThreadTimeOut 控制正式工要不要也限时）
+
+★ 五个生命周期状态（ shutdown / shutdownNow 的区别所在）：
+   RUNNING  → 收新任务 + 处理队列任务（正常营业）
+   SHUTDOWN → 不收新任务 + 【干完】队列里的存量（打烊前进完单）
+              —— shutdown() 触发，温和关闭
+   STOP     → 不收新任务 + 【丢弃】存量 + 中断正在干活的（掀桌子）
+              —— shutdownNow() 触发；返回被丢弃的任务清单
+   TIDYING  → 工人全散、队列清空（收拾场地）
+   TERMINATED → terminated() 钩子执行完，彻底关门</code></pre>
+    <p>看到没：<b>线程池的每一块拼图都是前几幕的零件</b>——Worker 领任务靠第六幕的条件等待；内部状态流转靠 CAS（ctl 一个 int 同时打包状态+线程数）；shutdownNow 的"中断干活"需要 Worker 响应中断（所以池里跑的任务要正确处理 InterruptedException，长任务不响应中断就关不干净）。</p>
+
+    <h3 class="kp">8.5 参数怎么配：把玄学变科学</h3>
+    <table>
+      <tr><th>业务类型</th><th>推荐 core</th><th>原理</th></tr>
+      <tr><td>CPU 密集（计算、压缩、加密）</td><td>N 或 N+1（N = 核数）</td><td>线程多了只是互相抢核；+1 是防某个线程偶发缺页暂停时 CPU 空一拍</td></tr>
+      <tr><td>IO 密集（调接口、查库、读写文件）</td><td>经验起点 2N，靠压测调</td><td>线程大部分时间在等 IO（睡着的工人不占核），可以多养几个把核喂饱</td></tr>
+    </table>
+    <p>面试更漂亮的答案是承认"公式只是起点"：<b>真正的工程做法是让参数可观测、可调整</b>——<code>setCorePoolSize()</code> 运行时生效（池内自适应），配合监控（活跃线程数、队列深度、任务耗时、拒绝次数）动态调参。把"背公式"升级成"讲闭环"，是中级和高级的分水岭。</p>
+
+    <h3 class="kp">8.6 两个必考的坑</h3>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 坑一：为什么阿里规约禁用 Executors 快捷方法？</div>
+      <p><code>Executors.newFixedThreadPool / newSingleThreadExecutor</code> 用的是<b>无界队列</b>（LinkedBlockingQueue 默认 Integer.MAX_VALUE 容量）——判定链 ② 永远为真，任务无限堆积 → <b>OOM</b>（还记得 8.3 的推论吗）；<code>newCachedThreadPool</code> 的 maximumPoolSize 是 Integer.MAX_VALUE——线程数无限膨胀 → <b>OOM</b>。手动 new ThreadPoolExecutor、显式给有界队列和明确上限，把"失控"变成"可控"。</p>
+    </div>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 坑二：submit 的异常去哪了？</div>
+      <p><code>execute()</code> 里任务抛异常 → 异常打印到控制台（默认 UncaughtExceptionHandler），工人继续领下一个任务，<b>池不会死</b>。<code>submit()</code> 把任务包成 FutureTask——异常被<b>吞进 Future 里</b>，不打日志、不冒泡，只有调 <code>future.get()</code> 时才会以 ExecutionException 抛出。所以线上 submit 不 get 也不记日志 = <b>故障静默</b>。修法：任务内部 try-catch 打日志，或统一包装。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>线程池的任务提交流程？——四级判定链：① 正式工没满 → 直接新招正式工干活；② 没满则入队排队；③ 队满且临时工没满 → 新招临时工；④ 全满 → 拒绝策略。核心是"先排队后扩容"；无界队列会让 maximumPoolSize 失效。</p>
+    </div>
+
+    <div class="edge">
+      <div class="ed-title">⚠ 边界：线程池解决了什么，没解决什么</div>
+      <div class="ed-grid">
+        <div><b>✅ 解决</b>
+          <ul>
+            <li>线程复用：创建/销毁成本归零</li>
+            <li>排队削峰 + 拒绝自保：过载不崩</li>
+            <li>统一管理：命名、监控、优雅关闭</li>
+          </ul>
+        </div>
+        <div><b>✗ 没解决</b>
+          <ul>
+            <li>多组工人之间的<b>协调</b>（等 N 个任务全完成再汇总、限制同时在岗人数）</li>
+            <li>这类"多方协作时序"需要专门的工具</li>
+            <li>→ 协作三件套 → 第九幕（收官）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="qa"><summary>核心线程能被回收吗？怎么"预热"线程池？</summary><div class="qa-body">
+      <p>默认不回收（睡在 take() 上待命），但 <code>allowCoreThreadTimeOut(true)</code> 可以让正式工也走限时 poll——闲过头同样销毁，适合低频任务省内存。预热：<code>prestartAllCoreThreads()</code> 提前把正式工全招齐（秒杀开闸前先备好人），或空闲期跑几个心跳任务防止刚启动时的创建延迟毛刺。</p>
+    </div></details>
+
+    <details class="qa"><summary>shutdown 和 shutdownNow 到底怎么选？</summary><div class="qa-body">
+      <p>看任务可不可弃：日常优雅停机（发布重启）用 <code>shutdown()</code>——不收新任务，<b>把队列里的存量干完</b>再关门，配 <code>awaitTermination(超时)</code> 等它收尾；紧急止损（发现任务有毒）用 <code>shutdownNow()</code>——直接掀桌：存量丢弃（返回给你）、干活中的线程被 interrupt。注意 interrupt 只是"请求停止"，任务里不处理 InterruptedException、不检查中断位的话，照样关不死。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的线程池和这个比？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p><code>concurrent.futures.ThreadPoolExecutor(max_workers=N)</code> 概念上是"只有正式工 + 无界队列"的简化版：核心数 = 最大数，队列无界（不会拒绝，只会堆积——对应 8.6 坑一的隐患）。Python 里它主要服务 IO 密集（GIL 之下 CPU 密集得用 multiprocessing）。你熟悉的 <code>future.result()</code> 对应 Java 的 <code>submit()</code> 返回 Future + <code>get()</code>——连"异常藏在 future 里"这个坑都一模一样，<code>as_completed</code> 则对应 Java 的 CompletionService。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 9 协作三件套与死锁 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>第九幕 协作三件套与死锁：收官 <span class="badge b-high">高频</span></h2></div>
+
+    <div class="storynav">
+      <div class="sq"><b>① 为什么出现</b>线程之间还有最后三类协调需求：限同时在岗人数、等 N 件事全部完成、人到齐才开会——手写全是 wait/notify 体力活。</div>
+      <div class="sq"><b>② 什么场景</b>资源池限流（Semaphore）、并行任务汇总（CountDownLatch）、分段计算合并（CyclicBarrier）。</div>
+      <div class="sq"><b>③ 怎么发生</b>三件套都是 AQS 的填空题（第五幕的理论落地）；死锁 = 两把钥匙形成环。</div>
+      <div class="sq"><b>④ 解决了什么</b>协作模板化；死锁四条件 + jstack 排查 + 顺序加锁预防。全书闭环。</div>
+    </div>
+
+    <h3 class="kp">9.1 先看需求，再看工具</h3>
+    <p>三个非常常见的协作需求，用第六幕的 wait/notify 手写每个都要几十行还容易错。逐个翻译成大白话：</p>
+    <pre class="diagram"><code>需求一【限流】"这个资源最多 5 个人同时用"（连接池、爬虫并发上限）
+需求二【等全完】"我派了 8 个任务出去，全部回来我再汇总"（主线程收拢）
+需求三【人齐开会】"10 个线程各算一段，人人都到齐了，一起进入合并阶段"
+                  （而且下一轮还能再聚 —— 循环使用）</code></pre>
+
+    <h3 class="kp">9.2 三件套逐个登场（全是 AQS 填空题，验证第五幕）</h3>
+    <h4>Semaphore（信号量）：坑位数</h4>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：公共厕所的坑位</div>
+      <p>门口挂一块牌子"剩余 5 个坑"（state = 5）。<code>acquire()</code> 进去一个人牌子减 1，减到 0 后再来的人在门口排队（AQS 队列睡觉）；<code>release()</code> 出来一个人牌子加 1、叫醒门口排在最前的。<b>与锁的本质区别：锁是"1 个坑"（独占），信号量是"N 个坑"（共享）</b>——对应 AQS 的独占模式和共享模式（这就是 5.3 表格里 tryAcquireShared 存在的意义）。</p>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>RateLimitDemo.java</span><span>限制同时 5 个爬虫在跑</span></div>
+      <pre><code>Semaphore permits = new Semaphore(5);      // 5 个坑位
+
+Runnable crawler = () -&gt; {
+    try {
+        permits.acquire();                  // 占坑（没坑就排队睡）
+        try {
+            crawl(url);                     // 同时最多 5 个线程真正在爬
+        } finally {
+            permits.release();              // ★ 必须在 finally 里还坑（同 unlock）
+        }
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+    }
+};</code></pre>
+    </div>
+    <p>注意：acquire/release <b>不要求同一线程配对</b>（A 占坑 B 还坑也行）——这让它能做"资源池"（借出和归还发生在不同线程）。这也是它和锁的另一个本质区别。</p>
+
+    <h4>CountDownLatch（倒计时门闩）：一次性倒数</h4>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：火箭发射倒计时</div>
+      <p>发射指挥（主线程）设定倒计时 N（state = N）。N 个检查组各完成自己的检查就 <code>countDown()</code> 一下（倒数 -1）；指挥 <code>await()</code> 站在发射按钮前等——<b>倒数到 0 的那一刻，门打开</b>（AQS 把队列里的等待者全叫醒）。<b>用完即焚</b>：这个门只能过一次，不能重置——第二个回合请再买一个新门。</p>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ParallelGather.java</span><span>8 个任务并行 + 主线程汇总</span></div>
+      <pre><code>int N = 8;
+CountDownLatch done = new CountDownLatch(N);
+List&lt;Future&lt;Result&gt;&gt; futures = new ArrayList&lt;&gt;();
+
+for (int i = 0; i &lt; N; i++) {
+    futures.add(pool.submit(() -&gt; {
+        try {
+            return queryShard(i);          // 各查各的分片
+        } finally {
+            done.countDown();              // ★ 查完一个，倒数 -1（finally 保证异常也数）
+        }
+    }));
+}
+
+done.await();                               // 主线程：等 8 个全部倒数完
+futures.forEach(f -&gt; merge(f.get()));      // 汇总（此处 get 不会阻塞，任务必已完成）</code></pre>
+    </div>
+    <p><b>为什么不用 Future.get() 轮流等？</b>——其实可以（get 也是阻塞到完成），但 latch 的语义是"门"：可以多处、多线程一起 await 这扇门；而且 countDown 的角色不一定是"任务完成"——可以是"某个外部条件到位"。它是<b>表达协调关系</b>的工具，不是取结果的工具。</p>
+
+    <h4>CyclicBarrier（循环栅栏）：人齐开会</h4>
+    <div class="analogy">
+      <div class="al-title">🗺 类比：全员到齐才开会</div>
+      <p>10 个线程干各自的活，各自干到"检查点"就 <code>await()</code>——在会议室门口等。<b>第 10 个人到达的瞬间，门开，全员一起进</b>（还可指定一个"开会动作"，比如合并各人手里的结果）。Cyclic = <b>可循环</b>：这一轮开完会，各自回去干活，下个检查点再聚——同一道栅栏用无数次。<b>与 latch 的分工</b>：latch 是"局外一个指挥等 N 个干活的"（角色不对称）；barrier 是"N 个平等的人互相等"（角色对称，缺一不可）。</p>
+    </div>
+    <pre class="diagram"><code>CyclicBarrier barrier = new CyclicBarrier(10, () -&gt; {
+    mergePartialResults();                  // 第 10 个人到齐时，先执行这个"会议议程"
+});
+
+// 每个线程：
+   partial = computeSegment();              // 各算各的
+   barrier.await();                         // 检查点：等满 10 人
+   useMerged(partial);                      // 人齐后一起进入下一阶段（下一轮还能再聚）
+
+对比速记：
+   Semaphore     谁等谁？没人等谁 —— 抢坑位     可重用 ✓   一对多放行
+   CountDownLatch N 个干活的 → 1 个指挥         一次性 ✗   计数减到 0
+   CyclicBarrier  N 个平等的人互相等             可重用 ✓   人到齐放行</code></pre>
+
+    <h3 class="kp">9.3 死锁：并发世界的绝症</h3>
+    <h4>惨案现场：转账</h4>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>TransferDeadlock.java</span><span>两行代码酝酿一场死锁</span></div>
+      <pre><code>void transfer(Account from, Account to, double amount) {
+    synchronized (from) {          // 线程1：先锁 A 账户，再锁 B 账户
+        synchronized (to) {        // 线程2：先锁 B 账户，再锁 A 账户
+            from.debit(amount);    // 线程1 拿着 A 等 B
+            to.credit(amount);     // 线程2 拿着 B 等 A —— 谁也不撒手，永远等下去
+        }
+    }
+}</code></pre>
+    </div>
+    <pre class="diagram"><code>线程1 ──► 持有 A ──等待──► B ──┐
+                              │   等待关系形成一个【环】
+线程2 ──► 持有 B ──等待──► A ──┘
+两个线程的线程状态都是 BLOCKED，CPU 占用 0%，系统看起来"没病"，
+但这两个转账永远不会完成 —— 静悄悄的死亡，连日志都没有</code></pre>
+
+    <h4>死锁的四个必要条件（缺一不死）</h4>
+    <table>
+      <tr><th>条件</th><th>大白话</th><th>怎么破坏（预防手段）</th></tr>
+      <tr><td>① 互斥</td><td>资源一次只能一人用（钥匙只有一把）</td><td>资源本身性质，<b>一般不破坏</b>（能用无锁/读写锁绕开就绕开）</td></tr>
+      <tr><td>② 持有并等待</td><td>拿着 A 不放，同时等 B</td><td>一次性申请全部资源（转账前同时锁定两个账户，要么都拿到要么都不拿）</td></tr>
+      <tr><td>③ 不可剥夺</td><td>别人不能抢走你手里的</td><td><code>tryLock(超时)</code> 拿不到就放手已持有的，重头再来（第五幕 RLock 的超时能力！）</td></tr>
+      <tr><td>④ 循环等待</td><td>等待关系成环</td><td>★<b>全局有序加锁</b>：所有线程都按固定顺序拿锁（比如按账户 id 从小到大）——环成了链</td></tr>
+    </table>
+    <p>工程上<b>最常用、成本最低</b>的是破坏 ④：给所有锁对象排个全局次序（id 哈希、字典序），人人按序获取。上面的转账代码修一下：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>TransferFixed.java</span><span>两行修复</span></div>
+      <pre><code>void transfer(Account from, Account to, double amount) {
+    Account first  = from.id &lt; to.id ? from : to;   // 全局顺序：永远先锁 id 小的
+    Account second = from.id &lt; to.id ? to : from;
+
+    synchronized (first) {
+        synchronized (second) {      // 所有线程加锁顺序一致 → 等待关系是链不是环
+            from.debit(amount);
+            to.credit(amount);
+        }
+    }
+}</code></pre>
+    </div>
+
+    <h4>排查：jstack 是你的心电图机</h4>
+    <pre class="diagram"><code>jstack &lt;pid&gt;   // 打印所有线程栈，JVM 自带死锁检测
+
+输出末尾直接给你点名（面试要能描述这段长什么样）：
+"Found one Java-level deadlock:"
+=============================
+"Thread-1":
+  waiting to lock monitor 0x... (object 0x..., a Account),
+  which is held by "Thread-2"
+"Thread-2":
+  waiting to lock monitor 0x... (object 0x..., a Account),
+  which is held by "Thread-1"
+→ 两个线程各持一把、互等对方 —— 照着栈找到加锁代码，套四条件分析
+
+图形化/远程：jconsole、Arthas（阿里，thread -b 直接报阻塞源头）——说得出工具名就是加分</code></pre>
+
+    <h4>两个容易和死锁混淆的亲戚（一句话区分）</h4>
+    <ul>
+      <li><b>活锁</b>：都没死、都在动，但互相谦让卡住了——两人走廊相遇，同时左让、同时右让、同时再让……<b>解法：谦让时加随机等待</b>（以太网冲突退避同款思路）；</li>
+      <li><b>饥饿</b>：不是谁锁死了，而是某个线程<b>永远抢不到</b>（非公平锁下被持续插队、或优先级低）。<b>解法：公平锁</b>（第五幕 ReentrantLock 的公平能力用武之地）。</li>
+    </ul>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>死锁四条件？——互斥、持有并等待、不可剥夺、循环等待，缺一不成；工程上最可操作的预防是"全局有序加锁"破坏循环等待；现场排查 jstack（JVM 自动点名互等的线程对）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 10 尾声 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>尾声：整条演进链，一张图带走</h2></div>
+
+    <p>九幕演完，把开场的图补全——现在链条上每一个箭头你都亲历过"惨案"了：</p>
+    <pre class="diagram"><code>【三性是所有故事的起点】
+  可见性 ──┐
+  原子性 ──┼──► 每个武器解决一部分，没解决的逼出下一个
+  有序性 ──┘
+
+volatile ──────────► 可见性+关键位置有序（举旗必被看见）
+   ✗ 复合操作三步还是三步
+       ▼
+synchronized ──────► 三性全包（会议室，锁升级控制成本）
+   ✗ 挂起排队贵，短临界区不划算
+       ▼
+CAS/原子类 ────────► 无锁的"读-改-写"（乐观重试；LongAdder 破高竞争）
+   ✗ 复杂临界区没法重来；且没有"排队等待"的管理
+       ▼
+AQS ───────────────► 公共排队机（state+CLH 队列，模板方法填空）
+   ✗ 只管排队拿许可，不管"等条件成立"
+       ▼
+wait/notify·Condition·park ──► 睡去等信号、醒来重抢锁（线程会说话）
+       │
+       ├─► ThreadLocal ──► 釜底抽薪：不共享就没伤害（口袋隔离+泄漏链）
+       │
+       └─► 线程池 ──────► 用工制度（判定链+拒绝策略+优雅关闭）
+                │
+                └─► 三件套+死锁 ──► 协作模板化 + 绝症的病理与预防</code></pre>
+
+    <h3 class="kp">速查：遇到问题，武器怎么选</h3>
+    <div class="summary-grid">
+      <div class="sum-card"><h5>一个开关/标志，一写多读</h5><ul><li><code>volatile</code>：stop 标志、配置热更新开关</li></ul></div>
+      <div class="sum-card"><h5>一句"读-改-写"</h5><ul><li>低竞争：<code>AtomicInteger/AtomicReference</code></li><li>高竞争纯计数：<code>LongAdder</code></li><li>ABA 敏感：<code>AtomicStampedReference</code></li></ul></div>
+      <div class="sum-card"><h5>多步临界区（默认选择）</h5><ul><li><code>synchronized</code>：写不坏、自动释放</li><li>注意同锁（坑：this/新对象/两把锁）</li></ul></div>
+      <div class="sum-card"><h5>要可中断/超时/公平/多条件</h5><ul><li><code>ReentrantLock</code> + try-finally</li><li>超时等待顺手治死锁（tryLock 放手重来）</li></ul></div>
+      <div class="sum-card"><h5>任务提交与线程管理</h5><ul><li>手动 new <code>ThreadPoolExecutor</code>（有界队列+命名+拒绝策略）</li><li>反压首选 CallerRunsPolicy</li></ul></div>
+      <div class="sum-card"><h5>多方协调</h5><ul><li>限同时人数：<code>Semaphore</code></li><li>主线程等全完：<code>CountDownLatch</code></li><li>平等互等可循环：<code>CyclicBarrier</code></li></ul></div>
+      <div class="sum-card"><h5>人各一份的数据</h5><ul><li><code>ThreadLocal</code>（上下文/SDF/事务连接）</li><li>池化场景：finally 里 <code>remove()</code></li></ul></div>
+      <div class="sum-card"><h5>死锁了</h5><ul><li>排查：jstack / Arthas thread -b</li><li>预防：全局有序加锁 / tryLock 超时</li></ul></div>
+      <div class="sum-card"><h5>生产者-消费者</h5><ul><li>日常：<code>ArrayBlockingQueue</code> / <code>LinkedBlockingQueue</code></li><li>面试手写：wait+while+notifyAll</li></ul></div>
+    </div>
+
+    <h3 class="kp">这本书和模块 6 怎么配合</h3>
+    <p>两本书讲同一批知识，分工不同：<b>6B（本书）建立"为什么"</b>——每个武器背后的惨案、根因、边界，适合第一遍建立因果链；<b>模块 6 是速查地图</b>——按主题罗列的完整 API、参数表、对比矩阵（并发容器、Fork/Join、虚拟线程等本书没展开的主题都在那），适合面试前一夜快速过。建议路线：先通读本书把链子穿起来，再用模块 6 查漏补缺，最后对照它补齐并发容器（ConcurrentHashMap 的分段演进、CopyOnWriteArrayList）等本书一笔带过的主题。</p>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 全书回收清单（检验你有没有真读通）</div>
+      <p>① volatile 的可见性和 CAS 的原子性，硬件根源是同一套机制（MESI 缓存行独占）——第一幕 ↔ 第四幕；② 锁的"进门看到最新"和 notify 后"醒来看到最新"，法源都是第三幕的锁规则（解锁 hb 后续加锁）；③ DCL 需要 volatile，是"有序性"惨案的最著名应用——第三幕；④ AQS 敢分两步"入队再挂起"不出竞态，靠 park 的"起床券"——第五幕 ↔ 第六幕；⑤ 线程池 Worker 没活干睡在队列上，就是第六幕的条件等待——第八幕；⑥ ThreadLocal 的泄漏链要靠模块 5 的弱引用知识才能读透——第七幕。如果这六条你都能自己复述出来，并发这一关，过了。</p>
+    </div>
+
+    <div class="pagenav">
+      <a href="06-concurrency.html">← 上一册：模块 6 速查版</a>
+      <a class="disabled">下一册：模块 7（待更新）</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="回到顶部">↑</button>
+
+<script>
+/* 简易 Java 语法高亮（关键词/字符串/注释/数字） */
+function highlightJava(src) {
+  return src.replace(/(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b(?:public|private|protected|static|final|class|interface|extends|implements|void|int|long|boolean|double|float|char|byte|short|new|return|if|else|for|while|do|try|catch|finally|throw|throws|import|package|this|super|null|true|false|synchronized|volatile|transient|abstract|enum|instanceof|default|break|continue|while)\b)|(\b\d+(?:\.\d+)?[LlFfDd]?\b)/gm,
+  function (m, com, str, kw, num) {
+    if (com) return '<span class="tok-com">' + com + '</span>';
+    if (str) return '<span class="tok-str">' + str + '</span>';
+    if (kw) return '<span class="tok-kw">' + kw + '</span>';
+    if (num) return '<span class="tok-num">' + num + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram')) el.innerHTML = highlightJava(el.textContent);
+});
+
+/* 目录滚动联动 + 回到顶部按钮 */
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+/* Q&A 批量展开/收起 */
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+
+</body>
+</html>

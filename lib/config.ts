@@ -112,6 +112,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: '高并发抢购系统 · 从 0 到 1 工程级设计',
+    volume: '后端',
+    description:
+      '面向面试的系统设计全解：容量估算用数字推导架构 → 五层漏斗（接入/资格/核心链路/数据/治理）逐层拆解 → Redis Lua 扣库存、库存分段与用户闸门、本地消息表 + MQ 异步落库 → 对账守恒式、降级预案与 V1→V5 演进路线，附 30 秒面试话术与追问深挖（单 Key 分段、延迟双删 vs binlog、分段三代价缓解）。',
+    href: '/books/seckill-system-design/seckill-system-design.html',
+    tags: ['系统设计', '高并发', 'Redis', 'MQ'],
+    accent: '#2d7d8f',
+    category: 'backend',
+  },
+  {
     title: 'Java 复习手册 · 秋招面试向',
     volume: 'Java',
     description:

@@ -4,16 +4,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MySQL 架构逻辑链 · 面试串讲笔记</title>
+<title>MySQL 逻辑链笔记 · 面试串讲（架构链 / 锁）</title>
 <!--
   ============================================================
-  MySQL 架构逻辑链 · 活文档（v1.7 · 2026-09-07）
+  MySQL 逻辑链笔记 · 活文档（v2.1 · 2026-10-06）
   ------------------------------------------------------------
   本文档的定位：面试串讲"活文档"，随对话迭代修正。
   维护方式：发现理解有误 / 需要补充追问 → 在对话中指出 →
             由 Trae 修改本文件 → 底部"修订记录"追加一行。
+  博客版注意：本页接入了 anno.js 划线批注系统（数据存 Upstash
+  Redis，锚点 = XPath + 文本兜底）。改版铁律：① 正文既有章节
+  （c1-c11）只追加不重排不改字——划线锚定在 DOM 位置上，重排
+  = 划线失效；② 新模块一律插在 c11 之后、页脚修订记录之前。
+  模块机制：顶部 Tab 切换（body class mod-arch / mod-lock 控制
+  显隐，逻辑在 assets/app.js），目录两套联动。划线系统与模块
+  切换无耦合（只改 display，不动 DOM）。
   结构地图（修改时按注释定位，不要全文搜索）：
-    §0  头部 masthead          —— 标题 / 版本 / 验收标准
+    §0  头部 masthead          —— 标题 / 版本 / 模块 Tab / 验收标准
+    —— 模块一 · 架构链（章节 id c1-c11 + 页脚 c12）——
     §1  使用说明 + 逻辑链总览    —— SVG-1 七环节路线图
     §2  四层架构（第 1-4 环）    —— SVG-2 + 每层记忆钩子
     §3  InnoDB 内存（第 5 环）  —— SVG-3 + 两大高频追问 + CB 两层排除逻辑 + 预读机制 + CB merge 时机
@@ -25,7 +33,16 @@
     §9  纠错记录（⭐明日复习）   —— 9 张纠错卡片
     §10 面试展示策略            —— 三原则 + 口播稿 v2 + 电梯版 + 钩子弹药表
     §11 自检清单（可勾选，localStorage 持久化；复位入口 id 见 assets/app.js）
-    §12 页脚修订记录
+    —— 模块二 · 锁（v2.0 新增，章节 id l1-l8，class 含 lock-mod）——
+    §L1 为什么需要锁 + 分层地图  —— SVG-L1 三层地图（每层的"为什么"）
+    §L2 全局锁                  —— FTWRL 与 MVCC 快照替代
+    §L3 表级锁三兄弟            —— SVG-L2（MDL 事故链 + 意向锁矩阵）
+    §L4 行锁三件套              —— SVG-L3 索引区间图（点/缝/缝加端点 + 两种退化）
+    §L5 行锁与索引              —— 无索引更新事故 + 唯一 vs 普通索引锁差异
+    §L6 2PL 与死锁              —— SVG-L4 时间线 + 等待环
+    §L7 锁与 MVCC 合流          —— 幻读完整解法 + 两个漏网场景 + RR 默认历史原因
+    §L8 口播稿 + 易混点 + 自检（lk1-lk11）
+    §12 页脚修订记录（两模块共享）
   设计约定：颜色仅用 CSS 变量；图片全部为内联 SVG，无外部依赖；
             双击 HTML 即可在浏览器离线打开。
   ============================================================
@@ -248,20 +265,50 @@ footer {
   .layout { grid-template-columns: 1fr; }
   section.chapter { page-break-before: auto; }
 }
+
+/* ============================================================
+   模块切换（v2.1：模块一 架构链 / 模块二 锁）
+   机制：body 挂 mod-arch / mod-lock 两个 class，CSS 按 class
+   控制章节与目录的显隐，切换逻辑在 assets/app.js。
+   注意：与 anno.js 划线系统无耦合——划线数据锚定在正文章节
+   的 DOM 结构上，模块切换只改 display，不动 DOM 位置。
+   ============================================================ */
+.mod-tabs { display: flex; gap: .45rem; margin-top: 1.1rem; flex-wrap: wrap; }
+.mod-tab {
+  padding: .42rem 1.05rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--rule); background: var(--bg);
+  font-size: .87rem; color: var(--muted); user-select: none;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.mod-tab:hover { color: var(--ink); border-color: var(--ink); }
+.mod-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+/* 正文双模块显隐：锁模块章节带 .lock-mod；架构章节不带 */
+body.mod-arch .lock-mod { display: none; }
+body.mod-lock .chapter:not(.lock-mod) { display: none; }
+/* 目录双套显隐 */
+body.mod-arch .toc-lock { display: none; }
+body.mod-lock .toc-arch { display: none; }
 </style>
 </head>
-<body>
+<!-- body 默认挂 mod-arch：即使 app.js 加载失败也只显示架构模块（CSS 兜底） -->
+<body class="mod-arch">
 
 <!-- ============================================================
      §0 头部：文档定位 + 版本信息
      ============================================================ -->
 <header class="masthead">
   <div class="masthead-inner">
-    <h1>MySQL 架构逻辑链</h1>
-    <p class="sub">从 0 到 1 串讲 MySQL 架构的完整逻辑链：总（四层框架）→ 分（InnoDB 内存 / 磁盘两翼深挖）→ 串（一条 update SQL 收束）。面试口播验收标准：<mark class="key">脱稿 2 分钟</mark>。</p>
+    <h1>MySQL 逻辑链笔记</h1>
+    <p class="sub">从 0 到 1 的完整逻辑链，模块间点击切换。面试口播验收标准：<mark class="key">脱稿 2 分钟</mark>。当前两块：模块一 架构链（四层框架 → InnoDB 两翼 → WAL）；模块二 锁（为什么需要 → 分层体系 → 行锁三件套 → 死锁 → 与 MVCC 合流）。</p>
+    <!-- 模块切换 Tab：点击切换 body class，逻辑见 assets/app.js 的 initModuleTabs -->
+    <div class="mod-tabs" id="modTabs">
+      <button class="mod-tab on" data-mod="arch" type="button">01 · 架构链</button>
+      <button class="mod-tab" data-mod="lock" type="button">02 · 锁</button>
+    </div>
     <div class="meta-chips">
-      <span class="chip">版本 v1.7</span>
-      <span class="chip">2026-09-07</span>
+      <span class="chip">版本 v2.1</span>
+      <span class="chip">2026-10-06</span>
       <span class="chip plain">活文档 · 随对话迭代</span>
       <span class="chip plain">后端 / AI 应用 · 秋招</span>
       <!-- 访问量 chip：不蒜子统计，脚本加载失败/离线时自动隐藏，不影响离线阅读 -->
@@ -279,8 +326,9 @@ footer {
      新增章节时：在此加 <li>，并在正文加对应 id
      ============================================================ -->
 <aside class="sidebar">
-  <div class="toc-title">目录</div>
-  <ul class="toc">
+  <div class="toc-title">目录 · 模块切换见顶部</div>
+  <!-- 架构模块目录（v2.1 起与锁模块目录二选一显示） -->
+  <ul class="toc toc-arch">
     <li><a href="#c1">01 逻辑链总览</a></li>
     <li><a href="#c2">02 四层架构</a></li>
     <li><a href="#c3">03 InnoDB 内存</a></li>
@@ -293,6 +341,17 @@ footer {
     <li><a href="#c10">10 面试展示策略</a></li>
     <li><a href="#c11">11 自检清单</a></li>
     <li><a href="#c12">12 修订记录</a></li>
+  </ul>
+  <!-- 锁模块目录（v2.0 新增） -->
+  <ul class="toc toc-lock">
+    <li><a href="#l1">L1 为什么需要锁</a></li>
+    <li><a href="#l2">L2 全局锁</a></li>
+    <li><a href="#l3">L3 表级锁三兄弟</a></li>
+    <li><a href="#l4">L4 行锁三件套</a></li>
+    <li><a href="#l5">L5 行锁与索引</a></li>
+    <li><a href="#l6">L6 2PL 与死锁</a></li>
+    <li><a href="#l7">L7 锁与 MVCC 合流</a></li>
+    <li><a href="#l8">L8 口播稿与自检</a></li>
   </ul>
 </aside>
 
@@ -1406,6 +1465,432 @@ footer {
 </section>
 
 <!-- ============================================================
+     ============  模块二 · 锁（v2.0 新增）  ============
+     逻辑链：为什么需要（并发隔离）→ 分层（粒度粗细）→
+     表级三兄弟（MDL / 意向 / AUTO-INC 各自的为什么）→
+     行级三件套（Record / Gap / Next-Key）→ 行锁在索引上 →
+     2PL 协议与死锁 → 与 MVCC 合流收束。
+     章节统一带 class="chapter lock-mod"，由 body class 控制显隐。
+     ============================================================ -->
+
+<section class="chapter lock-mod" id="l1">
+  <h2><span class="no">L1</span>为什么需要锁：一条逻辑链总览</h2>
+
+  <p><strong>起点永远是问题</strong>：并发事务同改一张表，会产生三个问题——<strong>脏读</strong>（读到别人未提交的数据）、<strong>不可重复读</strong>（同一行两次读不一样）、<strong>幻读</strong>（同一条件两次读，行数变了）。隔离性（ACID 的 I）就是治这三个问题的，而 InnoDB 用了<strong>两套手段</strong>：</p>
+  <ul>
+    <li><strong>MVCC（乐观路线）</strong>：普通读不加锁，靠 undo 版本链 + ReadView 读旧版本——"你改你的，我读我的快照"，读写不互相阻塞</li>
+    <li><strong>锁（悲观路线）</strong>：假设冲突一定会发生，先占住再操作——<mark class="key">写写冲突、当前读的隔离、以及表结构保护，全靠锁</mark></li>
+  </ul>
+  <p>分工记一句话：<strong>读靠 MVCC，写靠锁</strong>（严格说是"普通读靠 MVCC，当前读和写靠锁"，L7 展开）。锁体系按<strong>粒度</strong>从粗到细分三层，每一层解决一个特定问题：</p>
+
+  <!-- SVG-L1：锁的分层地图。三层从粗到细，每层标"为什么存在"。
+       布局：左中轴箭头（粒度↓ 并发↑ 开销↓）+ 右侧三层卡片 -->
+  <figure class="diagram">
+    <svg viewBox="0 0 760 560" role="img" aria-label="MySQL 锁的分层地图">
+      <defs>
+        <marker id="arl1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+          <path d="M1 1 L7 4 L1 7 Z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <text x="60" y="30" class="n-th">锁的分层地图：每层锁存在的「为什么」</text>
+
+      <!-- 左侧粒度轴 -->
+      <line x1="86" y1="60" x2="86" y2="500" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arl1)"/>
+      <text x="60" y="530" class="n-ts" transform="rotate(-90 60 530)" text-anchor="end">粒度变细 · 并发变高 · 开销变大</text>
+
+      <!-- 全局锁层 -->
+      <g>
+        <rect x="130" y="56" width="580" height="128" rx="8" class="n-box"/>
+        <text x="150" y="82" class="n-t" style="font-weight:700">全局锁 FTWRL（Flush Tables With Read Lock）</text>
+        <text x="150" y="104" class="n-ts">全库只读，DDL / DML 全部禁止</text>
+        <text x="150" y="130" class="n-brand-t">为什么存在：MyISAM 不支持事务与快照，全库逻辑备份时只能让库静止</text>
+        <text x="150" y="152" class="n-ts">InnoDB 时代的替代：mysqldump --single-transaction 用 MVCC 快照做一致性备份</text>
+      </g>
+      <!-- 表级锁层 -->
+      <g>
+        <rect x="130" y="204" width="580" height="150" rx="8" class="n-box-brand"/>
+        <text x="150" y="230" class="n-brand-t" style="font-weight:700">表级锁三兄弟：表锁 / MDL / 意向锁 / AUTO-INC</text>
+        <text x="150" y="254" class="n-brand-ts">MDL 元数据锁：保护表结构——DML 自动加读锁，DDL 要写锁，防止"查到一半表结构变了"</text>
+        <text x="150" y="276" class="n-brand-ts">意向锁 IS/IX：行锁在表级挂的「花名册」——表锁看牌子判冲突，不用遍历所有行锁</text>
+        <text x="150" y="298" class="n-brand-ts">AUTO-INC 锁：自增主键的分配控制（8.0 默认轻量交叉模式）</text>
+        <text x="150" y="326" class="n-ts">为什么存在：有些保护必须表级做（结构 / 自增序列），不能拆到行级</text>
+      </g>
+      <!-- 行级锁层 -->
+      <g>
+        <rect x="130" y="374" width="580" height="158" rx="8" class="n-box"/>
+        <text x="150" y="400" class="n-t" style="font-weight:700">行级锁三件套（InnoDB 独有，MyISAM 没有）</text>
+        <text x="150" y="424" class="n-ts">Record Lock：锁单条索引记录　　Gap Lock：锁记录间的开区间（只防插入）</text>
+        <text x="150" y="446" class="n-ts">Next-Key Lock = Record + Gap：前开后闭区间 (a, b]，RR 防幻读的主力</text>
+        <text x="150" y="474" class="n-brand-t">为什么存在：并发的主战场在"改同一批行"，行级粒度才能支撑高并发 OLTP</text>
+        <text x="150" y="496" class="n-brand-ts">关键前提：InnoDB 的行锁锁在索引上（L5 详解）——无索引更新 = 近似锁全表</text>
+      </g>
+    </svg>
+    <figcaption>图 L1 · 锁的分层地图：全局（库静止）→ 表级（结构与声明）→ 行级（并发主战场）</figcaption>
+  </figure>
+
+  <p><strong>面试串法</strong>：先说两套手段的分工（MVCC 管普通读、锁管写和当前读），再按粒度从粗到细走三层，每层讲"为什么存在"——这句话是整条链的骨架：<mark class="key">全局锁为备份、表锁为结构、行锁为并发、Gap 为防幻读</mark>。</p>
+
+  <h3>名词卡：OLTP / OLAP（v2.1 补）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>维度</th><th>OLTP 联机事务处理</th><th>OLAP 联机分析处理</th></tr></thead>
+      <tbody>
+        <tr><td>场景</td><td>下单、支付、转账等业务操作</td><td>报表、聚合、统计分析</td></tr>
+        <tr><td>事务特征</td><td>短事务、高并发、每次只动少量行</td><td>长查询、大扫描、全表聚合</td></tr>
+        <tr><td>典型产品</td><td>MySQL / PostgreSQL 业务库</td><td>ClickHouse / Doris / Hive 数仓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>和行锁的关联一句话：OLTP 是"大量用户同时操作<strong>不同</strong>行"，表级锁会让一个人更新、全表都得等；<mark class="key">粒度细到哪，并发就能开到哪</mark>——这就是"行级粒度支撑高并发 OLTP"的意思。</p>
+</section>
+
+<section class="chapter lock-mod" id="l2">
+  <h2><span class="no">L2</span>全局锁：为什么现在很少用</h2>
+  <p><strong>命令</strong>：<code>FLUSH TABLES WITH READ LOCK</code>（FTWRL），让全库处于只读状态。为什么需要它：逻辑备份要求"同一时刻的一致性快照"，而 MyISAM 没有事务、没有 MVCC，想一致就只能让库完全静止。加锁期间：<strong>DML / DDL 全部阻塞，但可以读</strong>。</p>
+  <p><strong>InnoDB 时代的正确替代</strong>：<code>mysqldump --single-transaction</code>——利用 MVCC，开启一个 RR 快照读事务（START TRANSACTION WITH CONSISTENT SNAPSHOT），备份期间业务照常读写。<mark class="key">这就是 MVCC 的价值：一致性不靠"禁止别人写"，而靠"我读我的旧版本"</mark>。注意边界：只对 InnoDB 表有效。</p>
+
+  <h3>追问：备份期间禁 DDL，是纪律还是数据库强制？（v2.1 补）</h3>
+  <p><strong>答案是纪律，数据库不会让 DDL 失败</strong>——这正是麻烦所在。备份期间来了 DDL，实际会发生两种情况之一：</p>
+  <ul>
+    <li><strong>DDL 排队卡表</strong>：备份的快照事务持有 MDL 读锁直到备份事务结束，DDL 请求写锁排队，后续所有查询堵在后面——MDL 事故链（L3）在备份场景的重演</li>
+    <li><strong>DDL 成功执行</strong>：表结构不走 MVCC（结构在数据字典里，不在 undo 版本链里）。mysqldump 先 <code>SHOW CREATE TABLE</code> 拿结构、再 SELECT 拿数据，DDL 插在中间 → 备份文件里"结构是新的、数据是旧的"，恢复出来就是错库</li>
+  </ul>
+  <p>所以这个约束来自<strong>运维纪律</strong>（低峰期操作、先查长事务）。8.0 给了正向工具：<code>LOCK INSTANCE FOR BACKUP</code>（备份锁——阻塞 DDL、放行 DML），新版 mysqldump 会自动配合使用——这才算把纪律变成了机制。</p>
+  <div class="callout"><span class="tag">钩子</span>"全局锁已被 MVCC 快照替代"——面试官若追问，自然进入 RR / ReadView 话题，衔接 L7。</div>
+</section>
+
+<section class="chapter lock-mod" id="l3">
+  <h2><span class="no">L3</span>表级锁三兄弟：MDL / 意向锁 / AUTO-INC</h2>
+
+  <h3>MDL 元数据锁：保护表结构的自动锁</h3>
+  <p><strong>为什么需要</strong>：一个查询正在执行，表结构不能变——否则解析树和实际表对不上。所以 <strong>任何 DML（增删改查）访问表时自动加 MDL 读锁，DDL（改结构）需要 MDL 写锁</strong>，读写互斥、读读兼容。它对业务透明，不需要手动加。</p>
+  <p><strong>经典事故链（高频面试题）</strong>：事务 A（长事务）持有 MDL 读锁未提交 → DDL 请求 MDL 写锁排队 → <mark class="key">写锁请求会阻塞它之后的所有新读锁请求</mark> → 全表后续查询全部排队 → 表看起来"卡死"。预防：DDL 前查 <code>information_schema.innodb_trx</code> 杀长事务；8.0 可用 <code>ALTER TABLE t NOWAIT</code> 拿不到锁立即失败而不排队。</p>
+
+  <h3>追问：杀长事务有没有影响？（v2.1 补）</h3>
+  <p>有影响，而且有个容易踩的坑：<mark class="key">KILL 连接 = 事务回滚，不是提交</mark>。回滚要执行 undo 反向操作（架构模块讲的"冲正"），<strong>undo 量大的事务回滚很慢，且回滚期间行锁、MDL 全部继续持有</strong>——杀完之后 DDL 可能还要等很久，不是立即解锁。业务侧：该事务的工作全部丢失，需要上游重试或补偿。</p>
+  <p>但生产上最常见被杀的其实是<strong>空转长事务</strong>（<code>autocommit=0</code> 的连接执行完语句忘了提交，挂着不动）——没改过数据，杀掉回滚瞬间完成，无损。真正改了大量数据的长事务才需要掂量。实操顺序：<strong>先 <code>KILL QUERY</code></strong>（只杀当前语句，事务和连接还在，留给应用自己决定 commit/rollback），不行再 <code>KILL &lt;id&gt;</code> 强制回滚。</p>
+
+  <h3>意向锁 IS/IX：行锁在表级挂的「花名册」</h3>
+  <p><strong>从场景出发</strong>：事务 T1 想要表级写锁（<code>LOCK TABLES t WRITE</code>），它怎么知道表里有没有行正被别人锁着？——没有意向锁就得遍历全表行锁，百万行表不可接受。机制：规定任何事务<mark class="key">给行加锁之前，必须先在表级挂一面牌子</mark>——加行 S 锁挂 IS（"我在读这表里的行"），加行 X 锁挂 IX（"我在改这表里的行"）。表锁请求来了，只看牌墙，O(1) 判定冲突。</p>
+  <p>具体例子走一遍：</p>
+  <div class="script-quote">
+    <p>T1 执行 <code>UPDATE t SET a=1 WHERE id=5;</code><br>
+    → 自动在表级挂 IX 牌子 → 再给 id=5 那行加 X 锁<br>
+    T2 执行 <code>LOCK TABLES t WRITE;</code>（请求表 X 锁）<br>
+    → 一看表上有 IX 牌子 → 冲突 → 等待（不用遍历任何行）</p>
+  </div>
+  <p>两个最容易被误解的性质：</p>
+  <ul>
+    <li><strong>牌子不是锁资源</strong>——IS 和 IX 互相永远兼容。它俩都只是"声明我占了表里的行"，声明之间不冲突，真冲突留给行锁自己去判。这就是矩阵左上角三格全 ✓ 的原因</li>
+    <li><strong>牌子只挡表锁，不挡行锁</strong>——加行锁的人只看行上有没有锁，从不看牌子；矩阵里意向锁只和表 S/X 冲突，就是这个意思</li>
+  </ul>
+  <p><strong>为什么牌子要分 IS/IX 两种</strong>：服务"整表读"的人。表 S 锁（读全表）能容忍别人也在行读（IS），但不能容忍别人在行写（IX）——所以需要区分"我在读行"和"我在写行"两种牌子。</p>
+  <p><strong>和另两个表级概念划清界限</strong>（易混重灾区）：表锁是显式控制数据访问的；MDL 是自动保护表结构的；意向锁是行锁的自动配套声明——三个都在"表级"，但服务的冲突各不相同。另外意向锁全程 InnoDB 自动加，用户不可见（8.0 可在 <code>performance_schema.data_locks</code> 里看到表级 IX 和行级 X 的记录）。一句话收束：<mark class="key">意向锁是层级锁的索引——行锁的花名册挂在表门口，包场的人看名单，不用挨个座位查</mark>。</p>
+
+  <h3>AUTO-INC 锁：自增序列的分配控制</h3>
+  <p>为什么需要：自增列要求"不重不漏（尽量连续）"。8.0 之前默认语句级锁（一条 insert 语句内自增值连续），8.0 默认轻量模式（<code>innodb_autoinc_lock_mode=2</code>，交叉分配）——<mark class="key">敢改默认值的原因：binlog 默认改成了 row 格式，主从复制不再依赖"语句内自增连续"</mark>，这是"两个机制的默认值被历史绑定"的经典例子（和 RR 默认隔离级别同理，见 L7）。</p>
+
+  <!-- SVG-L2：MDL 事故链时序 + 意向锁兼容矩阵。上半事故时间线，下半矩阵 -->
+  <figure class="diagram">
+    <svg viewBox="0 0 760 600" role="img" aria-label="MDL 事故链与意向锁兼容矩阵">
+      <defs>
+        <marker id="arl2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+          <path d="M1 1 L7 4 L1 7 Z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <text x="60" y="30" class="n-th">MDL 事故链 + 意向锁兼容矩阵</text>
+
+      <text x="60" y="62" class="n-t" style="font-weight:700">事故：一个长事务如何"卡死"整张表</text>
+      <g>
+        <rect x="60" y="76" width="640" height="196" rx="8" class="n-box"/>
+        <text x="80" y="100" class="n-t">① 事务 A 开启，SELECT 拿 MDL 读锁（长事务，一直不提交）</text>
+        <text x="80" y="126" class="n-t">② DBA 执行 ALTER TABLE：请求 MDL 写锁 → 排队等待</text>
+        <text x="80" y="152" class="n-brand-t">③ 此后所有新 SELECT：请求 MDL 读锁 → 排在写锁后面（队列语义）</text>
+        <text x="80" y="178" class="n-t">④ 全表读写排队，表象 = "表卡死了"</text>
+        <text x="80" y="210" class="n-brand-t">写锁会阻塞它之后的所有读锁——不是读读冲突，是队列里插了个排不动的写锁</text>
+        <text x="80" y="238" class="n-ts">预防：DDL 前查 innodb_trx 杀长事务 / NOWAIT 立即失败 / 低峰期操作</text>
+      </g>
+
+      <text x="60" y="316" class="n-t" style="font-weight:700">意向锁兼容矩阵（✓ 兼容 · ✗ 冲突）</text>
+      <!-- 矩阵：行=已有锁，列=请求的锁。四列：IS(270) / IX(340) / 表S(410) / 表X(480) -->
+      <g>
+        <rect x="60" y="332" width="460" height="180" rx="8" class="n-box2"/>
+        <text x="170" y="356" class="n-t" text-anchor="middle">已有↓ 请求→</text>
+        <text x="270" y="356" class="n-t" text-anchor="middle">IS</text>
+        <text x="340" y="356" class="n-t" text-anchor="middle">IX</text>
+        <text x="410" y="356" class="n-t" text-anchor="middle">表S</text>
+        <text x="480" y="356" class="n-t" text-anchor="middle">表X</text>
+        <text x="110" y="392" class="n-t">IS</text>
+        <text x="270" y="392" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="340" y="392" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="410" y="392" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="480" y="392" class="n-t" text-anchor="middle">✗</text>
+        <text x="110" y="428" class="n-t">IX</text>
+        <text x="270" y="428" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="340" y="428" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="410" y="428" class="n-t" text-anchor="middle">✗</text>
+        <text x="480" y="428" class="n-t" text-anchor="middle">✗</text>
+        <text x="110" y="464" class="n-t">表S</text>
+        <text x="270" y="464" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="340" y="464" class="n-t" text-anchor="middle">✗</text>
+        <text x="410" y="464" class="n-brand-t" text-anchor="middle">✓</text>
+        <text x="480" y="464" class="n-t" text-anchor="middle">✗</text>
+        <text x="110" y="500" class="n-t">表X</text>
+        <text x="270" y="500" class="n-t" text-anchor="middle">✗</text>
+        <text x="340" y="500" class="n-t" text-anchor="middle">✗</text>
+        <text x="410" y="500" class="n-t" text-anchor="middle">✗</text>
+        <text x="480" y="500" class="n-t" text-anchor="middle">✗</text>
+      </g>
+      <g>
+        <rect x="550" y="332" width="150" height="180" rx="8" class="n-box-brand"/>
+        <text x="566" y="356" class="n-brand-t" style="font-weight:700">矩阵读法</text>
+        <text x="566" y="382" class="n-brand-ts">IS/IX 互相全兼容</text>
+        <text x="566" y="404" class="n-brand-ts">（声明不冲突，</text>
+        <text x="566" y="426" class="n-brand-ts">冲突在行级）</text>
+        <text x="566" y="452" class="n-brand-ts">意向锁只挡表 S/X</text>
+        <text x="566" y="474" class="n-brand-ts">行级操作永不被</text>
+        <text x="566" y="496" class="n-brand-ts">意向锁挡住</text>
+      </g>
+      <text x="60" y="548" class="n-ts">记忆锚：意向锁是"行锁的旗帜"——旗帜之间不打架，只有"要收整个营地"的表锁会被旗挡住。</text>
+    </svg>
+    <figcaption>图 L2 · MDL 事故链（写锁阻塞队列）与意向锁兼容矩阵</figcaption>
+  </figure>
+</section>
+
+<section class="chapter lock-mod" id="l4">
+  <h2><span class="no">L4</span>行级锁三件套：Record / Gap / Next-Key</h2>
+
+  <p><strong>三件套的演进逻辑</strong>（每一件都是上一件的补丁）：</p>
+  <ul>
+    <li><strong>Record Lock（记录锁）</strong>：最基本的行锁，<mark class="key">锁单条索引记录</mark>。解决"两事务改同一行"的写写冲突。</li>
+    <li><strong>Gap Lock（间隙锁）</strong>：锁两条索引记录之间的开区间 (a, b)，<mark class="key">只阻止插入，不锁任何已有记录</mark>。为什么需要：只锁记录挡不住"往缝里插一条新记录"——幻读在当前读下仍会发生。Gap 把"缝"也焊死。</li>
+    <li><strong>Next-Key Lock</strong>：Record + Gap 的组合，<mark class="key">前开后闭区间 (a, b]</mark>——锁住"缝 + 右端点的记录"。RR 隔离级别下行锁的默认形态，防当前读幻读的主力。</li>
+  </ul>
+
+  <p><strong>两种退化规则（高频追问）</strong>：</p>
+  <ol>
+    <li><strong>唯一索引等值查询且命中</strong> → Next-Key 退化为纯 Record Lock。为什么：唯一性已保证这个值不可能再插入第二条，gap 的防插入职能自动满足，不用锁缝。</li>
+    <li><strong>等值查询未命中（值落在缝里）</strong> → 退化为纯 Gap Lock。为什么：没有记录可锁，锁缝本身就够挡插入。</li>
+  </ol>
+
+  <p><strong>插入意向锁（Insert Intention Lock）</strong>：insert 语句在等 Gap Lock 释放时持有的"排队标记"。关键性质：<mark class="key">多个插入意向锁互不冲突</mark>（只要不插同一个位置，各等各的缝），所以并发批量插入依然高效。它专用于"我想插进这条缝"的场景。</p>
+
+  <!-- SVG-L3：索引轴上三件套的区间可视化。
+       轴：…15, 18, 25, 30…；展示 Record(点) / Gap(开区间) / Next-Key(前开后闭) + 两种退化 -->
+  <figure class="diagram">
+    <svg viewBox="0 0 760 560" role="img" aria-label="行锁三件套在索引上的区间图">
+      <defs>
+        <marker id="arl3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+          <path d="M1 1 L7 4 L1 7 Z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <text x="60" y="30" class="n-th">三件套在索引轴上的样子（以 …, 15, 18, 25, 30, … 为例）</text>
+
+      <!-- 索引轴 -->
+      <line x1="80" y1="66" x2="700" y2="66" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arl3)"/>
+      <g>
+        <circle cx="140" cy="66" r="5" fill="var(--ink)"/><text x="140" y="44" class="n-t" text-anchor="middle">15</text>
+        <circle cx="260" cy="66" r="5" fill="var(--ink)"/><text x="260" y="44" class="n-t" text-anchor="middle">18</text>
+        <circle cx="430" cy="66" r="5" fill="var(--ink)"/><text x="430" y="44" class="n-t" text-anchor="middle">25</text>
+        <circle cx="560" cy="66" r="5" fill="var(--ink)"/><text x="560" y="44" class="n-t" text-anchor="middle">30</text>
+      </g>
+      <text x="80" y="100" class="n-ts">B+ 树叶子层的索引记录（升序排列）</text>
+
+      <!-- Record Lock -->
+      <g>
+        <rect x="60" y="124" width="640" height="88" rx="8" class="n-box"/>
+        <text x="80" y="150" class="n-t" style="font-weight:700">Record Lock：锁"点"　例：WHERE id = 25（唯一索引等值命中）</text>
+        <circle cx="430" cy="178" r="9" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="450" y="182" class="n-brand-ts">只锁 25 这一条记录本身</text>
+      </g>
+      <!-- Gap Lock -->
+      <g>
+        <rect x="60" y="228" width="640" height="96" rx="8" class="n-box"/>
+        <text x="80" y="254" class="n-t" style="font-weight:700">Gap Lock：锁"缝"（开区间）　例：(18, 25) 之间</text>
+        <line x1="268" y1="288" x2="422" y2="288" stroke="var(--accent)" stroke-width="3" stroke-dasharray="7 5"/>
+        <text x="80" y="312" class="n-ts">只挡插入：别人 insert 19 / 23 全部等待；但 18 和 25 两点本身不加锁，别人可以改它们</text>
+      </g>
+      <!-- Next-Key Lock -->
+      <g>
+        <rect x="60" y="340" width="640" height="100" rx="8" class="n-box-brand"/>
+        <text x="80" y="366" class="n-brand-t" style="font-weight:700">Next-Key Lock：缝 + 右端点（前开后闭）　例：(18, 25]</text>
+        <line x1="268" y1="400" x2="415" y2="400" stroke="var(--accent)" stroke-width="3" stroke-dasharray="7 5"/>
+        <circle cx="430" cy="400" r="9" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="80" y="430" class="n-brand-ts">RR 默认形态：既挡插 19~24 的幻影，又锁死 25 本身——当前读防幻读的主力</text>
+      </g>
+      <!-- 退化与 RC 对比 -->
+      <g>
+        <rect x="60" y="456" width="640" height="84" rx="8" class="n-box2"/>
+        <text x="80" y="480" class="n-t" style="font-weight:700">两种退化 + RC 对比</text>
+        <text x="80" y="502" class="n-ts">唯一索引等值命中 → 纯 Record（唯一性已保证，缝不用锁）　　等值落缝未命中 → 纯 Gap</text>
+        <text x="80" y="526" class="n-ts">RC 级别没有 Gap / Next-Key，只有 Record → 当前读挡不住幻读，但并发更高（锁的范围小得多）</text>
+      </g>
+    </svg>
+    <figcaption>图 L3 · 三件套 = 点 / 缝 / 缝加右端点；RR 靠 Next-Key，RC 只有点</figcaption>
+  </figure>
+
+  <div class="callout"><span class="tag">钩子</span>"Next-Key 是前开后闭"——追问必是"为什么 RR 需要 Gap"，答案链：当前读要防幻读 → 幻影 = 插进缝里的新行 → 只锁已有记录挡不住 → 锁缝。</div>
+</section>
+
+<section class="chapter lock-mod" id="l5">
+  <h2><span class="no">L5</span>行锁与索引：为什么无索引更新是事故</h2>
+  <p><strong>核心事实</strong>：InnoDB 是索引组织表，行 = 索引记录，所以<mark class="key">行锁实际锁在索引记录上</mark>。由此推出三类高频结论：</p>
+  <ol>
+    <li><strong>无索引 / 索引失效的 update = 近似锁全表</strong>：全表扫描，把扫过的每条记录都加上 Next-Key Lock，直到扫完。注意术语精确性：<mark class="key">这不是"表锁"，而是"锁了所有行的行锁"</mark>——本质仍是行级锁，效果上近似锁全表。经典事故：<code>UPDATE t SET a=1 WHERE b=2</code> 而 b 无索引 → 全表记录被锁，其他事务的任何写全部阻塞。</li>
+    <li><strong>唯一索引 vs 普通索引的加锁差异</strong>：唯一索引等值命中 → 退化纯 Record（锁一条）；普通索引等值命中 → 继续向右扫描直到第一个不满足条件的记录，锁住整个范围（因为可能有重复值，必须确认没有"下一条等于目标的行"）。<strong>所以唯一索引不仅查得快，锁得也少</strong>。</li>
+    <li><strong>锁的是索引，不是行</strong>：update 走二级索引时，聚簇索引和二级索引都可能加锁；两把锁共同保护这条逻辑行的完整性。</li>
+  </ol>
+  <p>实践守则：更新条件必须走索引；慢更新先 EXPLAIN；线上大表 DML 前确认索引存在——这三条本质上都是在防"锁范围意外扩大"。</p>
+</section>
+
+<section class="chapter lock-mod" id="l6">
+  <h2><span class="no">L6</span>两阶段锁协议与死锁</h2>
+
+  <h3>2PL：加锁和释放分两个阶段</h3>
+  <p><strong>规则</strong>：事务内可以随时加锁（扩展阶段），但一旦开始释放，就不能再加（收缩阶段）——InnoDB 的实现是<mark class="key">所有锁统一在 commit / rollback 时才释放</mark>。</p>
+  <p><strong>直接推论（面试加分点）</strong>：行锁的持有时间 = 从第一次访问到事务结束 → <strong>把最容易冲突的热点行放到事务最后操作</strong>，能显著缩小持锁窗口。例：转账事务里更新账户行放在记录流水之后。</p>
+
+  <h3>死锁：互相持有对方想要的锁</h3>
+  <p><strong>形成</strong>：事务 A 锁了行 1 想行 2，事务 B 锁了行 2 想行 1，互相等待形成环。InnoDB 的两个应对：</p>
+  <ul>
+    <li><strong>主动检测</strong>：wait-for graph（等待图）发现环 → 立即回滚<mark class="key">代价更小</mark>的那个事务（undo 量小的）</li>
+    <li><strong>被动超时</strong>：<code>innodb_lock_wait_timeout</code>（默认 50 秒）兜底——但 50 秒太久，生产上常调小到几秒</li>
+  </ul>
+  <p><strong>预防四原则</strong>（比事后处理更重要）：① 多行更新按<strong>固定顺序</strong>（如按主键升序）；② 事务尽量小、尽快提交；③ <strong>热点行放最后</strong>（2PL 推论）；④ 更新走索引避免锁范围扩大（L5）。</p>
+
+  <!-- SVG-L4：上半 2PL 时间线对比（先锁热点 vs 后锁热点），
+       下半死锁交叉等待图 + 检测结果 -->
+  <figure class="diagram">
+    <svg viewBox="0 0 760 600" role="img" aria-label="两阶段锁协议时间线与死锁形成">
+      <defs>
+        <marker id="arl4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+          <path d="M1 1 L7 4 L1 7 Z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <text x="60" y="30" class="n-th">2PL 时间线 + 死锁的等待环</text>
+
+      <!-- 2PL 对比：两个事务时间线 -->
+      <text x="60" y="62" class="n-t" style="font-weight:700">2PL：所有锁统一在 commit 释放 → 热点行放最后</text>
+      <g>
+        <rect x="60" y="76" width="640" height="150" rx="8" class="n-box"/>
+        <text x="80" y="100" class="n-t">事务 A：先锁热点行 H（持锁 10s）→ 再锁普通行 → …… → commit 才放</text>
+        <line x1="200" y1="120" x2="620" y2="120" stroke="var(--accent)" stroke-width="4"/>
+        <text x="200" y="108" class="n-ts">H 被占用</text>
+        <text x="80" y="146" class="n-t">改写：先处理普通行 → 最后才锁 H（持锁 0.1s）→ commit</text>
+        <line x1="560" y1="166" x2="620" y2="166" stroke="var(--accent)" stroke-width="4"/>
+        <text x="80" y="188" class="n-ts">同一段业务逻辑，热点行的持锁窗口缩小 100 倍——这就是 2PL 推论的实战价值</text>
+      </g>
+
+      <!-- 死锁环 -->
+      <text x="60" y="272" class="n-t" style="font-weight:700">死锁：等待图上出现环</text>
+      <g>
+        <rect x="60" y="288" width="640" height="150" rx="8" class="n-box2"/>
+        <rect x="140" y="316" width="120" height="48" rx="8" class="n-box"/>
+        <text x="200" y="344" class="n-t" text-anchor="middle">事务 A</text>
+        <rect x="500" y="316" width="120" height="48" rx="8" class="n-box"/>
+        <text x="560" y="344" class="n-t" text-anchor="middle">事务 B</text>
+        <!-- A 持有行1 想要行2；B 持有行2 想要行1，四条边形成环 -->
+        <path class="n-arr" d="M262 328 C 340 300, 420 300, 498 328" marker-end="url(#arl4)"/>
+        <text x="380" y="308" class="n-ts" text-anchor="middle">持有行1，想要行2</text>
+        <path class="n-arr" d="M498 356 C 420 384, 340 384, 262 356" marker-end="url(#arl4)"/>
+        <text x="380" y="402" class="n-ts" text-anchor="middle">持有行2，想要行1</text>
+        <text x="80" y="428" class="n-ts">环 = 永久互相等待 → wait-for graph 检测到 → 回滚代价小的（undo 量小的）那个</text>
+      </g>
+
+      <!-- 预防四原则 -->
+      <g>
+        <rect x="60" y="460" width="640" height="108" rx="8" class="n-box-brand"/>
+        <text x="80" y="486" class="n-brand-t" style="font-weight:700">预防四原则（按性价比排序）</text>
+        <text x="80" y="512" class="n-brand-ts">① 多行更新按固定顺序（主键升序）——消灭环的来源　② 小事务快提交——缩短持锁窗口</text>
+        <text x="80" y="534" class="n-brand-ts">③ 热点行放最后（2PL 推论）　④ 更新走索引——防锁范围扩大成"近似全表锁"</text>
+        <text x="80" y="556" class="n-brand-ts">一句话：让环无法形成 + 让窗口尽量短</text>
+      </g>
+    </svg>
+    <figcaption>图 L4 · 2PL 的锁统一释放（热点行放最后）与死锁的等待环</figcaption>
+  </figure>
+</section>
+
+<section class="chapter lock-mod" id="l7">
+  <h2><span class="no">L7</span>锁与 MVCC 合流：幻读的完整解法</h2>
+
+  <p><strong>收束章</strong>——锁不是孤立话题，它和 MVCC 是隔离性的两翼。先把"读"分两类：</p>
+  <ul>
+    <li><strong>快照读（普通读）</strong>：不加锁的 <code>SELECT</code>，走 MVCC（ReadView + undo 版本链），读旧版本——<mark class="key">架构模块已学：undo 退化为版本链数据</mark>，这里就是它的用武之地</li>
+    <li><strong>当前读</strong>：<code>SELECT ... FOR UPDATE / FOR SHARE</code>、<code>UPDATE</code>、<code>DELETE</code>、<code>INSERT</code>——必须读最新已提交版本并加锁，否则"改了个旧版本"就出大事了</li>
+  </ul>
+
+  <p><strong>RR 下防幻读的完整答案（标准面试题）</strong>：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>读类型</th><th>防幻读手段</th><th>机制</th></tr></thead>
+      <tbody>
+        <tr><td>快照读</td><td>MVCC / ReadView</td><td>读事务开始时刻的快照，后插入的行对我不可见——"幻影根本进不了我的视野"</td></tr>
+        <tr><td>当前读</td><td>Next-Key Lock</td><td>锁住 (a, b] 区间，别人的 insert 进不来——"幻影物理上插不进来"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>RR 是默认隔离级别的为什么</strong>：历史原因——statement 格式 binlog 依赖主从语句串行执行的一致性，RC 会导致主从数据不一致。现在 binlog 默认 row 格式后这层顾虑消失，<mark class="key">互联网大厂普遍改用 RC</mark>：锁粒度更小（无 Gap）、并发更高。这也是"机制的默认值被另一个机制的历史绑定"的典型例子。</p>
+
+  <h3>追问：大厂用 RC，不需要考虑幻读吗？（v2.1 补）</h3>
+  <p>需要考虑，但答案不是"靠隔离级别扛"，而是<mark class="key">把并发正确性的责任从数据库层挪到业务代码层</mark>。RC 下的现实：没有 Gap Lock，事务内两次同条件读行数可能变（幻读暴露）。但大厂敢用，靠三层逻辑：</p>
+  <ul>
+    <li><strong>绝大多数业务不依赖"事务内可重复读"</strong>：Web 业务基本是"读一次→算→写"的短事务，单条 SELECT 本身原子一致；幻读需要"同一事务内两次同条件读"才暴露，这种代码模式很少</li>
+    <li><strong>真正需要"读后写一致"的场景用显式工具</strong>（扣库存、转账）：悲观——<code>SELECT ... FOR UPDATE</code> 读最新已提交版本并加行锁；乐观——版本号 CAS（<code>UPDATE ... SET n=n-1, version=version+1 WHERE id=1 AND version=5</code>，affected rows=0 就重试）。这两个在 RC/RR 下都稳定可用</li>
+    <li><strong>极少数报表类一致性读</strong>：单独用 RR 会话或快照方案解决</li>
+  </ul>
+  <p>完整表述：<strong>RR 是数据库替你兜底的粗粒度保证（代价是 Gap Lock 的死锁和并发损失）；RC + 应用层显式控制是业务自己负责的细粒度保证</strong>。这也是"乐观锁/悲观锁"成为必考题的原因——它们是 RC 世界里防丢失更新的真正工具。顺带：RC 下每条语句生成新 ReadView（语句级一致），RR 下首个快照读生成后复用（事务级一致）——这也是"不可重复读"差异的机制根源。</p>
+
+  <p><strong>加分点：RR 防幻读的两个"漏网"场景</strong>（说明你真理解而非背结论）：</p>
+  <ol>
+    <li><strong>先快照读，后当前读</strong>：事务内先 SELECT（快照）再 UPDATE 同条件（当前读）——UPDATE 的影响行数会包含别人后插的行，幻影"突然可见"了。原因：当前读读的是最新版本。</li>
+    <li><strong>先 UPDATE，再快照读</strong>：自己 UPDATE 过的行，快照读可见其最新值（自己的修改对自己可见），快照的"旧"只对别人的修改成立——所谓"快照读防幻读"防的是别人，不防自己。</li>
+  </ol>
+  <div class="callout"><span class="tag">串联</span>至此两模块合流：undo 在架构模块是回滚材料 + WAL 对象，在本模块还是 MVCC 版本链——<mark class="key">一个 undo，三重身份</mark>，这句话本身就是极好的深度展示。</div>
+</section>
+
+<section class="chapter lock-mod" id="l8">
+  <h2><span class="no">L8</span>锁口播稿 + 易混点 + 自检</h2>
+
+  <h3>两分钟口播稿（锁版）</h3>
+  <div class="script-quote">
+    <p>MySQL 的锁要从"为什么"讲起：并发事务会产生脏读、不可重复读、幻读，隔离性靠两套手段——<strong>普通读走 MVCC 快照，写和当前读走锁</strong>。锁按粒度分三层：全局锁 FTWRL 让全库静止，是 MyISAM 时代逻辑备份用的，InnoDB 用 MVCC 快照替代了它；表级三个角色——MDL 保护表结构、防 DDL 和 DML 并发，意向锁是行锁在表级挂的"花名册"、表锁看牌子就能判冲突而不用遍历行锁，AUTO-INC 管自增分配、8.0 默认轻量模式配合 row 格式 binlog；行级是重点：InnoDB <strong>行锁锁在索引上</strong>，无索引更新会锁住全表扫描的所有记录。三件套——Record 锁单条记录，Gap 锁开区间只防插入，Next-Key 前开后闭、是 RR 防当前读幻读的主力；唯一索引等值命中退化纯 Record。</p>
+    <p>协议层面是两阶段锁：<strong>加锁在事务中、释放统一在提交时</strong>，所以把热点行放事务最后能缩短持锁窗口；死锁靠等待图检测加超时兜底，预防靠固定加锁顺序和小事务。最后和 MVCC 合流：RR 防幻读，快照读靠 ReadView、当前读靠 Next-Key Lock——<mark class="key">锁和版本，一悲一观，共同撑起隔离性</mark>。</p>
+  </div>
+
+  <h3>易混点速查</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>易混对</th><th>一句话区分</th></tr></thead>
+      <tbody>
+        <tr><td>表锁 vs MDL</td><td>表锁是显式控制数据访问的；MDL 是自动保护表结构的——DML 自动加读、DDL 要写</td></tr>
+        <tr><td>意向锁 vs 表锁</td><td>意向锁是行锁的声明，不挡任何行级操作，只挡表级 S/X</td></tr>
+        <tr><td>Gap vs Next-Key</td><td>Gap 只锁缝 (a,b)；Next-Key 缝加右端点 (a,b]，RR 默认</td></tr>
+        <tr><td>"锁全表" vs 表锁</td><td>无索引更新是锁了所有行的行锁，不是表锁——粒度仍是行级</td></tr>
+        <tr><td>快照读 vs 当前读</td><td>普通 SELECT 走 MVCC 旧版本；FOR UPDATE / DML 读最新版本并加锁</td></tr>
+        <tr><td>RR vs RC 的锁差异</td><td>RR 有 Gap/Next-Key（防当前读幻读）；RC 只有 Record（并发更高，大厂常用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>自检清单（锁模块）</h3>
+  <p>同架构模块：能口头复述即勾选，状态保存在本机浏览器。</p>
+  <ul class="checklist">
+    <li><input type="checkbox" id="lk1"><label for="lk1">两套手段分工：普通读 MVCC / 写与当前读走锁；粒度三层的各自"为什么"</label></li>
+    <li><input type="checkbox" id="lk2"><label for="lk2">全局锁为什么存在（MyISAM 备份）+ InnoDB 替代（--single-transaction 快照）</label></li>
+    <li><input type="checkbox" id="lk3"><label for="lk3">MDL 事故链完整复述：长事务读锁 → DDL 写锁排队 → 后续读全堵 → 表"卡死"</label></li>
+    <li><input type="checkbox" id="lk4"><label for="lk4">意向锁为什么存在 + 矩阵性质（互相兼容、只挡表 S/X）</label></li>
+    <li><input type="checkbox" id="lk5"><label for="lk5">行锁三件套：点 / 缝 / 缝加右端点；两种退化（唯一命中→Record、落缝→Gap）</label></li>
+    <li><input type="checkbox" id="lk6"><label for="lk6">为什么 RR 需要 Gap（当前读防幻读的推导链）</label></li>
+    <li><input type="checkbox" id="lk7"><label for="lk7">无索引更新 = 近似锁全表（是行锁不是表锁）+ 唯一 vs 普通索引的锁范围差异</label></li>
+    <li><input type="checkbox" id="lk8"><label for="lk8">2PL 推论：热点行放最后；死锁检测（回滚代价小的）与预防四原则</label></li>
+    <li><input type="checkbox" id="lk9"><label for="lk9">幻读完整解法：快照读 ReadView / 当前读 Next-Key；两个"漏网"场景；RR 默认的历史原因</label></li>
+    <li><input type="checkbox" id="lk10"><label for="lk10">锁版两分钟口播脱稿（含收束句"一悲一观撑起隔离性"）</label></li>
+    <li><input type="checkbox" id="lk11"><label for="lk11">v2.1 新增五问：OLTP/OLAP 区分；备份禁 DDL 是纪律非机制（两种后果 + LOCK INSTANCE FOR BACKUP）；KILL = 回滚非提交、锁延迟释放、先 KILL QUERY；意向锁"花名册"讲法 + 为什么分 IS/IX 两种；大厂 RC 防幻读 = FOR UPDATE / 版本号 CAS 挪到业务层</label></li>
+  </ul>
+</section>
+
+<!-- ============================================================
      §9 页脚：修订记录（活文档的版本历史）
      迭代时在此追加一行，并在 masthead 更新版本号与日期
      ============================================================ -->
@@ -1415,6 +1900,8 @@ footer {
     <table>
       <thead><tr><th>版本</th><th>日期</th><th>变更</th></tr></thead>
       <tbody>
+        <tr><td>v2.1</td><td>2026-10-06</td><td>锁模块答疑五连（同步自本地工作稿）：L1 补 OLTP/OLAP 名词卡；L2 补"备份禁 DDL 是纪律非机制"；L3 补"杀长事务的代价"（KILL = 回滚非提交）并重写意向锁小节（花名册讲法）；L7 补"大厂 RC 防幻读"（FOR UPDATE / 版本号 CAS 挪到业务层）；自检项 +1（lk11）</td></tr>
+        <tr><td>v2.0</td><td>2026-10-05</td><td>新增模块二"锁"（L1-L8：为什么需要锁 / 全局锁 / 表级三兄弟 / 行锁三件套 / 行锁与索引 / 2PL 与死锁 / 锁与 MVCC 合流 / 口播稿与自检）；顶部模块 Tab 切换 + 双套目录联动；新增 4 张锁模块 SVG；文档更名为"MySQL 逻辑链笔记"</td></tr>
         <tr><td>v1.7</td><td>2026-09-07</td><td>§3 新增"页预读机制"小节（线性预读：56 页触发、整区异步读、与 Old 区配合、随机预读已移除）；CB 高频追问二补两层排除逻辑（聚簇 = 数据页 / 唯一要校验）与"先查 BP 再谈拉盘"路径顺序；自检项 +1（ck17）</td></tr>
         <tr><td>v1.6</td><td>2026-09-07</td><td>全书审阅：巨型第 5 章拆为 4 个主题章节（update 时序 / 事务边界与 undo / checkpoint 耦合与 LSN / 回滚与崩溃恢复），目录扩为 12 章；口播稿升级 v2（新增 WAL 哲学收束段 + 30 秒电梯版）；新增"面试展示策略"章（深度三原则 + 钩子弹药表）；自检项 +1（ck16）；修复 app.js 复位入口的章节 id 引用</td></tr>
         <tr><td>v1.5</td><td>2026-09-07</td><td>新增"回滚的 redo 视角"章节与图 9（只进不退、追加冲正、回滚也写 redo）；纠错卡 +1（#9）；自检项 +1（ck15）</td></tr>

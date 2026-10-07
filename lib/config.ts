@@ -248,6 +248,7 @@ export const navLinks = [
   { href: '/', label: '首页' },
   { href: '/posts', label: '文章' },
   { href: '/exams', label: '笔试' },
+  { href: '/digs', label: '深挖' },
   { href: '/books', label: '教程' },
   { href: '/playground', label: '玩物志' },
   { href: '/projects', label: '项目' },

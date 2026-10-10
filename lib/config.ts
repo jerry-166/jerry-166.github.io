@@ -131,6 +131,16 @@ export const tutorialBooks: TutorialBook[] = [
     accent: '#2456d6',
     category: 'java',
   },
+  {
+    title: '算法面试语言对照手册 · Java × Python',
+    volume: 'Java',
+    description:
+      '以 19 道 LeetCode 高频题为载体的双栏对照手册：字符串/哈希/数组/栈队列/堆/排序比较器/二分/链表树/数字溢出逐章拆解，每题并排 Java 与 Python 写法、对比要点与追问预案。附 Python 标准库武器速查（Counter/bisect/itertools 及禁库退化版）、Java 八大翻车点清单（== 陷阱、Integer 缓存、CME）、ACM 模式输入输出模板，以及 28 问自测清单（勾选进度自动保存）。',
+    href: '/books/java-python-algo-compare/java-python-algo-compare.html',
+    tags: ['Java', 'Python', 'LeetCode', '算法'],
+    accent: '#b0712a',
+    category: 'java',
+  },
 ]
 
 // 玩物志：AI 协作创作的闲趣小件（静态交互页面，部署在 /public/playground 下）

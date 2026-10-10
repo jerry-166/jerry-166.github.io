@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块8：异常体系与 IO/NIO（Throwable 家族 / try-with-resources / Channel / Selector / 零拷贝）</title>
+<style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --line: #e2e8f0;
+  --primary: #2456d6;
+  --primary-soft: #eef3ff;
+  --high: #dc2626;
+  --high-bg: #fef2f2;
+  --hard: #7c3aed;
+  --hard-bg: #f5f3ff;
+  --trap: #c2410c;
+  --trap-bg: #fff7ed;
+  --py: #0f766e;
+  --py-bg: #f0fdfa;
+  --code-bg: #0f172a;
+  --code-ink: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px;
+}
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+/* ===== 顶部 Hero ===== */
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #e8efff 70%, #dde8ff 100%);
+  border-bottom: 1px solid #d4e0f7;
+  color: var(--ink);
+  padding: 36px 40px 30px;
+}
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 88.9%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
+
+/* ===== 模块导航条 ===== */
+.mod-nav {
+  display: flex; gap: 8px; padding: 12px 40px; background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; align-items: center;
+}
+.mod-nav a, .mod-nav span {
+  white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px;
+  color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc;
+}
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+
+/* ===== 主体布局 ===== */
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+
+/* ===== 左侧目录 ===== */
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a {
+  display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2);
+  text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px;
+}
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button {
+  width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+  cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+}
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ===== 章节 ===== */
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+
+/* ===== 徽章 ===== */
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+/* ===== 表格 ===== */
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+
+/* ===== 代码块 ===== */
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+
+/* ===== 提示框 ===== */
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+/* ===== 一句话回答 ===== */
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+/* ===== 面试 Q&A ===== */
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary {
+  cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none;
+  display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none;
+}
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* ===== 追问链 ===== */
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+
+/* ===== 前置/后续依赖卡 ===== */
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+
+/* ===== 其他 ===== */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 8 / 9</div>
+  <h1>异常体系与 IO/NIO：程序与不完美世界的对话</h1>
+  <div class="sub">
+    本模块两大主题，一条暗线贯穿：<b>程序如何面对"计划之外"</b>。异常是程序对自己内部意外的结构化表达（出错了谁负责、怎么传、怎么接）；IO 是程序与外部世界的通道（磁盘、网络——外部世界慢且不可靠）。前半场异常体系（<b>必考基础</b>：一棵继承树 + finally 执行细节 + 工程规约），后半场 IO/NIO（<b>中级分水岭</b>：BIO 之痛 → NIO 三大件 → epoll 多路复用 → 零拷贝——问到 Kafka / Netty / Redis 为什么快，答案全在这条链上）。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <a href="06-concurrency.html">6 并发编程</a>
+  <a href="06b-concurrency.html">6B 并发·大白话</a>
+  <a href="07-java8.html">7 Java 8+ 新特性</a>
+  <span class="cur">8 异常与 IO</span>
+  <span>9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 开场：两大主题一条暗线</a>
+    <a href="#s2">02 异常体系：一棵继承树</a>
+    <a href="#s3">03 三类异常的边界与策略</a>
+    <a href="#s4">04 try-catch-finally 深挖</a>
+    <a href="#s5">05 try-with-resources</a>
+    <a href="#s6">06 异常的性能与工程规约</a>
+    <a href="#s7">07 IO 家族地图与装饰器</a>
+    <a href="#s8">08 BIO 之痛与 C10K</a>
+    <a href="#s9">09 NIO 三大件</a>
+    <a href="#s10">10 多路复用：select→epoll</a>
+    <a href="#s11">11 零拷贝</a>
+    <a href="#s12">12 全模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部 Q&amp;A</button>
+      <button id="btn-collapse">收起全部 Q&amp;A</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <!-- ================= 1 开场 ================= -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>开场：两大主题一条暗线</h2></div>
+
+    <p>乍看"异常"和"IO"是两个不相干的主题，其实它们回答同一个问题的两个面：<b>程序怎么跟不完美的世界打交道</b>。</p>
+    <pre class="diagram"><code>程序的美好假设              现实世界
+─────────────────           ─────────────────
+一切按顺序执行     ──崩──►   磁盘可能满、文件可能不存在、数组可能越界
+                          （内部意外 → 异常体系来表达和传递）
+内存里数据随取随用 ──慢──►   磁盘比内存慢 10 万倍，网络还可能断
+                          （外部通道 → IO 体系来搬运和缓冲）
+
+异常 = 面对意外时的【语言】（怎么描述、怎么传播、怎么接住）
+IO   = 面对外部时的【通道】（怎么搬数据搬得快：BIO→NIO→零拷贝）</code></pre>
+
+    <h3 class="kp">1.1 面试考察地图</h3>
+    <table>
+      <tr><th>主题</th><th>考察频率</th><th>题型</th></tr>
+      <tr><td>异常体系划分（Error / 受检 / 非受检）</td><td>★★★★</td><td>"OOM 是 Exception 吗？""受检和非受检的区别？"</td></tr>
+      <tr><td>finally 执行细节</td><td>★★★★</td><td>笔试题：finally 里的 return / finally 一定执行吗</td></tr>
+      <tr><td>try-with-resources 原理</td><td>★★</td><td>"和 finally 关资源比好在哪"（suppressed 异常）</td></tr>
+      <tr><td>BIO / NIO / AIO 区别</td><td>★★★★</td><td>中级岗标配开场题</td></tr>
+      <tr><td>多路复用（select / poll / epoll）</td><td>★★★</td><td>"Netty 为什么快""Redis 单线程为什么快"的地基</td></tr>
+      <tr><td>零拷贝（mmap / sendfile）</td><td>★★★</td><td>"Kafka 为什么快""RocketMQ 刷盘"</td></tr>
+    </table>
+
+    <h3 class="kp">1.2 全模块路线</h3>
+    <pre class="diagram"><code>【前半场：异常】没有意外就没有异常体系
+  02 一棵继承树：Throwable 一分为二（Error/Exception），Exception 再分两半
+  03 三类异常的责任边界：JVM 的锅 / 外界的锅 / 你自己的锅
+  04 try-catch-finally 的执行细节（面试最爱抠的地方）
+  05 try-with-resources：Java 7 给资源管理的官方答案
+  06 异常的性能账 + 阿里规约（工程素养题）
+
+【后半场：IO】从"一连接一线程"到"一个线程管一万连接"
+  07 IO 家族地图：字节/字符 × 输入/输出，装饰器模式的天下
+  08 BIO 的死穴：线程是贵资源（回收模块 6）
+  09 NIO 三大件：Buffer / Channel / Selector
+  10 多路复用进化史：select → poll → epoll（Netty/Redis 的地基）
+  11 零拷贝：四次拷贝 → 零次（Kafka 吞吐的地基）</code></pre>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 你的 Python 背景怎么用</div>
+      <p>异常这一章你有天然优势：Python 的 <code>try/except/finally/else</code> 和 Java 几乎同构，EAFP 哲学（先干，错了再接）你天天在用。真正要花力气的是两处：<b>① Checked Exception 是 Java 独有的概念</b>（Python/Kotlin/Scala 都没有），要理解"编译器强制你处理"的设计动机和争议；<b>② 后半场 IO 是全新的世界观</b>——不过 <code>asyncio</code> 的 SelectorEventLoop、selectors 模块底层就是同一套 epoll，你调过的 <code>await</code> 就是把 BIO 阻塞点让出去，概念可以直接迁移。</p>
+    </div>
+
+    <div class="depcard">
+      <div class="dep"><b>前置模块（会回收的钩子）</b>模块 1（栈帧——stack trace 就是栈帧链快照）、模块 3（继承树怎么读、装饰器模式）、模块 4（fail-fast 的 ConcurrentModificationException）、模块 5（OOM 三兄弟：堆/元空间/栈、StackOverflowError）、模块 6/6B（线程是贵资源——BIO 之痛的根源；InterruptedException 的正确姿势）、模块 7（Lambda 里抛受检异常的麻烦）</div>
+      <div class="dep"><b>后续模块（本章埋的钩子）</b>模块 9（动态代理的 InvocationTargetException；泛型与 catch 的限制——为什么不支持泛型 catch）</div>
+    </div>
+  </section>
+
+  <!-- ================= 2 异常体系 ================= -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>异常体系：一棵继承树 <span class="badge b-high">必考</span></h2></div>
+
+    <h3 class="kp">2.1 痛点：错误码时代的三个灾难</h3>
+    <p>先看没有异常机制的 C 时代是怎么处理失败的，才能理解 Java 这棵树为什么长成这样：</p>
+    <pre class="diagram"><code>// C 风格：错误码 + errno 全局变量
+int fd = open("data.txt", O_RDONLY);
+if (fd == -1) {                       // 灾难一：调用方【可以不理】返回值
+    fprintf(stderr, "open failed: %s", strerror(errno));   // 错误信息贫瘠
+    return -1;                        // 灾难二：错误【没有类型】，只有 -1 和全局 errno
+}
+int n = read(fd, buf, size);
+if (n == -1) { ... return -2; }       // 灾难三：错误层层上报 = 层层 if，
+//                                   // 五层调用栈 = 五层 if (ret &lt; 0) 的样板
+// 而且：错误沿【返回值通道】逆流而上，和正常数据共用一条路，
+//       编译器无法区分"这是数据还是错误"</code></pre>
+    <p>Java 的解法是把"出错"从返回值通道里<b>剥离出来</b>，走一条专属通道：<b>异常沿调用栈向上冒泡（throw → 逐层上抛 → 直到有人 catch），没人接住就崩给 JVM 看栈轨迹</b>。这个"沿调用栈上抛"的机制叫<b>栈展开（stack unwinding）</b>——回收模块 1：每层方法调用对应一个栈帧，异常展开时逐帧弹出，并把"经过哪些帧"记下来，这就是 stack trace 的本质：<b>一张案发路径快照</b>。</p>
+
+    <h3 class="kp">2.2 继承树：先看清全貌</h3>
+    <pre class="diagram"><code>                        Throwable（一切异常的祖先）
+                        │  getMessage()      错误描述
+                        │  printStackTrace() 打印案发路径
+                        │  fillInStackTrace()现场取证（记录栈帧链）
+                        │
+          ┌─────────────┴─────────────┐
+        Error                      Exception
+     （JVM 级致命伤）              （程序级问题）
+          │                            │
+   ┌──────┼──────┐          ┌──────────┴──────────┐
+   │      │      │          │      受检异常         │   RuntimeException
+   │      │      │          │  （Checked）          │  （非受检 Unchecked）
+OutOfMemory Stack  NoClass  IOException             NullPointerException
+   Error     Overflow DefFound SQLException          ArrayIndexOutOfBounds
+   （内存尽） Error   Error   InterruptedException    ClassCastException
+   （栈爆）  （递归） （类丢）  FileNotFoundException    ArithmeticException
+                                                  ConcurrentModificationException
+
+★ 两条分界线（面试一句话）：
+  第一刀：Error vs Exception —— 问题出在【JVM】还是【程序】
+  第二刀：受检 vs 非受检 —— 编译器【强制你处理】还是【随你便】</code></pre>
+    <p>读这棵树的姿势（回收模块 3 的继承树读法）：<b>每一刀切分都问"按什么维度分"</b>。第一刀按"故障归属"分——Error 是 JVM 自己病入膏肓（内存耗尽、栈溢出、类加载失败），Exception 是程序运行中遇到的问题。第二刀按"编译器态度"分——受检异常编译器逼你处理，非受检异常全凭自觉。两刀切出四个象限，Java 把两个象限合并了（Error 也归非受检）。</p>
+
+    <h3 class="kp">2.3 为什么 Exception 要再分一刀：编译器的强制契约</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>CheckedDemo.java</span><span>不处理受检异常 = 编译不过</span></div>
+      <pre><code>// 受检异常：编译器强制"要么接住，要么声明上抛"——二选一，不许装看不见
+public String readConfig(String path) {
+    BufferedReader r = new BufferedReader(new FileReader(path));
+    // ✗ 编译错误：Unhandled exception: java.io.FileNotFoundException
+    //    —— FileReader 的构造器声明了 throws FileNotFoundException，
+    //       调用方【必须】表态
+}
+
+// 表态方式一：接住处理
+try {
+    BufferedReader r = new BufferedReader(new FileReader(path));
+} catch (FileNotFoundException e) {
+    log.error("配置缺失，用默认配置", e);
+    return defaultConfig();
+}
+
+// 表态方式二：声明上抛（"这事我处理不了，交给调用方"）
+public String readConfig(String path) throws IOException { ... }
+
+// 对比：NPE 这种 RuntimeException 不强制
+String s = map.get(key).trim();
+// 编译通过 —— 挂了运行时才炸。编译器认为：这是【你的 bug】，
+// 该修代码（判空），而不是"处理"异常</code></pre>
+    </div>
+    <p>设计动机一句话：<b>受检异常 = 方法签名的一部分，把"这个操作可能失败"写进契约</b>。像 <code>FileNotFoundException</code> 这种"外界环境导致的、调用方有能力预见的失败"，编译器逼你看一眼，理论上能消灭一类"忘处理的线上事故"。</p>
+
+    <h3 class="kp">2.4 受检异常的争议：为什么别的语言都把它扔了</h3>
+    <p>Java 是<b>主流语言里唯一有受检异常的</b>（C++/Python/Kotlin/Scala/Go 全都没有，Go 甚至直接回退到错误码 <code>if err != nil</code>）。面试聊到这就有意思了——受检异常的好意在实际工程里变了味：</p>
+    <pre class="diagram"><code>争议一【演化灾难】：
+  接口方法加一个受检异常 → 所有实现类和调用方全部编译报错。
+  和模块 8 接口默认方法要解决的是同一个问题：
+  "已发布的契约怎么安全演化"——受检异常让演化变得更脆。
+
+争议二【Lambda 不兼容】（回收模块 7）：
+  Stream.map(s -&gt; new FileReader(s))    // ✗ 编译错误
+  // Function&lt;T,R&gt; 的 SAM 不声明 throws，
+  //    lambda 里抛受检异常就装不进这个函数式接口
+  // → 全 JDK 的函数式接口都不带 throws，Lambda 时代受检异常成了累赘
+
+争议三【吞异常泛滥】：
+  强制的本意是"逼你处理"，实际催生的是：
+  catch (IOException e) { e.printStackTrace(); }   // 假装处理了
+  或者方法签名 throws Exception                     // 躺平摆烂
+  —— 强制处理 ≠ 正确处理
+
+所以业界的实践共识：新代码少抛受检异常，底层 API 用非受检 +
+  文档/异常体系自己设计（Spring 的 DataAccessException 就是全家非受检）。</code></pre>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Java 异常体系？——Throwable 一分为二：Error 是 JVM 级致命伤（OOM/StackOverflow，别 catch）；Exception 再分受检（编译器强制 catch 或 throws，如 IOException）与非检（RuntimeException，程序 bug，修代码而不是接异常）。stack trace 的本质是栈展开时的栈帧链快照。</p>
+    </div>
+
+    <details class="qa"><summary>OOM、StackOverflowError 是 Exception 吗？能 catch 吗？</summary><div class="qa-body">
+      <p>都不是——它们是 <b>Error</b>（继承 Throwable 的 Error 分支，属于非受检，但归类是 Error 不是 Exception）。能不能 catch：语法上能（catch (OutOfMemoryError e) 合法），但<b>基本没有意义</b>——OOM 时堆已耗尽，你的 handler 分配任何对象都可能再炸，应该做的是让 JVM 快速失败 + 外部监控告警。唯一的灰色地带是 <code>StackOverflowError</code>：递归爆栈后栈已经弹干净，catch 后小心理论上能继续跑（有些解析库拿它实现"深度自适应"），但这是走钢丝，面试答"不推荐依赖"。回收模块 5：OOM 家族按区域分——堆 OOM（对象太多）、元空间 OOM（类太多，回收模块 5 的动态代理滥用）、栈溢出（递归没出口）。</p>
+    </div></details>
+
+    <details class="qa"><summary>throws Exception（直接抛总类）好不好？</summary><div class="qa-body">
+      <p>不好，两层坏处：① <b>契约失效</b>——调用方只知道"可能出错"，不知道<b>哪类</b>错、该<b>怎么</b>应对（重试？降级？终止？），受检异常"精确契约"的价值被抹掉；② <b>传染扩散</b>——签名 throws Exception 会逼着每一层调用方也写 throws Exception（catch 具体类型也得先 catch Exception），异常体系烂在签名上。正确姿势：底层抛具体类型；需要泛化时在<b>边界层做异常转换</b>（IOException → 业务异常，保留 cause 链，见 3.4）。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的异常体系和 Java 比缺了什么？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>Python 一切异常继承 <code>BaseException</code>（SystemExit/KeyboardInterrupt 直挂其下，等价于 Java 的 Error 分支；日常异常继承 Exception），但<b>没有受检/非受检之分</b>——任何异常都可以不声明直接抛，你调一个函数前不知道它会炸什么（要么看文档要么看源码）。Java 的受检异常把这个信息放进<b>编译期类型系统</b>，代价是签名僵化。另外 Python 的 <code>else</code> 子句（try 不炸才执行）Java 没有；Java 的受检声明 Python 对应 <code>raise ... from ...</code>（异常链，Java 的 cause）。你会发现在 Python 里你早已习惯"EAFP"（请求宽恕比许可容易：先 try 再说），这正是异常机制的初衷——Java 只是把它做成了强制的。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 3 三类边界与策略 ================= -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>三类异常的边界与策略</h2></div>
+
+    <h3 class="kp">3.1 一张表定责任</h3>
+    <table>
+      <tr><th></th><th>Error</th><th>受检异常（Checked）</th><th>非受检（RuntimeException）</th></tr>
+      <tr><td>谁的锅</td><td>JVM / 运行环境</td><td>外界环境（文件没了、网络断了）</td><td>程序员自己（bug）</td></tr>
+      <tr><td>编译器态度</td><td>不管</td><td><b>强制</b> catch 或 throws</td><td>不管</td></tr>
+      <tr><td>该不该 catch</td><td>基本不 catch（救不了）</td><td>能恢复就 catch，不能就上抛</td><td><b>不 catch，修代码</b></td></tr>
+      <tr><td>典型</td><td>OOM、StackOverflowError</td><td>IOException、SQLException、InterruptedException</td><td>NPE、越界、ClassCastException、IllegalArgument</td></tr>
+      <tr><td>处理姿势</td><td>监控告警 + 让它死</td><td>重试 / 降级 / 换配置 / 上抛</td><td>修 bug（判空、边界检查）</td></tr>
+    </table>
+    <p>责任划分的判断口径（面试照这个说）：<b>调用方能不能预见到、且有没有恢复手段</b>——文件不存在调用方能预见也能处理（给默认路径），所以受检；NPE 是你自己没判空，catch 了 NPE 代码照样是错的，所以不 catch 改代码。</p>
+
+    <h3 class="kp">3.2 自定义异常：项目里的异常体系怎么设计</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>BusinessException.java</span><span>标准三层结构（面试可背）</span></div>
+      <pre><code>// ① 业务异常基类：非受检（不污染 service 签名），带错误码（比字符串好检索好国际化）
+public class BusinessException extends RuntimeException {
+    private final int code;                       // 错误码：ERROR_PARAM 之类
+    public BusinessException(int code, String message) {
+        super(message);                           // message 给人看
+        this.code = code;                         // code 给程序看
+    }
+    public BusinessException(int code, String message, Throwable cause) {
+        super(message, cause);                    // ★ 保留 cause：底层案发路径不丢
+    }
+    public int getCode() { return code; }
+}
+
+// ② 具体业务异常：继承基类，一眼可读
+public class InsufficientBalanceException extends BusinessException { ... }
+
+// ③ 全局处理器：Web 层统一接（Spring 的 @RestControllerAdvice）
+//    controller/service 里 throw new BusinessException(...)，
+//    这里统一转成 {"code": 4001, "msg": "余额不足"} 响应
+@ExceptionHandler(BusinessException.class)
+public Result handle(BusinessException e) {
+    return Result.fail(e.getCode(), e.getMessage());
+}</code></pre>
+    </div>
+    <p>设计要点（说得出 = 有工程经验）：业务异常用<b>非受检</b>（理由见 2.4 的争议三条）；带<b>错误码</b>（日志检索 + 前端国际化）；<b>边界层做转换</b>——底层 IOException 转成业务异常时必须把原异常作为 cause 传进去，否则 stack trace 断片（3.4 专讲）。</p>
+
+    <h3 class="kp">3.3 throw / throws / Throwable：三兄弟辨析</h3>
+    <table>
+      <tr><th></th><th>throw</th><th>throws</th><th>Throwable</th></tr>
+      <tr><td>是什么</td><td>语句（动词）</td><td>声明（签名的一部分）</td><td>类（一切异常的祖先）</td></tr>
+      <tr><td>写在哪</td><td>方法体内</td><td>方法签名后</td><td>import 的类型</td></tr>
+      <tr><td>作用</td><td>此刻抛出一个异常对象</td><td>声明"本方法可能抛这些异常"</td><td>catch (Throwable t) 之类的类型</td></tr>
+    </table>
+
+    <h3 class="kp">3.4 异常链：别把案发路径弄丢 <span class="badge b-trap">工程素养</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ExceptionChain.java</span><span>一个构造参数的差别</span></div>
+      <pre><code>// ✗ 反面教材：转换异常时丢了 cause
+try {
+    parseConfig(file);
+} catch (IOException e) {
+    throw new BusinessException(5001, "配置解析失败");
+    // ★ e 被扔掉了！stack trace 只剩这一层的路径，
+    //   "为什么 IOException？文件不存在还是权限不够？"——查不到了
+}
+
+// ✓ 正确姿势：把底层异常挂到 cause 链上
+try {
+    parseConfig(file);
+} catch (IOException e) {
+    throw new BusinessException(5001, "配置解析失败", e);
+    //                      e = cause ★ 日志打印的是完整因果链：
+    //    BusinessException: 配置解析失败
+    //        Caused by: java.io.FileNotFoundException: config.yml (No such file ...)
+    //        Caused by: ...
+}</code></pre>
+    </div>
+    <p>排查线上问题时，<code>Caused by</code> 链就是"案发路径的完整监控录像"——丢了它，等于把录像带删了再报警。这也是日志规范里"<b>日志要打异常对象本身（log.error("...", e)），不是 e.getMessage()</b>"的原因：message 只有一句话，异常对象才有完整栈。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>三类异常怎么处理？——Error 不 catch（JVM 的病，catch 了也救不了）；受检异常能恢复就 catch（重试/降级），不能就 throws 上抛；RuntimeException 不 catch，修 bug。业务异常体系：非受检基类 + 错误码 + 转换时保留 cause 链 + 全局处理器收口。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：catch (Exception e) 和 catch (Throwable t) 哪个更不能写？</div><div class="ca">都别写，但 Throwable 更糟：catch Exception 至少还在"程序问题"的范围内（会把 NPE 这类 bug 也吞掉）；catch Throwable 连 Error 一起吞——OOM/StackOverflow 被拦下后 JVM 带病运行，故障被掩盖得更深。合法场景只有最顶层兜底（main 循环或线程池的 UncaughtExceptionHandler，记完日志让线程体面退出）。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：finally 里写 return 会怎样？（先剧透，04 节细讲）</div><div class="ca">编译器允许（只给警告不给错误），但会<b>吞掉 try 里抛出的异常</b>并覆盖返回值——JLS 明文禁止的方向，阿里规约列为禁止项。细节和"finally 一定执行吗"一起在下一节展开，那是笔试最爱。</div></div></div>
+      <div class="chain-item"><div class="cn">3</div><div class="cc"><div class="cq">追问：项目里见过哪些"异常驱动流程"的反模式？</div><div class="ca">用异常当业务分支：解析数字用 Integer.parseInt 的 NumberFormatException 判断"是不是数字"（每秒上万次抛栈采集，CPU 全耗在取证上——06 节的性能账）；或用异常跳出深层循环（当 goto 用）。异常的定位是"异常路径"，正常路径走返回值。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 4 finally 深挖 ================= -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>try-catch-finally 深挖 <span class="badge b-high">笔试最爱</span></h2></div>
+
+    <h3 class="kp">4.1 执行模型：两段式 + 优先级</h3>
+    <pre class="diagram"><code>标准执行流程（无异常）：
+  try 全部执行 → finally 执行 → 方法返回
+
+try 里抛异常：
+  try 在抛出点【立刻中断】（后面的代码不执行）
+  → 异常和 catch 块类型从上往下匹配（★父类在前面 = 后面全废）
+  → 匹配成功：执行该 catch → 执行 finally → 方法返回
+  → 全不匹配：先执行 finally，然后异常【继续向上抛】
+
+三条优先级铁律（记这个顺序，所有笔试题都是它的变形）：
+  ① finally 的执行优先级最高：方法退出前【一定】轮到它（仅两种例外，4.3）
+  ② try/catch 的 return：先算好返回值【暂存】，再执行 finally，
+     finally 不动暂存值就返回暂存值
+  ③ finally 里如果【也有 return / 抛异常】：直接覆盖 ② —— 惨案之源</code></pre>
+
+    <h3 class="kp">4.2 三道经典笔试题（逐行推演）</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Quiz.java</span><span>面试现场手推</span></div>
+      <pre><code>// 题 1：finally 改的是"盒子"还是"卡片"？（回收模块 1 值传递）
+static int test1() {
+    int x = 1;
+    try { return x; }          // 返回值 1 已【快照暂存】
+    finally { x = 2; }         // 改的是局部变量 x，快照没动
+}
+// 答案：返回 1 —— finally 里改基本类型局部变量，追不回已暂存的返回值
+
+static List&lt;Integer&gt; test2() {
+    List&lt;Integer&gt; list = new ArrayList&lt;&gt;();
+    try { return list; }       // 暂存的是【引用】
+    finally { list.add(99); }  // 改的是引用指向的对象内容！
+}
+// 答案：返回 [99] —— 引用暂存了，但对象是共享的，add 立刻可见
+//       （模块 1 的"引用的拷贝 vs 对象的共享"在这里全额兑现）
+
+static int test3() {
+    try { return 1; }
+    finally { return 2; }      // ★ finally 的 return 直接抢班夺权
+}
+// 答案：返回 2 —— 而且 try 里的 return 1 【从未发生过】</code></pre>
+    </div>
+
+    <h3 class="kp">4.3 finally 一定执行吗？两个例外</h3>
+    <table>
+      <tr><th>场景</th><th>finally 还执行吗</th><th>说明</th></tr>
+      <tr><td>try 正常结束 / 抛异常 / 抛了没接</td><td>✓ 执行</td><td>标准路径，包括 try 里 return</td></tr>
+      <tr><td><code>System.exit()</code> 在 try 里被调用</td><td>✗ 不执行</td><td>JVM 直接终止，没有栈展开</td></tr>
+      <tr><td>守护线程的 finally，JVM 先退出</td><td>✗ 不执行</td><td>非守护线程全结束 JVM 就关机，守护线程的 finally 来不及（回收模块 6 线程池的 daemon）</td></tr>
+      <tr><td>try 里死循环 / kill -9</td><td>✗ 永远到不了 / 不执行</td><td>kill -9 是 OS 层强杀，JVM 没机会善后</td></tr>
+    </table>
+
+    <h3 class="kp">4.4 最恶劣的坑：finally 吞异常 <span class="badge b-trap">必考</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Swallow.java</span><span>三行代码静悄悄丢掉一个异常</span></div>
+      <pre><code>try {
+    throw new RuntimeException("真正的故障");
+} finally {
+    return 42;    // ★ try 里抛的异常【凭空消失】！
+}
+// 调用方拿到 42，一切"正常"——线上问题查到怀疑人生
+// JLS 语义：finally 里的 return/throw 会【中止】try 里的异常传播
+// 编译器只给警告不报错；阿里规约明令禁止 finally 里 return
+
+// 变体二：finally 里抛新异常，同样覆盖原异常
+try {
+    throw new RuntimeException("原始故障");
+} finally {
+    throw new IllegalStateException("finally 里的新故障");  // 只能看见这个
+}</code></pre>
+    </div>
+    <p>这也正是 05 节 try-with-resources 要解决的问题之一：<b>资源关闭（在 finally 里）和 try 里抛异常撞车时，谁活下来？</b>手写 finally 只能活一个（后者覆盖前者），Java 7 的官方答案是"两个都留，一个进压栈"。</p>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>finally 执行细节？——优先级最高（除 System.exit / JVM 退出 / kill -9 外必执行）；try 的 return 先暂存值再跑 finally（finally 改基本类型追不回暂存，改引用指向的对象立刻可见）；finally 里 return/throw 会覆盖 try 的（吞异常，禁止）；catch 匹配从上到下、父类必须放后面。</p>
+    </div>
+
+    <details class="qa"><summary>try 里有 return，finally 里也有 return，编译器怎么处理？</summary><div class="qa-body">
+      <p>编译通过但 IDE 会给 "finally block does not complete normally" 警告——JLS 故意没把它定成错误（兼容老代码），但语义上就是错的。字节码层面的真相：编译器生成的 finally 代码会插到每个出口（正常 return 前、athrow 前），finally 的 return 一执行，try 的返回路径直接被跳过。所以"finally 的 return 覆盖 try 的 return"不是什么微妙行为，是编译器把 finally 的代码排在最后、排在出口处。类似的：System.out.println 在 finally 里是安全的（不改变控制流），只有 return/throw/break/continue 这四种"控制流语句"才会吞异常。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的 finally 语义一样吗？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>一模一样的坑，Python 全都有：<code>finally</code> 里的 return 同样吞掉 try 的异常；<code>finally</code> 里抛异常同样覆盖原异常。而且 Python 还有个 Java 没有的坑：生成器在 finally 里 yield 会 RuntimeError。解药也是同构的——Python 3 的 <code>contextlib.suppress</code>、官方推荐 <code>with</code> 语句管理资源（对应 Java 7 的 try-with-resources，下一节）。两门语言在这点上共享同一套"finally 优先"的语言设计，你踩过的坑可以直接迁移。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 5 try-with-resources ================= -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>try-with-resources：资源管理的官方答案</h2></div>
+
+    <h3 class="kp">5.1 痛点：手写关闭的四种姿势，各有各的坑</h3>
+    <p>文件、Socket、数据库连接——用完必须关闭（不关 = 句柄泄漏，回收模块 5 的 native memory）。Java 7 之前的标准写法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ManualClose.java</span><span>老写法的三宗罪</span></div>
+      <pre><code>// 罪一：close() 本身也会抛异常（throws IOException），
+//       在 finally 里还得再套一层 try-catch —— 代码金字塔
+BufferedReader r = null;
+try {
+    r = new BufferedReader(new FileReader(path));
+    return r.readLine();
+} catch (IOException e) {
+    log.error("read fail", e);
+    return null;
+} finally {
+    if (r != null) {                 // 罪二：还得判空（构造可能就没成功）
+        try {
+            r.close();
+        } catch (IOException e) {     // 罪三：这里抛的异常会【覆盖】try 里的原始异常
+            log.error("close fail", e);   // —— 4.4 的吞异常坑，真实发生地
+        }
+    }
+}
+// 一个"读一行"的意图，写了 12 行，两处陷阱</code></pre>
+    </div>
+
+    <h3 class="kp">5.2 Java 7 的答案：语法 + 接口 + 语义三件套</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>TWR.java</span><span>同一件事，四行</span></div>
+      <pre><code>// ① 资源声明在 try 的括号里，编译器自动生成关闭逻辑
+try (BufferedReader r = new BufferedReader(new FileReader(path))) {
+    return r.readLine();
+}                                  // 无需 finally：close 自动调用、判空、套 catch 全免
+
+// ② 前提：资源类实现 AutoCloseable 接口（Java 7 新增）
+public interface AutoCloseable {
+    void close() throws Exception;      // 唯一抽象方法
+}                                       // 你的类实现它就能进 try 括号（自己写资源类时的钩子）
+
+// ③ 多个资源：分号分隔，【逆序关闭】（后开的先关，对称于 C++ 析构）
+try (FileInputStream in = new FileInputStream(src);
+     FileOutputStream out = new FileOutputStream(dst)) {
+    in.transferTo(out);
+}   // 关闭顺序：先 out 后 in —— out 是依赖 in 的数据建起来的，
+    // 建立顺序的正序，销毁顺序的逆序（栈式对称）</code></pre>
+    </div>
+
+    <h3 class="kp">5.3 精髓：suppressed exceptions（被压制的异常）</h3>
+    <pre class="diagram"><code>手写 finally 的两难（4.4 的坑）：
+  try 里抛了 A（比如磁盘读坏了），关闭时又抛了 B（close 失败）
+  → 只能活一个：B 覆盖 A，真正的案发原因 A 丢了
+
+try-with-resources 的答案：【一个都不丢】
+  try 里的异常 A = 主异常，照常上抛（它才是故障根源）
+  close() 里的异常 B = 被压制异常（suppressed），
+    挂到 A 身上：a.addSuppressed(b) —— 附带在案卷里，不打断主案
+
+打印出来的 stack trace：
+  java.io.IOException: 磁盘读失败（主异常，根因）
+      at ...
+      Suppressed: java.io.IOException: close 失败   ← 附属案卷
+          at ...
+
+★ 面试金句：try-with-resources 比 finally 关资源好在哪？
+  ① 不会吞异常（suppressed 全保留 vs 只活一个）
+  ② 逆序关闭多资源（依赖顺序正确）
+  ③ 代码量 1/3，且不可能忘写关闭逻辑
+  这题答出 suppressed，就是"读过 JLS 级"的信号。</code></pre>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>try-with-resources？——try 括号里声明的资源（实现 AutoCloseable）自动关闭：编译器生成逆序 close + 判空 + 异常处理，核心优势是 suppressed exceptions——try 的主异常照常抛，close 的异常挂到主异常的 suppressed 列表里，一个不丢（手写 finally 只能活一个）。</p>
+    </div>
+
+    <details class="qa"><summary>Java 9 对它做了什么增强？</summary><div class="qa-body">
+      <p>允许括号里直接引用<b>已存在的</b> effectively final 变量：Java 7/8 必须在括号里 new（<code>try (r = new ...)</code> 才合法），Java 9 起 <code>try (r)</code> 就行——当资源来自工厂方法/参数时不用再包一层。配合模块 7 的"effectively final"概念：被引用的变量必须事实上 final（编译器要保证它不被重新赋值，关闭代码才能安全引用它）。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的对应物？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p><code>with open(path) as f:</code> —— 上下文管理器协议（<code>__enter__</code>/<code>__exit__</code>），你天天在用。语义对齐到令人发指：异常自动传播（<code>__exit__</code> 返回 False 不吞异常）、多资源逗号分隔、离开作用域自动清理。差别在细节：Python 的 <code>__exit__</code> 能<b>看到异常对象</b>并选择吞不吞（返回 True = 吞），Java 的 AutoCloseable.close 看不到 try 里发生了什么；Java 用 suppressed 保存"关闭时又炸了"的信息，Python 的 <code>__exit__</code> 里再抛就直接链式覆盖（<code>raise ... from ...</code> 补救）。另外 <code>contextlib.contextmanager</code> 装饰器用生成器实现上下文管理，Java 没有这么轻巧的玩法（要老老实实实现接口）。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 6 性能与规约 ================= -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>异常的性能与工程规约 <span class="badge b-high">素养题</span></h2></div>
+
+    <h3 class="kp">6.1 异常到底贵在哪：fillInStackTrace</h3>
+    <pre class="diagram"><code>new RuntimeException() 的真实成本：
+
+  ① 填充栈轨迹 fillInStackTrace()：
+     逐帧回溯当前线程的调用栈（JIT 优化受限，可能还要符号反解）
+     栈越深越贵 —— 深调用链里 new 一个异常 = 微秒级
+  ② 分配栈轨迹数组、字符串化（getMessage/lazy 打印）
+
+对比：普通对象 new = 纳秒级；异常对象 new = 微秒级（100~1000 倍）
+
+推论：
+  ✓ 异常路径慢【无所谓】—— 走到异常路径本来就是小概率故障
+  ✗ 用异常当【正常控制流】= 灾难 —— 每秒抛万个异常，CPU 全在做"取证"
+    典型反例：Integer.parseInt 靠 NumberFormatException 判断"是不是数字"
+
+  高频创建同款异常的优化姿势（见识题）：
+    new StacklessException() —— JVM 内部用（隐藏构造器参数，不填栈）；
+    缓存预构建的异常对象 + fillInStackTrace=false —— 重抛时快，
+    代价是丢栈轨迹（只有确定不需要案发路径时才用，如中断标记）</code></pre>
+
+    <h3 class="kp">6.2 阿里规约的异常条款（挑高频的四条）</h3>
+    <table>
+      <tr><th>规约</th><th>理由（用前面的原理讲）</th></tr>
+      <tr><td>不要捕获 Java 类库中定义的继承自 RuntimeException 的运行时异常</td><td>如 NPE/越界——catch 了 bug 还在，见 3.1"修代码不是接异常"</td></tr>
+      <tr><td>捕获异常后要么处理要么上抛，<b>禁止空 catch / 只打 e.getMessage()</b></td><td>空 catch = 吞异常（比 4.4 更彻底的吞）；只打 message 丢栈轨迹（3.4 的录像带问题）——要 <code>log.error("ctx", e)</code></td></tr>
+      <tr><td>finally 里必须对返回值/资源<b>只做回收动作</b>，禁止 return</td><td>4.4 吞异常；return 覆盖暂存值</td></tr>
+      <tr><td>不要用异常做流程控制、条件控制</td><td>6.1 的性能账 + 可读性（异常路径的代码 JIT 少优化）</td></tr>
+    </table>
+
+    <h3 class="kp">6.3 rethrow 与 fast-fail 的正确姿势</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>GoodVsBad.java</span><span>四种写法段位对比</span></div>
+      <pre><code>// 青铜：吞
+try { risky(); } catch (Exception e) { }                    // 线上裸奔
+
+// 白银：打了但没打全
+try { risky(); } catch (Exception e) { log.error(e.getMessage()); }  // 丢栈轨迹
+
+// 黄金：打全
+try { risky(); } catch (Exception e) { log.error("risky 失败, ctx={}", ctx, e); }
+
+// 王者：打全 + 转换成有语义的异常上抛（保留 cause）
+try { risky(); }
+catch (IOException e) { throw new BusinessException(5002, "数据导入失败", e); }
+
+// 最差变体：捕获后再抛个裸 RuntimeException
+catch (Exception e) { throw new RuntimeException(); }       // cause 丢了，人间蒸发</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>异常的性能账？——贵在 fillInStackTrace（逐帧取证，微秒级，比普通 new 慢百倍），所以异常只走故障路径，禁止当流程控制（反例：用 NumberFormatException 判数字）。工程四红线：不空 catch、不打裸 getMessage、finally 不 return、运行时异常不 catch 修 bug。</p>
+    </div>
+  </section>
+
+  <!-- ================= 7 IO 家族地图 ================= -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>IO 家族地图与装饰器 <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">7.1 两个维度切出四象限</h3>
+    <p>java.io 的几十个类看着眼花，其实只有两个维度：<b>字节还是字符</b>（数据当什么看）、<b>进还是出</b>（方向）。四个抽象基类就是四个象限的原点：</p>
+    <pre class="diagram"><code>                字节（8bit，二进制：图片/压缩包/一切）    字符（16bit，文本：要解码）
+输入（读到程序）   InputStream                          Reader
+                   read() 返回 int（0~255，-1=结束）      read() 返回 int（字符，-1=结束）
+输出（从程序写）   OutputStream                         Writer
+                   write(int b)                          write(char[])
+
+命名规律：象限基类 + 功能前缀，见名知义：
+  File 前缀   = 数据源是文件        FileInputStream / FileReader
+  Byte/Char   = 内存数组当源        ByteArrayInputStream / CharArrayReader
+  Object 前缀 = 对象序列化          ObjectInputStream / ObjectOutputStream
+  Piped 前缀  = 线程间管道          PipedInputStream（回收模块 6 线程通信）
+
+字节 ↔ 字符的桥：InputStreamReader / OutputStreamWriter（解码用 charset）
+  new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))
+  —— 字节流包进"解码适配器"变成字符流，再包缓冲 —— 这就是下一节的主角</code></pre>
+
+    <h3 class="kp">7.2 装饰器模式：为什么 new 要套三层 <span class="badge b-hard">原理</span></h3>
+    <p>面试官最爱问："这行代码为什么 new 了三层？"</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Decorator.java</span><span>一行经典</span></div>
+      <pre><code>BufferedInputStream bis = new BufferedInputStream(new FileInputStream("a.txt"));
+//                                    └── 数据源：真会读磁盘的家伙
+//                       └── 装饰者：包着它，加"缓冲"能力
+
+// 核心：BufferedInputStream extends FilterInputStream extends InputStream
+//       装饰者【和被装饰者是同一个父类】 —— 套几层都还是 InputStream
+bis.read();   // 调到缓冲层的 read：内存缓冲区有就直接给，
+              // 没有就一次性找被包裹的真流要 8192 字节（少打扰磁盘）</code></pre>
+    </div>
+    <pre class="diagram"><code>为什么不设计成 FileInputStream 带 buffered 参数？
+  —— 能力组合会爆炸：
+     基础流 N 种（File/ByteArray/Socket...）× 增强能力 M 种（缓冲/基本类型/行读...）
+     = N×M 个类（FileBufferedInputStream、ByteArrayBufferedInputStream...）
+
+装饰器的答案：基础流实现"读"，增强流实现"包裹后增强"，
+  同一父类保证【任意组合、任意层数】—— N + M 个类搞定 N×M 种组合
+  ★ 回收模块 3 的设计模式：装饰器 = "不改原类、组合加能力"
+    （Python 的 @decorator 是【语法糖/函数包装】，Java IO 装饰器是【GoF 设计模式】
+      —— 同名不同物，面试别混；但"包装加能力"的思想一致）
+
+代价：类数量多、new 套娃难读 —— 所以日常代码用
+  Files.readAllLines(path) / Files.newBufferedReader(path) 这类工厂方法收口</code></pre>
+
+    <h3 class="kp">7.3 缓冲为什么快：一次搬一卡车 vs 一次搬一箱</h3>
+    <pre class="diagram"><code>无缓冲：read() 一次 = 真读一次磁盘/走一次系统调用
+  读 1MB：1024 次 read × 1 字节 = 1024 次系统调用（每次都是用户态↔内核态切换）
+
+有缓冲：缓冲层一次进货 8KB（一次系统调用），后续 read 从内存批发
+  读 1MB：128 次系统调用 —— 系统调用次数降为 1/8
+
+★ 本质：用"一次多搬"摊薄"每次搬运的固定成本"（系统调用切换）
+  这是计算机系统的通用规律（和 CPU cache 行、TCP 滑动窗口、GC 分代同源）：
+  —— 慢速边界上，永远批量搬运</code></pre>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>Java IO 体系？——两维四象限：字节/字符 × 输入/输出，四个抽象基类（InputStream/OutputStream/Reader/Writer），字节字符互转用 InputStreamReader 桥。功能增强靠装饰器模式（同父类包裹组合，N+M 个类覆盖 N×M 组合），缓冲提效的本质是批量搬运摊薄系统调用成本。</p>
+    </div>
+
+    <details class="qa"><summary>字节流和字符流怎么选？</summary><div class="qa-body">
+      <p>默认字节流（万物皆字节，通用）；确定是<b>文本</b>且要按字符处理（readLine、编码敏感）才用字符流。坑在编码：字符流不指定 charset 就用平台默认（Windows 的 GBK vs Linux 的 UTF-8——同一个文件两边读出乱码），生产代码必须显式 <code>StandardCharsets.UTF_8</code>。顺便回收模块 6：老 API 里 Reader/Writer 的某些实现（如 FileReader 老版本无法传 charset）逼人用字节流+手动解码，Java 11 后 FileReader 终于能传 charset 了。</p>
+    </div></details>
+
+    <details class="qa"><summary>序列化选什么？ObjectInputStream 好用吗？<span class="badge b-trap">追问率高</span></summary><div class="qa-body">
+      <p>Java 原生序列化（Serializable + ObjectInputStream）只适合进程内/临时场景：① <b>不安全</b>——反序列化任意类，历史上 RCE 漏洞重灾区（log4shell 同类攻击面）；② <b>脆</b>——serialVersionUID 一变就 InvalidClassException，加个字段都心惊；③ <b>大且慢</b>——带类元数据。生产选择：跨语言/网络 → JSON（Jackson）或 Protobuf（Kafka、gRPC 的选择，二进制小 3~10 倍）；进程内缓存 → Hessian/Kryo。面试能说出"为什么 Kafka 不用 Java 序列化"就是加分：跨语言 + 紧凑 + 版本演化友好。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 8 BIO 之痛 ================= -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>BIO 之痛与 C10K <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">8.1 传统网络编程模型：一连接一线程</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>BioServer.java</span><span>Tomcat 4 时代的模型</span></div>
+      <pre><code>ServerSocket server = new ServerSocket(8080);
+while (true) {
+    Socket socket = server.accept();          // ① 阻塞：没连接来就睡着等
+    new Thread(() -&gt; {                        // ② 每来一个连接，专职伺候
+        byte[] buf = new byte[1024];
+        try (InputStream in = socket.getInputStream()) {
+            int n = in.read(buf);             // ③ 阻塞：对端不发数据就睡着等
+            // ... 处理                        // ④ 这个线程就这么被【这个连接独占】
+        }
+    }).start();
+}</code></pre>
+    </div>
+    <p>每一步都直白可靠，但代价藏在 ③：<b>read() 是阻塞调用——对端不说话，这个线程就干睡着</b>。于是"线程数 = 连接数"成为铁律。</p>
+
+    <h3 class="kp">8.2 C10K：数量级一变，模型崩塌</h3>
+    <pre class="diagram"><code>100 个连接：    100 个线程 —— 完全没问题（BIO 的舒适区）
+10000 个连接：  10000 个线程 —— C10K 问题（1999 年 Dan Kegel 提出）
+
+三重死法（全部回收模块 6/6B 的知识）：
+  ① 内存：线程栈默认 1MB，10000 线程 = 10GB 起步 → OOM
+  ② 调度：CPU 核就 8/16 个，上万线程上下文切换，
+     切换开销吃掉大部分 CPU（真正干活的时间被挤没了）
+  ③ 创建销毁的 churn（虽可用线程池缓，但 1 万并发还是撑不住 1 万线程池）
+
+★ 根因复盘：线程被浪费在【阻塞等待】上 —— 90% 的线程在睡
+  （等对端发数据），真正干活的连 10% 都没有。
+  破局思路只有一条：让少数线程【不再傻等】——
+  把"每连接一个专职服务员（阻塞等）"
+  换成"一个服务员同时盯着 10000 张桌子（谁举手了服务谁）"</code></pre>
+    <div class="tipbox tb-py">
+      <div class="tb-title">🐍 Python 对比</div>
+      <p>你在 Python 里绕过 C10K 的路径就是 <code>asyncio</code>：协程挂在 <code>await</code> 上不占线程，事件循环一个线程轮询所有就绪的 socket——和 Java NIO 的思路完全同源，只是把"就绪通知 + 手动注册"自动化成了语法（await 点即挂起点）。Flask/Django 老 WSGI 模型（一请求一线程/进程）= BIO 思路，FastAPI/uvicorn（ASIO）= NIO 思路——你两个世界都待过，这是理解本节最好的入口。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>BIO 的问题？——accept/read 全阻塞，只能一连接一线程；连接数破万（C10K）后内存（1MB 栈 × 1 万）、上下文切换、线程管理全部爆掉。根因是线程浪费在阻塞等待上，解法是"就绪通知"模型：让一个线程只处理【此刻有事件】的连接——NIO。</p>
+    </div>
+  </section>
+
+  <!-- ================= 9 NIO 三大件 ================= -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>NIO 三大件：Buffer / Channel / Selector <span class="badge b-hard">原理</span></h2></div>
+
+    <p>Java NIO（JDK 1.4，New IO / Non-blocking IO）的世界观转变：<b>从"流"到"通道"</b>。Stream 是单向的水管（读用 InputStream、写用 OutputStream），Channel 是双向的铁道（读写同一条）。</p>
+
+    <h3 class="kp">9.1 Buffer：自己管状态的字节数组</h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>BufferDemo.java</span><span>flip 是全场的灵魂考点</span></div>
+      <pre><code>ByteBuffer buf = ByteBuffer.allocate(1024);   // position=0, limit=1024, capacity=1024
+channel.read(buf);                            // 网络数据灌进缓冲区（写模式）
+
+buf.flip();          // ★ 切换到读模式：limit=position（读到哪算哪）, position=0
+while (buf.hasRemaining()) {
+    byte b = buf.get();                       // 逐字节消费，position 前进
+}
+
+buf.clear();         // 复位为写模式：position=0, limit=capacity（数据没擦，会被覆盖）
+// compact()          变体：未读完的挪到开头，接着写（半包场景）</code></pre>
+    </div>
+    <pre class="diagram"><code>Buffer 的四个指针（一个"读写双态"状态机）：
+  capacity 容量：分配时定死，永不变
+  position 位置：下一个读/写的下标
+  limit   界限：第一个不可读/写的下标
+
+写模式 flip 后 →读模式（核心图，必画）：
+  写模式（read 进来后）：  [▓▓▓▓▓░░░░░]     position=5 limit=10
+                          数据↑   ↑limit(capacity)
+  flip()                  [▓▓▓▓▓░░░░░]     position=0 limit=5
+  读模式：                 ↑position ↑limit —— 只能读到 5
+
+为什么需要 flip：read() 和 get() 共用 position 一个游标，
+  不切状态就会"写到哪从哪接着读"（读到垃圾）。
+  真实项目里没人手写这个 —— Netty 的 ByteBuf 用双游标
+  （readerIndex/writerIndex 分开）把这个易错点消掉了，这是它好用的点之一。</code></pre>
+
+    <h3 class="kp">9.2 Channel：双向、可配非阻塞</h3>
+    <pre class="diagram"><code>Channel vs Stream：
+  Stream   单向（输入/输出两个家族）    阻塞为主
+  Channel  双向（读写同一对象）         可配置非阻塞（configureBlocking(false)）
+
+  SocketChannel  = TCP 读写通道（可非阻塞）
+  ServerSocketChannel = 服务端 accept 通道（可非阻塞）
+  FileChannel    = 文件通道（【只能阻塞】—— 文件没有"就绪"概念，磁盘永远可读）
+
+★ 关键体验：非阻塞模式下
+  channel.read(buf)  → 没数据时【立即返回 0】，不睡！
+  server.accept()    → 没连接时【立即返回 null】，不睡！
+  —— "傻等"被消灭了，但新问题出现：没数据你也返回，调用方只能
+     【循环重试空转】（busy loop 烧 CPU）……
+     谁来告诉我"哪些连接此刻真的有数据"？—— 第三大件登场</code></pre>
+
+    <h3 class="kp">9.3 Selector：一个线程管一万连接的指挥家 <span class="badge b-high">核心</span></h3>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>NioServer.java</span><span>骨架代码（面试能手写个大概即可）</span></div>
+      <pre><code>Selector selector = Selector.open();
+ServerSocketChannel server = ServerSocketChannel.open();
+server.bind(new InetSocketAddress(8080));
+server.configureBlocking(false);                    // ★ 前提：非阻塞才能注册
+server.register(selector, SelectionKey.OP_ACCEPT);  // 注册"我对 accept 事件感兴趣"
+
+while (true) {
+    selector.select();          // ① 阻塞到【至少一个通道有事发生】（唯一睡觉点，
+                                //    睡的是"等事件"，不是"等某个连接的数据"）
+    Set&lt;SelectionKey&gt; keys = selector.selectedKeys();  // ② 拿到就绪名单
+    Iterator&lt;SelectionKey&gt; it = keys.iterator();
+    while (it.hasNext()) {
+        SelectionKey key = it.next();
+        it.remove();                               // ③ 处理完必须移除（高频坑）
+        if (key.isAcceptable()) {                  // 新连接来了
+            SocketChannel ch = server.accept();
+            ch.configureBlocking(false);
+            ch.register(selector, SelectionKey.OP_READ);   // 挂到同一个 selector
+        } else if (key.isReadable()) {             // 某连接有数据可读
+            SocketChannel ch = (SocketChannel) key.channel();
+            ByteBuffer buf = ByteBuffer.allocate(1024);
+            int n = ch.read(buf);                  // 此刻读【保证有数据】，不空转
+            if (n == -1) { ch.close(); }           // 对端关闭
+            else { buf.flip(); handle(buf); }
+        }
+    }
+}
+// 一个线程（主循环）伺候了所有连接 —— "谁举手了服务谁"</code></pre>
+    </div>
+    <pre class="diagram"><code>★ 心智模型：餐厅革命
+  BIO   ：每桌一个专职服务员，客人不点菜服务员干站着（阻塞）
+  NIO   ：一个服务员看全场，【只有举手的桌子才走过去】
+          selector.select() = "等任何一张桌子举手"（这唯一的一觉值得睡）
+          selectedKeys()    = "此刻举手桌子的名单"
+          注册 OP_READ/OP_ACCEPT = "告诉领班，这张桌子我关心 XX 事件"
+
+一个 selector 线程可挂几万通道 —— C10K 的正解
+（Redis 单线程、Netty 的 EventLoop、Nginx worker 全是此模型）</code></pre>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>NIO 三大件？——Buffer：带 position/limit/capacity 指针的缓冲区（flip 切读写模式）；Channel：双向通道，可配非阻塞（read 没数据返回 0 而不是睡）；Selector：多路复用器——通道注册感兴趣的的事件，select() 阻塞到"有事件发生"，一个线程轮询处理所有就绪通道。三者合体 = 一个线程管一万连接。</p>
+    </div>
+
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：selector.select() 也是阻塞，那和 BIO 的 read 阻塞有什么区别？</div><div class="ca">睡的<b>对象</b>不同：BIO 是"每个线程为<b>自己那个连接</b>睡"（1 万连接 = 1 万个睡着的线程）；NIO 是"<b>一个线程</b>为<b>所有连接</b>的事件睡"（睡一次，醒了就有一批活干）。前者线程数 ∝ 连接数，后者线程数 ≈ CPU 核数。本质：把 N 个"等具体数据"的睡眠合并成 1 个"等任意事件"的睡眠——这就是"多路复用"四个字的字面意思。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：selectedKeys 处理完为什么要 remove？</div><div class="ca">selectedKeys 是"已就绪集合"，selector 不会自动清理——不 remove，下一轮 while 还会看到它，同一事件被重复处理（数据早被读走了，read 返回 0，空转+逻辑错乱）。这是手写 NIO 的第一大坑，也是"为什么要用 Netty"的最有力论据（它把这些细节全包了）。</div></div></div>
+      <div class="chain-item"><div class="cn">3</div><div class="cc"><div class="cq">追问：NIO 一定比 BIO 快吗？什么时候 BIO 反而好？</div><div class="ca">不一定。NIO 的优势只在<b>连接多且空闲多</b>的场景（长连接、消息推送、IM）；连接少而忙碌（每连接持续大流量读写，如内网服务间调用），BIO 的"一连接一线程+阻塞"反而更简单高效（没有 select 轮询/事件分发的开销，内核直接唤醒对应线程）。Tomcat 至今保留 BIO（老版本）和 NIO 两种 Connector 就是这个原因——模型没有绝对优劣，只有场景匹配。</div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= 10 多路复用 ================= -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>多路复用进化史：select → poll → epoll <span class="badge b-hard">区分度</span></h2></div>
+
+    <p>Selector 是 Java 的封装，底下操作系统提供的才是本体。面试问"NIO 原理"或"Netty/Redis 为什么快"，最后一公里都在这三个系统调用上：</p>
+
+    <h3 class="kp">10.1 三代系统调用</h3>
+    <pre class="diagram"><code>【第一代 select（1983）】
+  fd_set 传入【关注名单】，内核遍历所有 fd 找就绪的，拷回结果
+  两个致命伤：① 名单上限 FD_SETSIZE=1024（编译期定死）
+            ② 每次调用【全量拷贝 + 全量遍历】，O(n)，n=1万时每次都要扫1万个
+
+【第二代 poll（1997）】
+  用链表代替定长数组 → 1024 上限解除
+  但【每次全量拷贝 + 全量遍历】照旧 —— O(n) 没变，治标不治本
+
+【第三代 epoll（Linux 2.6, 2003）】三个新招：
+  ① epoll_create：内核里建一张【常驻注册表】（红黑树）—— 注册一次，不再每次传名单
+  ② epoll_ctl：增删改关注项 —— 拷贝只在注册时发生一次
+  ③ epoll_wait：只拿【就绪链表】—— 就绪的 fd 由回调机制主动挂上链表，
+     wait 返回的就是"已筛好的结果"，O(就绪数) 而非 O(总数)
+
+★ select 是"每次考试全班挨个问一遍谁交卷了"
+  epoll 是"交卷的学生自己把卷子放到收件篮，老师只看篮子"</code></pre>
+
+    <h3 class="kp">10.2 epoll 为什么快：把 O(n) 干掉</h3>
+    <table>
+      <tr><th>维度</th><th>select / poll</th><th>epoll</th></tr>
+      <tr><td>fd 上限</td><td>1024 / 无硬限</td><td>无（受内存）</td></tr>
+      <tr><td>每次调用</td><td>全量 fd 拷进内核 + 内核遍历 + 结果拷回</td><td>注册一次常驻内核；wait 只取就绪链表</td></tr>
+      <tr><td>复杂度</td><td>O(总 fd 数)</td><td>O(就绪 fd 数)</td></tr>
+      <tr><td>万连接场景</td><td>每次扫 1 万个，其中 100 个就绪</td><td>直接拿到那 100 个</td></tr>
+      <tr><td>触发方式</td><td>水平触发（LT）</td><td>LT / <b>边缘触发（ET）</b>可选</td></tr>
+    </table>
+    <pre class="diagram"><code>水平触发 LT（Level-Triggered）vs 边缘触发 ET（Edge-Triggered）：
+  LT：只要缓冲区【还有】数据没读完，每次 epoll_wait 都继续报告你
+      —— 保险，read 少读点也没事（下次还会叫你）
+  ET：只在状态【变化】那一刻（无数据→有数据的边沿）报告一次
+      —— 这次不读完，下次没人叫你了（数据滞留）
+      所以 ET 必须"循环 read 到 EWOULDBLOCK 为止"（配非阻塞 fd）
+  Netty 默认 LT（Java 层 epoll 也只暴露 LT）；Nginx/Redis 用 ET
+  
+★ 面试串联（说这个 = 懂生态）：
+  Redis 6.0 前"单线程为什么快"：epoll + 内存操作 + 无锁（单线程免上下文切换）
+  Netty 为什么快：epoll(LT) + EventLoop(固定线程绑核) + 零拷贝 + ByteBuf 池化
+  Kafka/Netty 的"零拷贝" → 下一节</code></pre>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>epoll 比 select 强在哪？——select 每次调用全量拷贝名单+内核遍历全部 fd，O(n) 且上限 1024；epoll 把关注列表常驻内核（红黑树注册一次），就绪事件由回调挂上就绪链表，wait 只取结果，O(就绪数)。触发模式 LT（有数据就报）vs ET（只在变化沿报一次，必须读到 EWOULDBLOCK）。</p>
+    </div>
+
+    <details class="qa"><summary>Java Selector 底层用的什么？跨平台怎么办？<span class="badge b-hard">加分</span></summary><div class="qa-body">
+      <p>取决于操作系统，JVM 自动选择：Linux 2.6+ 用 <b>epoll</b>（默认 EPollSelectorProvider）；macOS/BSD 用 kqueue（epoll 的 BSD 系表亲）；Windows 用 select 家族（IOCP 属 AIO 路线）。所以 Java 的 Selector 是"多路复用"的跨平台抽象——<code>selector.select()</code> 一句代码，在 Linux 上就是 epoll_wait。补充加分点：JDK 还提供 <code>EPollSelectorProvider</code> 显式指定，以及 Linux 上 JDK 17 引入了对 io_uring 的实验支持（下一代异步框架的地基）——说到 io_uring 说明你在跟进技术演进。</p>
+    </div></details>
+
+    <details class="qa"><summary>Python 的 selectors/asyncio 和这套什么关系？<span class="badge b-py">Python 对比</span></summary><div class="qa-body">
+      <p>一层窗户纸：<code>selectors</code> 模块就是 Python 版的 Selector 抽象（<code>DefaultSelector</code> 在 Linux 上自动选 EpollSelector，api 和 Java Selector 几乎同构：register/select）；<code>asyncio</code> 的 <code>SelectorEventLoop</code> 就是"selectors + 回调 + 协程语法糖"的组合——你写的每个 <code>await</code>，底层就是"把协程挂到 selector 的就绪回调上"。所以本节学完，你反过来完全看懂了 asyncio 的引擎盖下面。区别在编程模型：Java NIO 给你的是裸事件循环（自己写 while+dispatch），Python 用协程把 dispatch 生成器化了，Java 侧对应物是 Netty 的回调/或 JDK 21 虚拟线程（用同步写法享受异步模型）。</p>
+    </div></details>
+  </section>
+
+  <!-- ================= 11 零拷贝 ================= -->
+  <section class="sec" id="s11">
+    <div class="sec-head"><span class="sec-no">11</span><h2>零拷贝：Kafka 吞吐的地基 <span class="badge b-high">高频</span></h2></div>
+
+    <h3 class="kp">11.1 先看账单：传统读文件发网络有多贵</h3>
+    <p>场景：把磁盘上 100MB 文件通过 Socket 发出去（文件下载/消息投递，Kafka 每天在做亿次的动作）。传统写法：</p>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Traditional.java</span><span>四步拷贝 + 四次切换</span></div>
+      <pre><code>byte[] buf = new byte[4096];
+while (in.read(buf) != -1) {
+    out.write(buf);    // 看似两行，底层是 4 次拷贝 + 4 次态切换
+}</code></pre>
+    </div>
+    <pre class="diagram"><code>传统路径（DMA 拷 2 次 + CPU 拷 2 次）：
+
+  磁盘 ──DMA①──► 内核页缓存（Page Cache）──CPU②──► 用户缓冲区(buf)
+                                                          │
+  Socket 缓冲区 ◄──CPU③────────────────────── 用户缓冲区 ──┘
+       │
+  网卡 ◄──DMA④── Socket 缓冲区
+
+  系统调用：read（用户↔内核切换 ×2）+ write（×2）= 4 次态切换
+  CPU 参与了 ②③ 两次纯搬运 —— 数据在内核/用户间来回倒腾，
+  而 Java 代码甚至【根本没碰这份数据的内容】（只是转发）！</code></pre>
+
+    <h3 class="kp">11.2 两级优化：mmap 与 sendfile</h3>
+    <pre class="diagram"><code>【优化一 mmap（内存映射）】：把用户态的一块地址【直接映射】到页缓存
+  磁盘 ──DMA──► 页缓存 ◄──【映射，同一份内存】──► 用户空间
+  拷贝 4→3、切换 4→4（省了一次 CPU 拷贝）
+  用户代码像访问内存数组一样访问文件内容（MappedByteBuffer 就是它）
+  适合：需要【读取并处理】文件内容（要看到数据）
+
+【优化二 sendfile（Java 的 transferTo/transferFrom）】：连用户态都不路过
+  磁盘 ──DMA──► 页缓存 ──DMA──► 网卡   （CPU 零参与，仅 2 次切换！）
+  ★ 这才是"零拷贝"名字的本义：CPU 拷贝次数 = 0
+  适合：纯转发（文件 → 网络，全程不需要看内容）——Kafka 的场景
+
+一句话分工：
+  要看数据 → mmap（少拷一次）
+  只转发  → sendfile（CPU 完全不搬运）
+（现代网卡还支持 SG-DMA，页缓存地址直接给网卡，连最后一次都能省）</code></pre>
+    <div class="codebox">
+      <div class="bar"><span><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ZeroCopy.java</span><span>Java 里的入口</span></div>
+      <pre><code>// FileChannel.transferTo：底层在 Linux 自动走 sendfile
+try (FileChannel file = FileChannel.open(path, StandardOpenOption.READ);
+     SocketChannel socket = ...) {
+    file.transferTo(0, file.size(), socket);   // 100MB 转发：CPU 拷贝 0 次
+}
+
+// MappedByteBuffer：mmap 的封装
+MappedByteBuffer mbb = file.map(FileChannel.MapMode.READ_ONLY, 0, file.size());
+byte b = mbb.get(1024);    // 直接按内存访问，缺页时才真正读盘（OS 惰性加载）</code></pre>
+    </div>
+
+    <h3 class="kp">11.3 面试串联：谁在用</h3>
+    <table>
+      <tr><th>系统</th><th>用哪个</th><th>为什么</th></tr>
+      <tr><td>Kafka</td><td>sendfile（broker 端消息投递）</td><td>消息本来就是"落盘后原样转发给消费者"——纯转发场景，零拷贝 + 顺序写 + 批量 = 百万级吞吐三板斧之一</td></tr>
+      <tr><td>RocketMQ</td><td>mmap（CommitLog 刷盘）</td><td>写消息要对内容做处理（校验/索引），需要"看见"数据，用映射少拷一次</td></tr>
+      <tr><td>Netty</td><td>CompositeByteBuf / DirectBuffer + FileRegion(sendfile)</td><td>"零拷贝"的第二层含义：应用层的字节 buffer 合并（多个 buffer 逻辑拼接不物理拷贝）——面试提这句，说明你知道 Netty 零拷贝≠OS 零拷贝</td></tr>
+      <tr><td>Nginx</td><td>sendfile（静态文件）</td><td>同 Kafka：磁盘文件原样回给浏览器</td></tr>
+    </table>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">⚠ 概念纠偏（说错就露怯）</div>
+      <p>①"零拷贝"指 <b>CPU 拷贝次数为零</b>，不是"不拷贝"（DMA 硬件搬运照常有）；② Netty 语境的"零拷贝"是<b>应用层</b>概念（ByteBuf 逻辑合并、避免堆内外互拷），与 OS 的 sendfile 是两码事——被追问"Netty 零拷贝"时先分层再作答；③ mmap 不是万能药：映射的页缓存在 OS 手里（缺页、刷盘时机不受你控），断电场景可靠性要靠 fsync 兜底（RocketMQ 同步刷盘的争论点）。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话回答</div>
+      <p>零拷贝？——传统"读文件发网络"= 4 次拷贝（2 DMA + 2 CPU）+ 4 次态切换，纯转发场景 CPU 白搬两次；sendfile（transferTo）让数据不离开内核：磁盘→页缓存→网卡，CPU 零参与（Kafka/Nginx）；mmap 把页缓存映射到用户态，省一次拷贝、适合要看内容的场景（RocketMQ）。</p>
+    </div>
+  </section>
+
+  <!-- ================= 12 小结 ================= -->
+  <section class="sec" id="s12">
+    <div class="sec-head"><span class="sec-no">12</span><h2>全模块小结</h2></div>
+
+    <h3 class="kp">12.1 知识速查</h3>
+    <div class="summary-grid">
+      <div class="sum-card"><h5>异常体系</h5><ul>
+        <li>Throwable → Error（JVM 级，别 catch）+ Exception</li>
+        <li>Exception → 受检（编译器强制，IOException）+ RuntimeException（bug，修代码）</li>
+        <li>stack trace = 栈展开时的栈帧链快照</li>
+        <li>受检异常是 Java 独有：Lambda 不兼容 + 演化灾难 → 业界倾向少用</li>
+      </ul></div>
+      <div class="sum-card"><h5>finally 细节</h5><ul>
+        <li>优先级最高（例外：exit/JVM 退出/kill -9）</li>
+        <li>return 先暂存：finally 改基本类型无效，改引用指向的对象有效</li>
+        <li>finally 里 return/throw 覆盖 try 的 → 吞异常，禁止</li>
+        <li>catch 从上到下匹配，父类放后面</li>
+      </ul></div>
+      <div class="sum-card"><h5>try-with-resources</h5><ul>
+        <li>AutoCloseable + try 括号声明 = 自动逆序关闭</li>
+        <li>suppressed：主异常照抛，close 的异常挂压制链，一个不丢</li>
+        <li>比手写 finally：不吞异常 + 顺序正确 + 代码 1/3</li>
+      </ul></div>
+      <div class="sum-card"><h5>异常工程学</h5><ul>
+        <li>贵在 fillInStackTrace（微秒级），禁当流程控制</li>
+        <li>四红线：不空 catch / 打异常对象不打裸 message / finally 不 return / 运行时异常不 catch</li>
+        <li>业务异常：非受检 + 错误码 + cause 链 + 全局处理器</li>
+      </ul></div>
+      <div class="sum-card"><h5>IO 家族</h5><ul>
+        <li>两维四象限：字节/字符 × 入/出（四大抽象基类）</li>
+        <li>装饰器组合能力：N+M 个类覆盖 N×M 组合</li>
+        <li>缓冲 = 批量搬运摊薄系统调用（8KB 一卡车）</li>
+        <li>序列化生产用 JSON/Protobuf，原生 Serializable 不安全不跨语言</li>
+      </ul></div>
+      <div class="sum-card"><h5>BIO → NIO</h5><ul>
+        <li>BIO：一连接一线程，C10K 三死法（内存/切换/管理）</li>
+        <li>Buffer：position/limit/capacity，flip 切读写</li>
+        <li>Channel：双向 + 可非阻塞（read 空手返回 0）</li>
+        <li>Selector：注册事件 → select 等事件 → 处理就绪集，一线程管万连接</li>
+      </ul></div>
+      <div class="sum-card"><h5>多路复用</h5><ul>
+        <li>select：1024 上限 + 每次全量拷贝遍历 O(n)</li>
+        <li>epoll：红黑树注册 + 回调挂就绪链表，O(就绪数)</li>
+        <li>LT 有数据就报；ET 变化沿报一次，须读到 EWOULDBLOCK</li>
+        <li>Redis 单线程快 / Netty 快，地基都是 epoll</li>
+      </ul></div>
+      <div class="sum-card"><h5>零拷贝</h5><ul>
+        <li>传统 4 拷 4 切；sendfile = CPU 零参与（Kafka/Nginx，纯转发）</li>
+        <li>mmap = 页缓存映射用户态，省一拷（RocketMQ，要看内容）</li>
+        <li>零拷贝指 CPU 拷贝为零，DMA 照常；Netty 零拷贝是应用层另一概念</li>
+      </ul></div>
+    </div>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">📌 本章回收清单（检验读没读通）</div>
+      <p>① stack trace 的本质 = 模块 1 的栈帧链快照（异常沿栈展开逐帧记录）；② finally 暂存返回值 vs 引用指向内容 = 模块 1 值传递的续集；③ Error 家族（OOM 三兄弟/StackOverflow）= 模块 5 的运行时数据区划分；④ BIO 之痛的账单（1MB 栈 × 万连接）= 模块 6/6B 的"线程是贵资源"；⑤ 守护线程 finally 不执行 = 模块 6 的 daemon 概念；⑥ try-with-resources 的 effectively final（Java 9 增强）= 模块 7 的 lambda 捕获规则；⑦ 装饰器 = 模块 3 设计模式的正文实例。七条都能复述，这模块就通了。</p>
+    </div>
+
+    <div class="pagenav">
+      <a href="07-java8.html">← 模块 7：Java 8+ 新特性</a>
+      <a class="disabled">模块 9：泛型反射代理（待更新）</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="回到顶部">↑</button>
+
+<script>
+/* 简易 Java 语法高亮（关键词/字符串/注释/数字） */
+function highlightJava(src) {
+  return src.replace(/(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b(?:public|private|protected|static|final|class|interface|extends|implements|void|int|long|boolean|double|float|char|byte|short|new|return|if|else|for|while|do|try|catch|finally|throw|throws|import|package|this|super|null|true|false|synchronized|volatile|transient|abstract|enum|instanceof|default|break|continue|var|record|sealed|permits|yield)\b)|(\b\d+(?:\.\d+)?[LlFfDd]?\b)/gm,
+  function (m, com, str, kw, num) {
+    if (com) return '<span class="tok-com">' + com + '</span>';
+    if (str) return '<span class="tok-str">' + str + '</span>';
+    if (kw) return '<span class="tok-kw">' + kw + '</span>';
+    if (num) return '<span class="tok-num">' + num + '</span>';
+    return m;
+  });
+}
+document.querySelectorAll('pre code').forEach(el => {
+  if (!el.closest('.diagram') && !el.classList.contains('nohl')) el.innerHTML = highlightJava(el.textContent);
+});
+
+/* 目录滚动联动 + 回到顶部按钮 */
+const tocLinks = [...document.querySelectorAll('.toc a')];
+const secs = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let idx = 0;
+  secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 120) idx = i; });
+  tocLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', () => {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+/* Q&A 批量展开/收起 */
+document.getElementById('btn-expand').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = true);
+document.getElementById('btn-collapse').onclick = () => document.querySelectorAll('details.qa').forEach(d => d.open = false);
+</script>
+<script src="anno.js"></script>
+
+</body>
+</html>

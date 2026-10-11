@@ -32,6 +32,12 @@
      · 正文容器三级自动探测：① 显式配置 root → ② 约定链（main/article/[role=main]/
        常见 class，命中需正文>200字防误配）→ ③ 启发式兜底（body 下文本量最大的子元素），
        不同结构的教程书无需各写适配代码
+
+   v3.3 变更（边栏快速切换）：
+     · 边栏头部新增 ‹ › 切换按钮 + "n/总数"位置指示：按【正文阅读顺序】在批注间
+       快速跳转，切换后自动滚动定位并闪烁当前划线 —— 复习批注不再逐条回正文找
+     · 边栏打开时支持 ← / → 键盘切换（焦点在输入框/文本域时不抢按键）
+     · 编辑模式下切换会自动回到查看模式（避免丢失未保存的编辑内容）
    ================================================================== */
 (function () {
   'use strict';
@@ -372,6 +378,10 @@
       '.ad-btn.pri{background:#2456d6;color:#fff;border-color:#2456d6;}',
       '.ad-btn.pri:hover{background:#1a44b8;color:#fff}',
       '.ad-btn.danger{color:#dc2626;}.ad-btn.danger:hover{border-color:#dc2626;background:#fef2f2}',
+      /* v3.3：‹ › 切换按钮的禁用态（首条/末条置灰）+ "n/总数"位置指示 */
+      '.ad-btn:disabled{opacity:.35;cursor:default;}',
+      '.ad-btn:disabled:hover{border-color:#e2e8f0;color:#334155;background:#f8fafc;}',
+      '.ad-nav-no{font-size:12px;color:#94a3b8;min-width:38px;text-align:center;user-select:none;font-variant-numeric:tabular-nums;}',
       '.ad-quote{margin:12px 16px 0;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;',
       'border-radius:10px;font-size:12.5px;color:#64748b;max-height:96px;overflow-y:auto;',
       'line-height:1.65;flex-shrink:0;}',
@@ -689,6 +699,44 @@
       drawer.classList.contains('open') && window.innerWidth >= SQUEEZE_MIN);
   }
 
+  /* v3.3 防御：事件 target 不一定是 Element —— 程序化 dispatch 的事件
+     （自动化测试 / 书页自带脚本）target 可能是 document 或文本节点，
+     它们没有 closest 方法，直接调用会抛 TypeError 中断整个处理器。
+     统一取值入口：非 Element 一律返回 null（按"页面外部"处理）。 */
+  function evtEl(e) {
+    return e.target && typeof e.target.closest === 'function' ? e.target : null;
+  }
+
+  /* v3.3：按【正文阅读顺序】排列的批注 id 列表。
+     实现：querySelectorAll('.anno-hl') 天然按 DOM 树顺序返回（= 文档从上到下），
+     去重后即为阅读顺序；位置失效（orphan，正文里已找不到划线元素）的批注
+     按数组序垫在末尾 —— 保证任何批注都能被切换到，不会凭空消失。 */
+  function orderedIds() {
+    var ids = [], seen = {};
+    document.querySelectorAll('.anno-hl[data-aid]').forEach(function (m) {
+      if (!seen[m.dataset.aid]) { seen[m.dataset.aid] = 1; ids.push(m.dataset.aid); }
+    });
+    annotations.forEach(function (a) {
+      if (!seen[a.id]) { seen[a.id] = 1; ids.push(a.id); }
+    });
+    return ids;
+  }
+
+  /* v3.3：切换到上一条(dir=-1)/下一条(dir=+1)批注。
+     注意：openDrawer 只在"从关到开"时才延迟定位，边栏已开着的切换场景
+     需要在这里显式 locate —— 滚动到新划线并闪烁，让用户始终知道自己在哪。 */
+  function stepAnno(dir) {
+    var ids = orderedIds();
+    var i = ids.indexOf(curId);
+    if (i < 0) return;
+    var j = i + dir;
+    if (j < 0 || j >= ids.length) return;
+    var nid = ids[j];
+    drawerMode = 'view';           // 编辑中切换会丢未保存内容，统一回到查看模式
+    openDrawer(nid, 'view');
+    locate(nid);
+  }
+
   /** 打开边栏。mode: 'view' 查看 | 'edit' 编辑 */
   function openDrawer(id, mode) {
     var a = byId(id);
@@ -727,6 +775,24 @@
     head.appendChild(el('span', 'ad-time', fmt(a.ts)));
     var sp = el('span', 'ad-sp');
     head.appendChild(sp);
+    /* —— v3.3：‹ n/总 › 快速切换组（单条批注时没有切换意义，整组隐藏）—— */
+    var ids = orderedIds();
+    if (ids.length > 1) {
+      var idx = ids.indexOf(curId);
+      var bPrev = el('button', 'ad-btn', '‹');
+      bPrev.title = '上一条批注（快捷键 ←）';
+      bPrev.disabled = idx <= 0;          // 已是第一条：置灰
+      bPrev.addEventListener('click', function () { stepAnno(-1); });
+      var no = el('span', 'ad-nav-no', (idx < 0 ? '–' : idx + 1) + '/' + ids.length);
+      no.title = '当前是本页第 ' + (idx + 1) + ' / ' + ids.length + ' 条批注（按正文位置排序）';
+      var bNext = el('button', 'ad-btn', '›');
+      bNext.title = '下一条批注（快捷键 →）';
+      bNext.disabled = idx < 0 || idx >= ids.length - 1;  // 已是最后一条：置灰
+      bNext.addEventListener('click', function () { stepAnno(1); });
+      head.appendChild(bPrev);
+      head.appendChild(no);
+      head.appendChild(bNext);
+    }
     if (drawerMode === 'view') {
       var be = el('button', 'ad-btn', '✎ 编辑');
       be.title = '编辑此批注（支持 Markdown）';
@@ -886,22 +952,24 @@
     toastEl = el('div', 'anno-toast');
     [toolbar, drawer, fab, panel, fileInput, toastEl].forEach(function (n) { document.body.appendChild(n); });
 
-    /* 全局事件 */
+    /* 全局事件（v3.3：统一经 evtEl() 取 target，防程序化事件的非 Element target） */
     document.addEventListener('mouseup', function (e) {
-      if (e.target.closest('.anno-toolbar, .anno-drawer, .anno-panel, .anno-fab')) return;
+      var mu = evtEl(e);
+      if (mu && mu.closest('.anno-toolbar, .anno-drawer, .anno-panel, .anno-fab')) return;
       setTimeout(showToolbar, 0);
     });
     document.addEventListener('click', function (e) {
-      var t = e.target.closest('.anno-hl, .anno-chip');
-      if (t) { openDrawer(t.dataset.aid, 'view'); return; }
+      var tgt = evtEl(e);
+      var hit = tgt && tgt.closest('.anno-hl, .anno-chip');
+      if (hit) { openDrawer(hit.dataset.aid, 'view'); return; }
       /* v3.2.1 修复：点"✎ 编辑 / 👁 查看模式"等按钮会触发 renderDrawer 整体重渲染，
          click 事件还在冒泡途中时目标按钮已被移出 DOM 树 —— 此时 closest() 沿实时
          DOM 向上找 .anno-drawer 祖先必然失败，会被误判成"页面外部点击"，把刚打开
          的编辑框立刻收起（用户所见：点编辑，框弹一下就没了）。
          判据：isConnected=false 的事件目标不可能来自用户对页面的正常点击，
          只能是本脚本重渲染的产物 —— 放行，不收起。 */
-      if (!e.target.isConnected) { hide(toolbar); return; }
-      if (e.target.closest('.anno-drawer, .anno-toolbar, .anno-panel, .anno-fab')) return;
+      if (!tgt || !tgt.isConnected) { hide(toolbar); return; }
+      if (tgt.closest('.anno-drawer, .anno-toolbar, .anno-panel, .anno-fab')) return;
       hide(toolbar);
       // v3.1：点到页面空白处 = 收起批注边栏与管理面板（原先只能点 ✕ / Esc，不友好）。
       // 两个例外：① 正在划词选字（getSelection 非空）时不收，避免打断用户创建新批注；
@@ -916,6 +984,14 @@
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && drawerMode === 'edit') {
         var btn = drawer.querySelector('.ad-btn.pri');
         if (btn) btn.click();
+      }
+      // v3.3：←/→ 在批注间快速切换。仅边栏打开时接管；焦点在输入框/
+      // 文本域时不抢按键（不能妨碍用户在批注里用方向键移动光标）。
+      var kt = evtEl(e);
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+          && drawer.classList.contains('open')
+          && !(kt && kt.closest('textarea, input, select'))) {
+        stepAnno(e.key === 'ArrowLeft' ? -1 : 1);
       }
     });
     window.addEventListener('scroll', function () { hide(toolbar); }, { passive: true });
@@ -960,7 +1036,8 @@
         }, 0);
       }
       item.addEventListener('click', function (e) {
-        if (e.target.closest('.anno-x, .anno-more')) return;
+        var pt = evtEl(e);
+        if (pt && pt.closest('.anno-x, .anno-more')) return;
         locate(a.id);
         openDrawer(a.id, 'view');
       });

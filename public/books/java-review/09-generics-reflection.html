@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java 复习 · 模块9：泛型 反射 注解 动态代理（类型擦除 / Class 对象 / @Retention / JDK Proxy vs CGLIB）</title>
+<style>
+:root {
+  --bg: #f4f6fa; --card: #ffffff; --ink: #1e293b; --ink-2: #475569; --ink-3: #64748b;
+  --line: #e2e8f0; --primary: #2456d6; --primary-soft: #eef3ff;
+  --high: #dc2626; --high-bg: #fef2f2; --hard: #7c3aed; --hard-bg: #f5f3ff;
+  --trap: #c2410c; --trap-bg: #fff7ed; --py: #0f766e; --py-bg: #f0fdfa;
+  --code-bg: #0f172a; --code-ink: #cbd5e1; --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+.hero { background: linear-gradient(135deg,#ffffff 0%,#e8efff 70%,#dde8ff 100%); border-bottom: 1px solid #d4e0f7; color: var(--ink); padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 30px; font-weight: 800; color: #0f172a; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; }
+.hero .sub b { color: #0f172a; font-weight: 700; }
+.progress-track { margin-top: 20px; height: 8px; background: #d9e2f5; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg,#2456d6,#4f7df9); border-radius: 4px; }
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a, .mod-nav span { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #475569; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav span { color: #94a3b8; background: #fff; border-style: dashed; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 255px 1fr; gap: 32px; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } }
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+.toc a.active { border-left-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.toc .toc-tools { margin-top: 14px; padding: 0 12px; }
+.toc button { width: 100%; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.toc button:hover { border-color: var(--primary); color: var(--primary); }
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c7d5f2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fef08a; padding: 0 3px; border-radius: 3px; }
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #fecaca; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddd6fe; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #fed7aa; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #99f6e4; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.8px; background: #fff; }
+th { background: #f1f5f9; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b91c1c; }
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1a2438; color: #c3d2ea; font-size: 12px; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #c792ea; } .tok-str { color: #c3e88d; } .tok-com { color: #7d8db1; font-style: italic; }
+.tok-num { color: #f78c6c; } .tok-anno { color: #ffcb6b; }
+.diagram { background: #0d1730; color: #9fb6e0; }
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d7fe; color: #1e40af; }
+.tb-warn { background: var(--trap-bg); border-color: #fed7aa; color: #9a3412; }
+.tb-py { background: var(--py-bg); border-color: #99f6e4; color: #115e59; }
+.tb-hard { background: var(--hard-bg); border-color: #ddd6fe; color: #5b21b6; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none; }
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+.chain { margin: 16px 0; }
+.chain-item { display: flex; gap: 14px; margin-bottom: 2px; }
+.chain-item .cn { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--high-bg); color: var(--high); border: 1.5px solid var(--high); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+.chain-item .cc { flex: 1; padding-bottom: 14px; border-left: 1.5px dashed #e2e8f0; margin-left: -21px; padding-left: 36px; }
+.chain-item:last-child .cc { border-left-color: transparent; }
+.chain-item .cq { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.chain-item .ca { font-size: 13.8px; color: var(--ink-2); margin-top: 3px; }
+.depcard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.depcard .dep { border: 1px dashed #c7d7fe; background: #f6f9ff; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; color: #334155; }
+.depcard .dep b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px; }
+@media (max-width: 700px) { .depcard { grid-template-columns: 1fr; } }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; margin-top: 14px; }
+.sum-card { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.sum-card h5 { font-size: 13.5px; color: var(--primary); margin-bottom: 6px; }
+.sum-card ul { margin-left: 16px; font-size: 13px; }
+.top-btn { position: fixed; right: 26px; bottom: 30px; width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 17px; box-shadow: 0 4px 12px rgba(36,86,214,.4); display: none; z-index: 9; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #94a3b8; pointer-events: none; border-style: dashed; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">JAVA 秋招复习手册 · 模块 9 / 9 · 终章</div>
+  <h1>泛型 · 反射 · 注解 · 动态代理：框架世界的四块地基</h1>
+  <div class="sub">
+    终章四大件，一条主线贯穿：<b>静态语言如何在运行时获得动态能力</b>。泛型把类型检查提前到编译期（类型的"合同"），反射让程序在运行时解剖自己（能力的"镜子"），注解把元数据贴在代码上（信息的"标签"），动态代理在运行时合成新类（行为的"替身"）。Spring / MyBatis / Retrofit 的魔法没有一条超出这四块——面试官问"框架原理"，本质是在问这四件套的排列组合。其中<b>类型擦除</b>和 <b>JDK 代理为什么必须接口</b>是高频原理题。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<nav class="mod-nav">
+  <a href="01-jvm-memory.html">1 内存模型与对象</a>
+  <a href="02-basic-syntax.html">2 基础语法与数据类型</a>
+  <a href="03-oop.html">3 面向对象</a>
+  <a href="04-collections.html">4 集合框架</a>
+  <a href="05-jvm-deep.html">5 JVM 深入</a>
+  <a href="06-concurrency.html">6 并发编程</a>
+  <a href="06b-concurrency.html">6B 并发·大白话</a>
+  <a href="07-java8.html">7 Java 8+ 新特性</a>
+  <a href="08-exceptions-io.html">8 异常与 IO</a>
+  <span class="cur">9 泛型反射代理</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc" id="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#s1">01 开场：四块地基一条主线</a>
+    <a href="#s2">02 泛型为什么出现</a>
+    <a href="#s3">03 类型擦除：编译器的魔术</a>
+    <a href="#s4">04 擦除的代价：那些编译报错</a>
+    <a href="#s5">05 通配符与 PECS</a>
+    <a href="#s6">06 反射：运行时的解剖刀</a>
+    <a href="#s7">07 反射为什么慢</a>
+    <a href="#s8">08 注解：贴在代码上的标签</a>
+    <a href="#s9">09 APT：编译期生成代码</a>
+    <a href="#s10">10 JDK 动态代理</a>
+    <a href="#s11">11 CGLIB 与 Spring AOP</a>
+    <a href="#s12">12 全模块小结</a>
+    <div class="toc-tools">
+      <button id="btn-expand">展开全部 Q&amp;A</button>
+      <button id="btn-collapse">收起全部 Q&amp;A</button>
+    </div>
+  </aside>
+
+  <main>
+
+  <section class="sec" id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>开场：四块地基一条主线 <span class="badge b-high">终章</span></h2></div>
+    <p>前八个模块讲的都是"Java 给了你什么"；这个模块讲"Java 如何把自己拆开给你看"。<b>四问框架</b>先过一遍：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>四问框架 · 终章版</div><pre><code>为什么出现？ → Java 1.0 集合只装 Object（取出来强转，错到运行时才炸）
+                框架（1999 前后的 EJB 时代）需要"不改动用户代码就注入行为"
+基于什么场景？ → 集合元素类型安全 / 配置文件映射到类 / 统一日志事务权限
+怎么出现的？   → 2004 Java 5 一口气发布：泛型 + 注解 + 枚举 + 增强for（一场语言革命）
+解决了什么？   → 编译期类型检查（泛型）+ 运行时元编程能力（反射/注解/代理）
+                ——Spring 的 IoC/AOP、MyBatis 的 Mapper、Retrofit 的接口全靠它们</code></pre></div>
+    <h3 class="kp">1.1 一张图看懂四者关系</h3>
+    <div class="codebox"><pre class="diagram"><code>  编译期                              运行时
+┌─────────────────┐              ┌──────────────────────────┐
+│ 泛型（类型合同）  │   擦除后     │ 反射（解剖 Class 对象）    │
+│ 注解（贴标签）    │ ──────────→ │  ├─ 读注解 → 知道怎么处理  │
+│ APT（编译期消费） │  只留签名    │  ├─ 拿 Method/Field      │
+└─────────────────┘              │  └─ 动态代理（合成 $Proxy0）│
+                                 │       └─ 方法调用转发给 Handler │
+                                 └──────────────────────────┘
+  Spring 一行 @Autowired 的旅程：
+  注解(标签) → 反射(扫描发现) → 泛型(注入类型对) → 动态代理(包一层事务/AOP)</code></pre></div>
+    <h3 class="kp">1.2 你已有的知识怎么接上来</h3>
+    <div class="tipbox tb-py"><div class="tb-title">🐍 Python 对照 · 你的天然优势</div>
+      <p>这四件套你在 Python 里全见过"平替"：<b>泛型</b> ↔ <code>typing.List[int]</code>（但 Python 的类型注解<b>运行时不强制</b>，mypy 才检查——Java 是编译器拿枪指着检查，这是本质差异）；<b>反射</b> ↔ <code>inspect</code>/<code>__dict__</code>/<code>getattr(obj, "name")</code>（Python 生下来就是反射体质，duck typing 就是天天反射）；<b>注解</b> ↔ decorator（但 Python 装饰器是<b>会执行的函数</b>，Java 注解是<b>被动贴的标签</b>——前者主动改造，后者等待消费）；<b>动态代理</b> ↔ <code>__getattr__</code>/<code>__ wrappers__</code> 装饰器（FastAPI 的 Depends 注入原理和 Spring AOP 是一个思想：拦截方法调用，前后加料）。</p>
+      <p>一句话：<b>Python 把动态能力做成了默认体质，Java 把它做成了需要显式申请的许可证</b>——所以 Java 的这套东西才显得"有原理可考"。</p>
+    </div>
+    <div class="depcard">
+      <div class="dep"><b>前置依赖</b>模块 3 的多态与方法表（桥方法的根基）· 模块 4 集合（泛型的动机现场）· 模块 5 类加载（Class 对象的唯一性）· 模块 7 Lambda 底层（invokedynamic 与 MethodHandle）</div>
+      <div class="dep"><b>本章产出</b>类型擦除原理链 · PECS 口诀 · 反射三件套与开销账 · @Retention 三档 · JDK/CGLIB 代理选择策略 —— 面试"框架原理"的应答弹药库</div>
+    </div>
+    <h3 class="kp">1.3 本章考点地图</h3>
+    <table>
+      <tr><th>主题</th><th>热度</th><th>面试问法</th></tr>
+      <tr><td>类型擦除</td><td>★★★</td><td>"泛型是怎么实现的？""List&lt;String&gt; 和 List&lt;Integer&gt; 的 Class 相同吗？"</td></tr>
+      <tr><td>通配符 PECS</td><td>★★</td><td>"? extends 和 ? super 什么时候用？"（区分度题）</td></tr>
+      <tr><td>反射原理与开销</td><td>★★</td><td>"反射为什么慢？框架里怎么优化？"</td></tr>
+      <tr><td>注解与 APT</td><td>★★</td><td>"注解的本质是什么？""Lombok 是怎么工作的？"</td></tr>
+      <tr><td>JDK vs CGLIB</td><td>★★★</td><td>"JDK 动态代理为什么必须基于接口？""Spring AOP 怎么选？"</td></tr>
+    </table>
+  </section>
+
+  <section class="sec" id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>泛型为什么出现：把运行时爆炸提前到编译期 <span class="badge b-high">高频</span></h2></div>
+    <h3 class="kp">2.1 没有泛型的惨案（Java 1.4 及之前）</h3>
+    <p>集合的元素类型是 <code>Object</code>——什么都能装，代价是取出来必须<b>记得它是什么</b>并强转：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>List.java · Java 1.4 时代</div><pre><code><span class="tok-com">// 装的时候来者不拒（Object 是万物之父）</span>
+List list = <span class="tok-kw">new</span> ArrayList();
+list.add(<span class="tok-str">"hello"</span>);
+list.add(<span class="tok-num">42</span>);          <span class="tok-com">// 编译器不拦：int 自动装箱成 Integer，都是 Object</span>
+
+<span class="tok-com">// 取的时候全凭记忆强转 —— 记错了就是运行时炸弹</span>
+String s = (String) list.get(<span class="tok-num">0</span>);   <span class="tok-com">// OK</span>
+String t = (String) list.get(<span class="tok-num">1</span>);   <span class="tok-com">// 💥 ClassCastException</span>
+                             <span class="tok-com">// 编译完全通过，测试没覆盖到，生产环境炸给你看</span></code></pre></div>
+    <p>问题的本质：<b>类型信息在存入时被丢弃，取回时靠人脑恢复</b>。人脑是不可靠的，错误应该让编译器在<b>编译期</b>就拦下——这是泛型的全部动机：</p>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>泛型为什么出现？——把"取回时强转"这个运行时炸弹，改造成"存入时检查"的编译期错误；类型的正确性从"程序员负责"变成"编译器担保"。</p></div>
+    <h3 class="kp">2.2 泛型怎么解决：类型参数化</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>List.java · Java 5+</div><pre><code>List&lt;String&gt; list = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+list.add(<span class="tok-str">"hello"</span>);
+list.add(<span class="tok-num">42</span>);          <span class="tok-com">// ❌ 编译错误：add(String) 不接受 Integer</span>
+                             <span class="tok-com">// 炸弹在写代码的那一刻就被拆除了</span>
+String s = list.get(<span class="tok-num">0</span>);       <span class="tok-com">// 无需强转，编译器已担保类型</span>
+
+<span class="tok-com">// 泛型方法：类型参数由调用处推断 —— 和 Python 泛型函数一个意思</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> &lt;T&gt; T first(List&lt;T&gt; list) {
+    <span class="tok-kw">return</span> list.get(<span class="tok-num">0</span>);
+}
+Integer n = first(Arrays.asList(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>));  <span class="tok-com">// T 被推断为 Integer</span></code></pre></div>
+    <p>注意一个关键区别：<b>Java 泛型不做运行时协变检查，全部靠编译期</b>。这既是它的优点（零运行时开销——下一节的擦除），也是它一切限制的根源（第 4 节的代价）。</p>
+    <div class="tipbox tb-py"><div class="tb-title">🐍 Python 对照 · typing 是"君子协定"</div>
+      <p>你写的 <code>def first(l: list[T]) -&gt; T</code> 在 CPython 运行时<b>完全不检查</b>，传个 <code>list[str]</code> 装整数照样跑（直到你写 <code>mypy</code> 才报错）。Java 泛型则是 javac 的<b>强制关卡</b>——不通过就拒绝生成字节码。代价是 Java 泛型必须保守（类型参数在运行时不存在），收益是零成本抽象。另外 Python 3.12 的 <code>class C[T]</code> 语法糖和 Java 的 <code>class C&lt;T&gt;</code> 形式几乎一样，但底层哲学完全不同：<b>Python 是"文档+工具链"，Java 是"语言契约"</b>。</p>
+    </div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：那为什么不直接做成"每个 List&lt;String&gt; 在运行时是独立类型"？像 C# 那样</div><div class="ca">历史包袱。Java 5 发布时 JVM 上已经跑着海量的非泛型字节码（老代码里 <code>List</code> 装的 <code>Object</code>）。如果泛型做进运行时（C# 的 reified generics），新代码的 <code>List&lt;String&gt;</code> 和老代码的 <code>List</code> 就是两个类型，互操作全断——迁移成本不可接受。所以 Java 选了<b>擦除式泛型</b>：字节码层面完全兼容老代码，代价是把类型检查全部锁死在编译期。这是"兼容性优先"的经典工程权衡。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>类型擦除：编译器的魔术 <span class="badge b-hard">原理核心</span></h2></div>
+    <p>泛型在字节码层面<b>不存在</b>——这就是类型擦除（Type Erasure），整个模块最重要的一个原理。</p>
+    <h3 class="kp">3.1 擦除规则：擦到哪一层？</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Erasure.java · 源码 → 字节码</div><pre><code><span class="tok-com">// 你写的源码</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Box&lt;T <span class="tok-kw">extends</span> Number&gt; {
+    <span class="tok-kw">private</span> T value;
+    <span class="tok-kw">public</span> T get() { <span class="tok-kw">return</span> value; }
+}
+
+<span class="tok-com">// javac 编译后，字节码里实际存在的等价形式（用 javap -c 可验证）</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Box {
+    <span class="tok-kw">private</span> Number value;              <span class="tok-com">// T 被替换为【最左边界】Number</span>
+    <span class="tok-kw">public</span> Number get() { <span class="tok-kw">return</span> value; }
+}</code></pre></div>
+    <p>三条擦除规则（面试标准答案）：</p>
+    <ul>
+      <li><b>无限定 <code>&lt;T&gt;</code></b> → 擦成 <code>Object</code></li>
+      <li><b>有限定 <code>&lt;T extends Number&gt;</code></b> → 擦成<b>第一个边界</b> <code>Number</code>（多个边界取最左）</li>
+      <li><b>使用处</b>插入强转：调用 <code>box.get()</code> 的地方，编译器自动补 <code>(Integer) box.get()</code>——泛型的"担保"最终落回强转，只是这次强转<b>编译器替你担保正确</b></li>
+    </ul>
+    <h3 class="kp">3.2 运行时证据：亲手验证擦除</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Proof.java · 可以跑的证据</div><pre><code>List&lt;String&gt; a = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+List&lt;Integer&gt; b = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+
+System.out.println(a.getClass() == b.getClass());   <span class="tok-com">// true！同一个 Class</span>
+                                                    <span class="tok-com">// 字节码里根本没有 String/Integer 的事</span>
+
+<span class="tok-com">// 通过原生方法绕过编译期检查（raw type）</span>
+List&lt;String&gt; c = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+List raw = c;                 <span class="tok-com">// 裸类型引用：逃出泛型检查的后门</span>
+raw.add(<span class="tok-num">42</span>);               <span class="tok-com">// 编译只给 warning，不拦</span>
+String s = c.get(<span class="tok-num">0</span>);       <span class="tok-com">// 💥 ClassCastException —— 编译器补的强转炸了</span></code></pre></div>
+    <p>第三段代码值得细品：<code>c.get(0)</code> 编译后是 <code>(String) list.get(0)</code>，这个强转是编译器<b>替你写的</b>——它担保过类型安全，但你从裸类型后门塞了脏数据，担保失效，运行时爆炸。<b>泛型的安全性是编译期的全封闭契约，漏了一个口子（raw type / 反射）就全部失效</b>。</p>
+    <h3 class="kp">3.3 桥方法：擦除与多态的冲突怎么解决</h3>
+    <p>擦除会立刻撞上一个矛盾：子类重写泛型方法时，签名对不上。看这个经典案例：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Bridge.java · 没有桥方法时的逻辑矛盾</div><pre><code><span class="tok-kw">interface</span> Converter&lt;T&gt; { <span class="tok-kw">void</span> convert(T t); }
+
+<span class="tok-kw">class</span> StringConverter <span class="tok-kw">implements</span> Converter&lt;String&gt; {
+    <span class="tok-com">// 你写的重写：convert(String) —— 但父接口擦除后是 convert(Object)</span>
+    <span class="tok-com">// 方法签名不一致 → 不构成重写 → 多态断裂？！</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> convert(String s) { System.out.println(s); }
+}
+
+<span class="tok-com">// javac 的解法：自动生成【桥方法】（javap -v 可见）</span>
+<span class="tok-com">// class StringConverter 中多了一个编译器合成的方法：</span>
+<span class="tok-com">//   public void convert(Object s) { convert((String) s); }  ← 桥</span>
+<span class="tok-com">// 它重写了接口的 convert(Object)，内部转调你的 convert(String)</span>
+<span class="tok-com">// 多态链修复：接口引用调用 → 桥方法 → 真实方法</span></code></pre></div>
+    <p>桥方法是<b>擦除和多态（模块 3 的方法表）之间的粘合剂</b>。追问链里它还有个著名应用——<code>invokevirtual</code> 指令通过符号引用找到方法时，找到的往往就是桥方法。面试能主动讲出桥方法，说明真理解了擦除。</p>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>什么是类型擦除？——泛型只存在于源码和编译期，javac 编译时把 <code>&lt;T&gt;</code> 替换为边界类型（无限定则 Object），并在调用点自动插入强转；字节码和运行时完全没有泛型。子类重写冲突靠编译器合成的桥方法解决。这样换来了与 Java 1.4 字节码的完全兼容 + 零运行时开销。</p></div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：怎么在运行时拿到泛型参数？（反射框架天天干这事）</div><div class="ca">擦除擦的是"使用处"的变量类型，但<b>类声明、字段声明、方法签名里的泛型信息以 Signature 属性的形式保留在字节码里</b>（不是被擦干净了）。所以 <code>Field.getGenericType()</code> 能拿到 <code>List&lt;String&gt;</code> 的完整泛型——Spring 的依赖注入、FastJSON 的反序列化就是这么知道该把 JSON 转成什么类型的。但局部变量和使用处的泛型真没了：<code>new ArrayList&lt;String&gt;()</code> 这行的 String 只活在编译期。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：既然擦掉了，为什么不能有 <code>List&lt;int&gt;</code>？</div><div class="ca">擦除后 T 变成 Object，而 <code>int</code> 不是 Object 的子类（基本类型不参与继承体系，模块 2）。装箱成 Integer 可以进 Object 世界，但那性能代价（模块 4 讲过自动装箱的坑）在高频集合操作里不可接受。所以 Java 选择直接禁止 <code>List&lt;int&gt;</code>，逼你用 <code>List&lt;Integer&gt;</code>。对比：Kotlin/Scala 在编译期把 <code>List&lt;Int&gt;</code> 特化成 <code>int[]</code> 语义的类，规避了这个问题；C# 的 reified 泛型根本没这限制。<b>Valhalla 项目</b>（Java 未来版本）的 generic specialization 就是要补这个历史窟窿。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>擦除的代价：那些"莫名其妙"的编译报错 <span class="badge b-trap">易错</span></h2></div>
+    <p>理解了擦除，一大类"为什么这么设计"的烦人限制全部豁然开朗——<b>它们不是语言设计者蠢，是擦除的必然推论</b>：</p>
+    <table>
+      <tr><th>限制</th><th>报错样例</th><th>为什么（擦除视角）</th></tr>
+      <tr><td>不能用基本类型</td><td><code>List&lt;int&gt;</code> ❌</td><td>擦成 Object 后 int 无处安放（非对象）</td></tr>
+      <tr><td>不能 <code>new T()</code></td><td><code>new T()</code> ❌</td><td>运行时 T 已是 Object，new 出来的是 Object 不是 T</td></tr>
+      <tr><td>不能 <code>T.class</code></td><td><code>T.class</code> ❌</td><td>字节码里没有 T 这个类型，Class 对象不存在</td></tr>
+      <tr><td>不能 <code>instanceof T</code></td><td><code>x instanceof T</code> ❌</td><td>运行时无 T 可比对（但 <code>instanceof List&lt;?&gt;</code> 可以）</td></tr>
+      <tr><td>泛型数组受限</td><td><code>new T[10]</code> ❌<br><code>new List&lt;String&gt;[10]</code> ❌</td><td>数组协变 + 擦除 = 类型安全漏洞（见下）</td></tr>
+      <tr><td>静态成员不能用 T</td><td><code>static T field</code> ❌</td><td>静态成员属于类（raw 的 Box），不属于某个 Box&lt;String&gt;</td></tr>
+    </table>
+    <h3 class="kp">4.1 泛型数组为什么被禁：一个思想实验</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Why.java · 假如允许 new List&lt;String&gt;[10]</div><pre><code><span class="tok-com">// 前置知识：数组是协变的（模块 4）—— Object[] 可以引用 String[]</span>
+List&lt;String&gt;[] lsa = <span class="tok-kw">new</span> ArrayList&lt;String&gt;[<span class="tok-num">10</span>];  <span class="tok-com">// 假设合法</span>
+Object[] oa = lsa;                    <span class="tok-com">// 数组协变：OK</span>
+oa[<span class="tok-num">0</span>] = Arrays.asList(<span class="tok-num">42</span>);         <span class="tok-com">// 存 List&lt;Integer&gt;：数组只检查"是不是 List"</span>
+                                      <span class="tok-com">// （元素类型擦成 Object，检查不出 String）—— 存入成功！</span>
+String s = lsa[<span class="tok-num">0</span>].get(<span class="tok-num">0</span>);        <span class="tok-com">// 💥 取出时编译器补强转，炸弹引爆</span>
+
+<span class="tok-com">// 结论：允许泛型数组 = 打开一个编译器看不见的投毒通道</span>
+<span class="tok-com">// Java 的选择：直接禁止。要存就用 List&lt;List&lt;String&gt;&gt;（集合是不变的，没有这个洞）</span></code></pre></div>
+    <p><b>数组协变 + 泛型擦除 = 类型安全漏洞</b>，这个组合拳推导面试出现过（区分度极高）。记住结论：<b>数组是协变的（运行时检查），集合是不变的（编译期检查）</b>——两种不同的类型安全哲学，Java 各取一半。</p>
+    <h3 class="kp">4.2 不能 new T() 的官方解法：传 Class 对象进来</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Factory.java · 框架里的标准姿势</div><pre><code><span class="tok-com">// T 在运行时不存在 → 让调用者把"类型的替身"（Class 对象）显式传进来</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> &lt;T&gt; T create(Class&lt;T&gt; clazz) <span class="tok-kw">throws</span> Exception {
+    <span class="tok-kw">return</span> clazz.getDeclaredConstructor().newInstance();
+}
+
+User u = create(User.class);   <span class="tok-com">// Class&lt;User&gt; 同时提供了运行时类型 + 泛型参数</span>
+
+<span class="tok-com">// 这就是为什么 MyBatis mapper、Jackson 反序列化、Spring 反射创建 Bean</span>
+<span class="tok-com">// 的 API 全长着 Class/Type/TypeReference 参数 —— 都是在给擦除"还债"</span></code></pre></div>
+    <div class="tipbox tb-mem"><div class="tb-title">💡 记忆锚点</div><p>所有"泛型为什么不能 XXX"的答案都指向同一句话：<b>运行时 T 不存在</b>。new T() 需要 T 的构造器（不存在）、T.class 需要 T 的 Class 对象（不存在）、instanceof T 需要 T 做比对（不存在）。而解法永远是一个：<b>把类型信息用 Class/TypeToken 的形式在运行时显式携带</b>——这也正是反射登场的原因，自然过渡到下一节。</p></div>
+  </section>
+
+  <section class="sec" id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>通配符与 PECS：不变类型的补丁 <span class="badge b-hard">区分度</span></h2></div>
+    <h3 class="kp">5.1 先搞清问题：集合"不变"带来的不便</h3>
+    <p>集合是不变的（invariant）：<code>List&lt;String&gt;</code> 不是 <code>List&lt;Object&gt;</code> 的子类——哪怕 String 是 Object 的子类。这是对的（否则又开投毒通道：往 <code>List&lt;Object&gt;</code> 引用的 <code>List&lt;String&gt;</code> 里塞 Integer）。但完全不变又太死板：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Invariant.java · 合理的需求被拒绝</div><pre><code><span class="tok-com">// 想写一个"打印任意数字列表"的方法 —— 数字家族：Integer/Double/...都行</span>
+<span class="tok-kw">void</span> printNums(List&lt;Number&gt; list) { ... }
+
+List&lt;Integer&gt; ints = Arrays.asList(<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span>);
+printNums(ints);     <span class="tok-com">// ❌ 编译错误！List&lt;Integer&gt; 不是 List&lt;Number&gt;</span>
+                     <span class="tok-com">// 方法只读不写，明明很安全 —— 不变性一刀切误伤了</span></code></pre></div>
+    <p>通配符就是给"只读"和"只写"两种场景各开一扇<b>受控的门</b>：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Wildcard.java · 两扇门</div><pre><code><span class="tok-com">// 门一：? extends —— 上界通配符（协变，只读门）</span>
+<span class="tok-kw">void</span> printNums(List&lt;? <span class="tok-kw">extends</span> Number&gt; list) {
+    Number n = list.get(<span class="tok-num">0</span>);      <span class="tok-com">// ✅ 读出来一定是 Number（或子类）</span>
+    list.add(<span class="tok-kw">new</span> Integer(<span class="tok-num">1</span>)); <span class="tok-com">// ❌ 编译器拒绝写入</span>
+                                  <span class="tok-com">// （不知道确切元素类型，写什么都可能投毒）</span>
+}
+printNums(ints);                  <span class="tok-com">// ✅ Integer 是 Number 子类，放行</span>
+
+<span class="tok-com">// 门二：? super —— 下界通配符（逆变，只写门）</span>
+<span class="tok-kw">void</span> fillInts(List&lt;? <span class="tok-kw">super</span> Integer&gt; list) {
+    list.add(<span class="tok-num">42</span>);              <span class="tok-com">// ✅ 写 Integer 一定安全（消费者至少装得下 Integer）</span>
+    Object o = list.get(<span class="tok-num">0</span>);     <span class="tok-com">// ⚠️ 读出来只能当 Object（精确类型未知）</span>
+}
+List&lt;Number&gt; nums = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+fillInts(nums);                   <span class="tok-com">// ✅ Number 是 Integer 的父类，放行</span></code></pre></div>
+    <h3 class="kp">5.2 PECS：Producer Extends, Consumer Super</h3>
+    <p>Joshua Bloch（《Effective Java》作者）的口诀，回答"什么时候用哪个"：</p>
+    <div class="codebox"><pre class="diagram"><code>  变量/参数是【生产者】（你从它读数据）→ extends（读出按上界用）
+  变量/参数是【消费者】（你往它写数据）→ super（按下界写入）
+
+  ┌─────────────┐   读(生产)    ┌──────────┐
+  │ List&lt;? extends X&gt; │ ────────→ │  你（消费数据） │   extends 门只开"出"
+  └─────────────┘              └──────────┘
+  ┌─────────────┐   写(消费)    ┌──────────┐
+  │ List&lt;? super X&gt;  │ ←──────── │  你（生产数据） │   super 门只开"进"
+  └─────────────┘              └──────────┘</code></pre></div>
+    <p>JDK 源码的活例子——<code>Collections.copy</code> 的签名就是标准 PECS 应用：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Collections.java · JDK 源码</div><pre><code><span class="tok-kw">public</span> <span class="tok-kw">static</span> &lt;T&gt; <span class="tok-kw">void</span> copy(List&lt;? <span class="tok-kw">super</span> T&gt; dest, List&lt;? <span class="tok-kw">extends</span> T&gt; src) {
+    <span class="tok-com">// src 是生产者（往外吐数据）→ extends：允许 List&lt;Integer&gt; 复制进 List&lt;Number&gt;</span>
+    <span class="tok-com">// dest 是消费者（吞数据）  → super：同上场景，目标容器是更宽的类型</span>
+}
+<span class="tok-com">// 于是这样合法：把 List&lt;Integer&gt;（src）复制到 List&lt;Object&gt;（dest）</span>
+Collections.copy(objectList, integerList);   <span class="tok-com">// ✅</span></code></pre></div>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>? extends 和 ? super 怎么选？——PECS：参数是数据<b>生产者</b>（你读它）用 <code>? extends T</code>，是<b>消费者</b>（你写它）用 <code>? super T</code>。extends 开只读门（协变，写入被禁），super 开只写门（逆变，读出仅 Object）。JDK 的 <code>Collections.copy(dest-super, src-extends)</code> 是教科书现场。</p></div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：? extends 写入为什么一刀切禁止？我明明知道 list 是 List&lt;Integer&gt;，add 个 Integer 不行吗？</div><div class="ca">编译器<b>不知道</b>。引用 <code>List&lt;? extends Number&gt;</code> 可能指向 <code>List&lt;Integer&gt;</code> 也可能指向 <code>List&lt;Double&gt;</code>——静态类型系统只看声明不看运行时（而运行时泛型又被擦了）。它必须按"最坏情况"设防：任何写入都可能投毒，所以全禁。想写入？显式收窄类型（声明成 <code>List&lt;Integer&gt;</code>）。这又回到同一个母题：<b>擦除之下，编译器宁可错杀不可放过</b>。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：Python 有协变逆变这些事吗？</div><div class="ca">概念有（<code>typing.List</code> 不变、<code>Sequence</code> 协变、<code>Callable[[T], None]</code> 逆变），但只对 mypy 有意义——运行时零约束。Java 的 extends/super 是<b>编译器强制执行的访问控制</b>，Python 的变型标注是<b>给类型检查器的提示</b>。你在 FastAPI 里写的 <code>Sequence[User]</code> 参数能接 <code>list[User]</code>，那是 Pydantic 运行时转换，不是类型系统协变。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>反射：运行时的解剖刀 <span class="badge b-high">高频</span></h2></div>
+    <h3 class="kp">6.1 为什么出现：配置驱动架构的需求</h3>
+    <p>四问框架：编译期你就得知道要 new 哪个类、调哪个方法。但 2000 年前后企业级开发提出了新要求——<b>把"用哪个类"写成配置，运行时再决定</b>：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Config.java · 早期 Spring 的核心卖点</div><pre><code><span class="tok-com">// applicationContext.xml（配置文件，改配置不改代码）</span>
+<span class="tok-com">// &lt;bean id="userService" class="com.demo.UserService"/&gt;</span>
+
+<span class="tok-com">// 框架启动时：读配置拿到类名字符串 → 运行时"凭名字"创建对象</span>
+String className = <span class="tok-str">"com.demo.UserService"</span>;       <span class="tok-com">// 来自配置</span>
+Class&lt;?&gt; clazz = Class.forName(className);               <span class="tok-com">// ① 加载并拿 Class 对象</span>
+Object obj = clazz.getDeclaredConstructor().newInstance(); <span class="tok-com">// ② 反射创建实例</span>
+Method m = clazz.getMethod(<span class="tok-str">"save"</span>, User.class);        <span class="tok-com">// ③ 反射拿方法</span>
+m.invoke(obj, user);                                      <span class="tok-com">// ④ 反射调用</span>
+<span class="tok-com">// 全程没有任何一行代码 import UserService —— "解耦"到字符串级别</span></code></pre></div>
+    <p>这就是反射的定义：<b>程序在运行时检查、修改自身结构与行为的能力</b>——凭字符串拿类、拿方法、拿字段，还能调用和赋值。它是 Spring IoC（按配置造对象）、MyBatis（接口映射 SQL）、JUnit（扫 @Test 方法）、Jackson（字段 ↔ JSON）的共同地基。</p>
+    <h3 class="kp">6.2 Class 对象：每个类的运行时身份证</h3>
+    <p>反射的入口是 <code>Class&lt;?&gt;</code> 对象——类加载（模块 5 的加载阶段）时由 JVM 从字节码生成，<b>每个类全局唯一</b>（同一个类加载器下）。四种拿法：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>GetClass.java</div><pre><code>Class&lt;?&gt; c1 = User.class;                        <span class="tok-com">// 类字面量：编译期已知类型，最稳</span>
+Class&lt;?&gt; c2 = <span class="tok-kw">new</span> User().getClass();           <span class="tok-com">// 对象实例：运行时从对象反查</span>
+Class&lt;?&gt; c3 = Class.forName(<span class="tok-str">"com.demo.User"</span>);  <span class="tok-com">// 全限定名字符串：会触发类加载</span>
+Class&lt;?&gt; c4 = UserClassLoader.loadClass(<span class="tok-str">"com.demo.User"</span>); <span class="tok-com">// 自定义加载器</span>
+
+System.out.println(c1 == c2 &amp;&amp; c2 == c3);       <span class="tok-com">// true —— 全局唯一（同一加载器）</span>
+<span class="tok-com">// 模块 5 的双亲委派保证了"一个类一个身份"，这是反射可靠性的前提</span></code></pre></div>
+    <p>拿到 Class 后的"解剖三件套"：</p>
+    <table>
+      <tr><th>拿什么</th><th>API</th><th>说明</th></tr>
+      <tr><td>构造器</td><td><code>getConstructor() / getDeclaredConstructor()</code></td><td>带 Declared 的系列能拿 private（但不加 setAccessible 调不了）</td></tr>
+      <tr><td>方法</td><td><code>getMethod(name, 参数类型...) / getDeclaredMethods()</code></td><td>getMethod 只拿 public（含继承的）；Declared 拿本类全部（含私有）</td></tr>
+      <tr><td>字段</td><td><code>getField(name) / getDeclaredField(name)</code></td><td>读写字段值：<code>f.set(obj, value)</code> / <code>f.get(obj)</code></td></tr>
+    </table>
+    <h3 class="kp">6.3 setAccessible(true)：破坏封装的口子</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Private.java · 反射能干"宪法不允许"的事</div><pre><code><span class="tok-kw">public</span> <span class="tok-kw">class</span> User {
+    <span class="tok-kw">private</span> String name = <span class="tok-str">"secret"</span>;
+}
+
+Field f = User.class.getDeclaredField(<span class="tok-str">"name"</span>);
+f.setAccessible(<span class="tok-kw">true</span>);              <span class="tok-com">// 关掉访问检查 —— private 形同虚设</span>
+f.set(user, <span class="tok-str">"hacked"</span>);              <span class="tok-com">// 直接改私有字段</span>
+
+<span class="tok-com">// 应用：Spring 依赖注入私有字段 @Autowired、Jackson 反序列化填私有字段</span>
+<span class="tok-com">// 代价：Java 9 模块化后，跨模块 setAccessible 会抛 InaccessibleObjectException</span>
+<span class="tok-com">//      （JPMS 收紧了这个口子 —— add-opens 才能打开）</span></code></pre></div>
+    <p>封装只是<b>编译器的君子协定</b>，反射提供了撕毁协议的合法通道。框架广泛依赖它（注入私有字段），JDK 9 的模块系统又试图收紧——这个拉扯本身说明了反射的"越权"本质。</p>
+    <div class="tipbox tb-py"><div class="tb-title">🐍 Python 对照 · 你天天在用"反射"</div>
+      <p><code>getattr(obj, "name")</code> = Java 的 <code>clazz.getField("name").get(obj)</code>；<code>hasattr</code> / <code>dir(obj)</code> = 检查结构；<code>obj.__dict__</code> = 字段全表；<code>type(obj)</code> = getClass()。FastAPI 根据函数签名自动生成 API 文档用的 <code>inspect.signature()</code>，就是 Java 反射 + 注解的合体。<b>差异在于默认值</b>：Python 一切属性天生可反射访问（没有 private，只有 <code>_name</code> 的命名约定）；Java 的 private 是真锁，反射是万能钥匙但开门有开销（下一节）。</p>
+    </div>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>反射是什么、为什么框架离不开它？——反射是运行时凭 Class 对象解剖类结构（构造器/方法/字段）并调用它们的能力；它让"类名、方法名写在配置里"成为可能，实现了编译期解耦——Spring IoC 的 @Autowired、MyBatis 的 Mapper 接口、JUnit 的 @Test 扫描，全是"运行时才知道要操作谁"的场景，没有反射就没有框架。</p></div>
+  </section>
+
+  <section class="sec" id="s7">
+    <div class="sec-head"><span class="sec-no">07</span><h2>反射为什么慢：开销的三本账 <span class="badge b-hard">原理</span></h2></div>
+    <h3 class="kp">7.1 三本账</h3>
+    <div class="codebox"><pre class="diagram"><code>普通调用 obj.save(x)                  反射调用 m.invoke(obj, x)
+┌──────────────────┐                ┌────────────────────────────┐
+│ 编译期已确定：      │                │ ① 安全检查：参数类型/访问权限 每次都查  │
+│ · 方法偏移量定死    │    ≈ 慢 10~50 倍（量级）  │ ② 装箱拆箱 + Object[] 参数组装     │
+│ · JIT 可内联       │                │ ③ JIT 无法内联：invoke 对 JIT 是黑盒    │
+│ · 零额外分配       │                │    （方法体动态多变，激进优化不敢做）    │
+└──────────────────┘                └────────────────────────────┘</code></pre></div>
+    <ol>
+      <li><b>安全检查账</b>：每次 <code>invoke</code> 都要做参数类型匹配 + 访问权限检查（普通调用在编译期就查完了，且 JIT 直接编译成一条 call 指令）。</li>
+      <li><b>装箱账</b>：<code>invoke(Object obj, Object... args)</code> —— <code>int</code> 参数要装箱成 <code>Integer</code>，返回值要拆箱，参数数组是堆上分配的 <code>Object[]</code>。</li>
+      <li><b>优化账</b>（最大头）：普通热点方法 JIT 会内联展开（模块 1 的栈帧里讲过方法调用成本），而 <code>Method.invoke</code> 是个"什么方法都可能调"的动态分发黑盒，JIT 不敢做激进假设，内联优化全免谈。</li>
+    </ol>
+    <h3 class="kp">7.2 框架怎么优化：三条路</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Optimize.java · 工业级做法</div><pre><code><span class="tok-com">// ① 缓存 Method 对象：查找（getMethod 遍历方法表）只做一次</span>
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">final</span> Method SAVE = User.class.getMethod(<span class="tok-str">"save"</span>, User.class);
+SAVE.setAccessible(<span class="tok-kw">true</span>);   <span class="tok-com">// 顺手关掉每次调用的访问检查（快 ~20%）</span>
+
+<span class="tok-com">// ② 高频场景换 MethodHandle / LambdaMetafactory（JDK 7/8+）</span>
+MethodHandle mh = MethodHandles.lookup().findVirtual(User.class,
+        <span class="tok-str">"save"</span>, MethodType.methodType(<span class="tok-kw">void</span>.class, User.class));
+<span class="tok-com">// MethodHandle 更接近"函数指针"，JIT 能内联（这是 invokedynamic 的底层机制，</span>
+<span class="tok-com">// 模块 7 讲过 Lambda 的实现就靠它）—— 但 API 丑，一般只在高性能库（Jackson/fastjson2）里用</span>
+
+<span class="tok-com">// ③ 釜底抽薪：编译期直接生成代码（APT/字节码生成），运行时零反射</span>
+<span class="tok-com">// MapStruct 编译期生成 new User().setName(...) 的真代码；Lombok 编译期生成 getter</span>
+<span class="tok-com">// —— "最好的反射是不反射"，第 9 节展开</span></code></pre></div>
+    <p>注意一个常见的面试陷阱：<b>反射慢是相对的</b>——单次 invoke 大约百纳秒级，对"启动时创建 Bean"（一次性的）毫无影响；只有放在<b>热路径</b>（每秒百万次调用的序列化/Getter 场景）才成为瓶颈。所以正确表述是"反射的开销使其不适合热点循环，框架通过缓存 + 字节码生成规避"。</p>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：Spring 启动那么慢是因为反射吗？</div><div class="ca">部分是，但主因是<b>类路径扫描</b>（遍历 jar 里的所有 .class 找注解）和<b>初始化链</b>（Bean 依赖图拓扑排序 + 逐个反射构造）。所以 Spring Boot 2+ 用 CGLIB 代理提前生成类、Spring 6 支持 AOT（Ahead-of-Time，构建期把反射点冻结成代码）来砍启动时间——GraalVM Native Image 更是把"运行时反射"变成"构建时代码生成"的极致版。你能从"反射三本账"推导出这些优化方向，就是满分答案。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s8">
+    <div class="sec-head"><span class="sec-no">08</span><h2>注解：贴在代码上的标签 <span class="badge b-high">高频</span></h2></div>
+    <h3 class="kp">8.1 本质：一个继承了 Annotation 的接口</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Override.java · 注解的真身</div><pre><code><span class="tok-com">// 你写的 @Override，本质是这样一个接口：</span>
+<span class="tok-kw">public</span> @<span class="tok-kw">interface</span> Override { }   <span class="tok-com">// javac 编译后：interface Override extends Annotation</span>
+
+<span class="tok-com">// 带属性的注解 = 接口方法（所以注解只支持"看起来像常量"的类型）</span>
+<span class="tok-kw">public</span> @<span class="tok-kw">interface</span> MyAnno {
+    String value();                <span class="tok-com">// 属性 = 无参方法</span>
+    <span class="tok-kw">int</span> priority() <span class="tok-kw">default</span> <span class="tok-num">0</span>;  <span class="tok-com">// default 给默认值</span>
+}
+@MyAnno(value = <span class="tok-str">"test"</span>)        <span class="tok-com">// 使用 = "实现"这个接口，传入"方法返回值"</span></code></pre></div>
+    <p><b>注解本身没有任何行为</b>——它只是一份结构化元数据，安静地躺在那里，等待某个"消费者"（编译器 / 运行时反射 / 工具）来读。这是和 Python decorator 最本质的区别：Python 的 <code>@app.get("/users")</code> 是<b>立刻执行的函数</b>（返回闭包、注册路由，行为全在装饰器里）；Java 的 <code>@GetMapping("/users")</code> 是<b>一条静态记录</b>（Spring 启动时反射扫描到它才发生点什么）。</p>
+    <h3 class="kp">8.2 @Retention：标签贴到哪一层被撕掉</h3>
+    <p>元注解（贴在注解定义上的注解）里最重要的一条——生命周期三档：</p>
+    <table>
+      <tr><th>策略</th><th>活到哪</th><th>谁能读</th><th>例子</th></tr>
+      <tr><td><code>SOURCE</code></td><td>只到源码，编译即丢弃</td><td>编译器/静态工具</td><td><code>@Override</code> <code>@SuppressWarnings</code></td></tr>
+      <tr><td><code>CLASS</code>（默认）</td><td>进 class 文件，运行时不加载</td><td>字节码工具（ASM/AspectJ 织入）</td><td>少见，框架一般不用默认值</td></tr>
+      <tr><td><code>RUNTIME</code></td><td>一路活到运行时</td><td><b>反射 getAnnotation</b></td><td><code>@Autowired</code> <code>@Test</code> <code>@Transactional</code></td></tr>
+    </table>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Retention.java · 为什么你的注解反射读不到</div><pre><code><span class="tok-anno">@Retention</span>(RetentionPolicy.RUNTIME)   <span class="tok-com">// ← 没这行的注解，运行时反射是读不到的！</span>
+<span class="tok-anno">@Target</span>(ElementType.METHOD)            <span class="tok-com">// 只能贴在方法上（贴别处编译报错）</span>
+<span class="tok-kw">public</span> @<span class="tok-kw">interface</span> LogExecution { }
+
+<span class="tok-com">// 运行时读取 —— 和反射合体，构成"配置即代码"的闭环：</span>
+<span class="tok-kw">for</span> (Method m : clazz.getDeclaredMethods()) {
+    <span class="tok-kw">if</span> (m.isAnnotationPresent(LogExecution.class)) {
+        <span class="tok-com">// 找到贴了标签的方法 → 反射调用 / 生成代理包一层日志（第 10 节）</span>
+    }
+}
+<span class="tok-com">// Spring 扫描 @Component 的原理和这三行代码没有本质区别，只是加了缓存和索引</span></code></pre></div>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>注解的本质是什么？——一个继承 <code>Annotation</code> 的接口，本身无行为，是贴在类/方法/字段上的结构化元数据；靠 <code>@Retention</code> 决定生命周期（SOURCE 编译即弃 / CLASS 留在字节码 / RUNTIME 活到运行时），运行时档的注解由反射 <code>getAnnotation</code> 消费——"注解贴标签 + 反射读标签"就是 Spring 一切魔法的最小闭环。</p></div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：@Autowired 为什么要求字段不能是 final？字段注入和构造器注入谁好？</div><div class="ca">字段注入靠反射 <code>field.set(obj, value)</code> 写入，而 final 字段反射改不了（JLS 限制，JDK 17 后更是直接抛异常）；构造器注入是把反射创建 <code>new</code> 的参数交给你 —— 类型安全、可测试（不用容器也能 new）、依赖显式（构造器参数一眼看清依赖面）。所以 Spring 官方和现代规范都推<b>构造器注入</b>，字段注入只在老代码里常见。这个追问把注解、反射、泛型串成了一条线——终章知识点的联动现场。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：Python 的装饰器和 Java 注解到底差在哪？</div><div class="ca">三个维度：① <b>执行时机</b>——decorator 在 import 时立即执行（函数被替换/注册），注解在编译期只是元数据，消费与否看框架；② <b>能力</b>——decorator 是真函数，能做任何事（闭包、注册、改行为），注解只能携带常量数据（String/Class/枚举/基本类型/注解嵌套/它们的数组）；③ <b>改行为靠谁</b>——Python 装饰器直接改，Java 要"注解 + 动态代理"两件套（@Transactional 的实现 = 扫描注解 + 生成代理类加事务逻辑）。所以 Java 的"装饰器等价物"是<b>注解 + AOP</b>，不是注解本身。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s9">
+    <div class="sec-head"><span class="sec-no">09</span><h2>APT：编译期消费注解，生成代码 <span class="badge b-hard">拓展</span></h2></div>
+    <p>注解的第二个消费时机不在运行时，而在<b>编译期</b>——注解处理器（Annotation Processing Tool，APT）。 javac 编译的轮次中留了钩子：让你在编译时读到注解，然后<b>生成新的源码文件</b>参与本轮编译。</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>Apt.java · Lombok 就是这么工作的</div><pre><code><span class="tok-com">// 你写的：</span>
+<span class="tok-anno">@Data</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> User { <span class="tok-kw">private</span> String name; }
+
+<span class="tok-com">// Lombok 的 APT 处理器在编译期"看到" @Data，直接修改/生成 AST（语法树），</span>
+<span class="tok-com">// 编译出来的 class 文件等价于：</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> User {
+    <span class="tok-kw">private</span> String name;
+    <span class="tok-kw">public</span> String getName() { <span class="tok-kw">return</span> name; }
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> setName(String name) { <span class="tok-kw">this</span>.name = name; }
+    <span class="tok-kw">public</span> <span class="tok-kw">boolean</span> equals(Object o) { ... }   <span class="tok-com">// + hashCode + toString</span>
+}
+<span class="tok-com">// 源码里没有这些方法，字节码里有 —— "编译期魔法"</span></code></pre></div>
+    <p>同门师兄弟的分工：</p>
+    <table>
+      <tr><th>技术</th><th>消费时机</th><th>产物</th><th>代表</th></tr>
+      <tr><td>运行时反射</td><td>运行时</td><td>无代码生成，每次反射调用</td><td>Spring/Jackson（灵活但有开销）</td></tr>
+      <tr><td>APT</td><td>编译期</td><td>生成新源码参与编译</td><td>Lombok、MapStruct、AutoValue（零运行时开销）</td></tr>
+      <tr><td>字节码增强</td><td>编译后/类加载时</td><td>直接改写字节码</td><td>AspectJ 织入、JaCoCo、SkyWalking Agent</td></tr>
+    </table>
+    <p>面试一般问到"知道 Lombok 原理"即可，深问就答"APT 改 AST，所以 IDE 要装 Lombok 插件才能不报错"——这个细节能体现你真用过。</p>
+    <div class="tipbox tb-py"><div class="tb-title">🐍 Python 对照</div><p>Python 没有"编译期生成代码"的对应物（有 <code>__init_subclass__</code> / 元类这种运行时钩子，dataclasses 装饰器也是在 import 时给类动态加方法——时机对等于 Java 的"类加载时"，不是编译期）。<code>@dataclass</code> 和 Lombok <code>@Data</code> 是绝妙的对照组：<b>功能一样，实现时机不同</b>——前者运行时加，后者编译期生成，这是两种语言哲学的缩影。</p></div>
+  </section>
+
+  <section class="sec" id="s10">
+    <div class="sec-head"><span class="sec-no">10</span><h2>JDK 动态代理：运行时合成 $Proxy0 <span class="badge b-hard">原理核心</span></h2></div>
+    <h3 class="kp">10.1 它解决什么：不改原类，给方法加前后缀</h3>
+    <p>四问框架：日志、事务、权限、监控——这些功能要"包"在业务方法外面（方法前开事务、方法后提交/回滚）。直接改业务代码 = 侵入；继承重写 = 一个类一个子类，写不过来。需要一个<b>运行时按需生成的"替身类"</b>：接口方法全转发给一个统一的处理器。</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>ProxyDemo.java · JDK 动态代理三要素</div><pre><code><span class="tok-com">// ① 业务接口（JDK 代理的硬性要求）</span>
+<span class="tok-kw">interface</span> UserService {
+    <span class="tok-kw">void</span> save(String name);
+    <span class="tok-kw">void</span> delete(<span class="tok-kw">int</span> id);
+}
+
+<span class="tok-com">// ② 目标对象（真身，不实现接口也行——只要接口存在）</span>
+<span class="tok-kw">class</span> UserServiceImpl <span class="tok-kw">implements</span> UserService {
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> save(String name) { System.out.println(<span class="tok-str">"保存 "</span> + name); }
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> delete(<span class="tok-kw">int</span> id)   { System.out.println(<span class="tok-str">"删除 "</span> + id); }
+}
+
+<span class="tok-com">// ③ InvocationHandler：所有方法调用的统一收发室</span>
+UserService target = <span class="tok-kw">new</span> UserServiceImpl();
+InvocationHandler handler = (proxy, method, args) -&gt; {
+    System.out.println(<span class="tok-str">"[前置] 调用 "</span> + method.getName());   <span class="tok-com">// 加料：日志/事务/权限</span>
+    Object result = method.invoke(target, args);            <span class="tok-com">// 反射调用真身</span>
+    System.out.println(<span class="tok-str">"[后置] 完成"</span>);                        <span class="tok-com">// 加料：提交/回滚</span>
+    <span class="tok-kw">return</span> result;
+};
+
+<span class="tok-com">// 合成代理对象：运行时 JVM 动态生成类 $Proxy0（extends Proxy implements UserService）</span>
+UserService proxy = (UserService) Proxy.newProxyInstance(
+        target.getClass().getClassLoader(),          <span class="tok-com">// 用目标类的加载器（保证能见到接口）</span>
+        target.getClass().getInterfaces(),           <span class="tok-com">// 要实现的接口列表（反射拿的！）</span>
+        handler);                                    <span class="tok-com">// 统一处理器</span>
+
+proxy.save(<span class="tok-str">"jerry"</span>);   <span class="tok-com">// 输出：[前置] 调用 save → 保存 jerry → [后置] 完成</span>
+proxy.delete(<span class="tok-num">1</span>);     <span class="tok-com">// 两个方法都被同一套前后缀包住 —— 一处定义，处处生效</span></code></pre></div>
+    <h3 class="kp">10.2 生成的 $Proxy0 长什么样（为什么必须接口）</h3>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>$Proxy0.java · 运行时合成类的等价源码（javap 反编译可见）</div><pre><code><span class="tok-kw">public</span> <span class="tok-kw">final</span> <span class="tok-kw">class</span> $Proxy0 <span class="tok-kw">extends</span> Proxy <span class="tok-kw">implements</span> UserService {
+    <span class="tok-com">// equals/hashCode/toString 和每个接口方法，全是同一个套路：</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">final</span> <span class="tok-kw">void</span> save(String var1) {
+        <span class="tok-kw">try</span> {
+            <span class="tok-com">// 不干正事，把"哪个方法 + 什么参数"打包交给 h（你的 Handler）</span>
+            <span class="tok-kw">super</span>.h.invoke(<span class="tok-kw">this</span>, m3_save, <span class="tok-kw">new</span> Object[]{var1});
+        } <span class="tok-kw">catch</span> (Throwable t) { ... }
+    }
+}
+<span class="tok-com">// 谜底揭晓——【为什么 JDK 代理必须基于接口】：</span>
+<span class="tok-com">// Java 单继承：$Proxy0 已经 extends Proxy（为了拿到 h 字段和基础设施），</span>
+<span class="tok-com">// 只能把"身份"寄托在实现接口上。没有接口 = 没有第二张身份牌 = 无法成为替身。</span></code></pre></div>
+    <p>把这句话说进面试：<b>JDK 动态代理生成的类已经把唯一的继承名额用掉了（extends Proxy），所以只能通过实现接口来获得目标类型的行为契约——这就是"必须基于接口"的根本原因</b>。</p>
+    <div class="oneliner"><div class="ol-tag">一句话回答</div><p>JDK 动态代理的原理？——运行时由 JVM 动态生成一个 <code>$Proxy0 extends Proxy implements 你的接口</code> 的类，它每个方法的实现都是把 <code>(this, Method, args)</code> 打包转发给 <code>InvocationHandler.invoke()</code>；你在 Handler 里反射调用目标对象并织入前后逻辑。因单继承名额被 Proxy 占用，所以必须有接口。</p></div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：method.invoke(target, args) 里再调 handler 不就死循环了？怎么保证调的是真身？</div><div class="ca">关键在<b>两个对象</b>：代理对象 proxy 和目标对象 target 是不同的引用。$Proxy0 的方法转发给 handler 时传的是 <code>proxy</code>（代理自己）；而 handler 内部 <code>method.invoke(target, ...)</code> 用的是你闭包里捕获的 <code>target</code>（真身）。如果你手滑写成 <code>method.invoke(proxy, ...)</code>——恭喜，无限递归 StackOverflow。这是动态代理面试的隐藏彩蛋题，考的就是"proxy 和 target 的引用区分"。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：Python 里怎么实现同样的效果？</div><div class="ca">你天天在写：装饰器就是"方法级"的动态代理（前后加料、转发调用）；<code>__getattr__</code> 是"类级"的（任意属性访问统一收发，等价 InvocationHandler）；Django/FastAPI 的中间件是"请求级"的。区别是 Python 的替身在<b>解释器层面</b>天然支持（一切皆对象、一切可拦截），Java 的替身要<b>生成一个真类</b>——因为 Java 的方法调用必须落在静态类型上，没有"凭空拦截"这个能力，只能造一个"看起来一样"的类来顶包。这再次呼应终章主线：<b>静态语言获得动态能力的每一步，都要付一次"生成代码"的代价</b>。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s11">
+    <div class="sec-head"><span class="sec-no">11</span><h2>CGLIB 与 Spring AOP 的选择策略 <span class="badge b-high">高频</span></h2></div>
+    <h3 class="kp">11.1 CGLIB：用继承代替接口</h3>
+    <p>没有接口的类怎么办？CGLIB（Code Generation Library）换了个思路：<b>生成目标类的子类</b>，重写所有非 final 方法：</p>
+    <div class="codebox"><div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>CglibDemo.java · 子类代理</div><pre><code><span class="tok-com">// 目标类：没有实现任何接口，JDK 代理无能为力</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> OrderService {
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> pay() { System.out.println(<span class="tok-str">"支付"</span>); }
+}
+
+Enhancer enhancer = <span class="tok-kw">new</span> Enhancer();
+enhancer.setSuperclass(OrderService.class);          <span class="tok-com">// 以真身为父类</span>
+enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -&gt; {
+    System.out.println(<span class="tok-str">"[前置]"</span>);
+    Object result = proxy.invokeSuper(obj, args);    <span class="tok-com">// 调用父类（真身）方法</span>
+    System.out.println(<span class="tok-str">"[后置]"</span>);
+    <span class="tok-kw">return</span> result;
+});
+OrderService proxy = (OrderService) enhancer.create();  <span class="tok-com">// 生成 OrderService$$EnhancerByCGLIB$$xxx</span>
+proxy.pay();   <span class="tok-com">// [前置] → 支付 → [后置]</span></code></pre></div>
+    <p>CGLIB 的三张红线（面试常考）：</p>
+    <ul>
+      <li><b>final 类不能代理</b>（不能被继承）——String 就不行</li>
+      <li><b>final/private/static 方法不能被增强</b>（不能被重写，静默跳过——所以有时注解贴了却没生效，先查方法是不是 final）</li>
+      <li>构造器会被调用两次（父类一次 + CGLIB 反射实例化一次），字段初始化逻辑重复执行——细节坑</li>
+    </ul>
+    <h3 class="kp">11.2 两者对比与 Spring 的选择</h3>
+    <table>
+      <tr><th>维度</th><th>JDK 动态代理</th><th>CGLIB</th></tr>
+      <tr><td>实现方式</td><td>实现接口（ extends Proxy）</td><td>继承目标类（生成子类）</td></tr>
+      <tr><td>硬性要求</td><td>目标必须实现接口</td><td>类和方法不能是 final</td></tr>
+      <tr><td>依赖</td><td>JDK 自带（java.lang.reflect）</td><td>第三方库（Spring 已内嵌，JDK 17+ 需处理模块限制）</td></tr>
+      <tr><td>方法拦截</td><td>只能拦接口里声明的方法</td><td>能拦子类可见的所有方法</td></tr>
+      <tr><td>性能</td><td>JDK 8 后 invoke 已高度优化</td><td>生成慢一点、调用快一点（早期结论，现在差距很小）</td></tr>
+    </table>
+    <p><b>Spring AOP 的实际策略</b>（面试标准答案）：目标类实现了接口 → 默认用 JDK 代理；没实现接口 → 自动切 CGLIB；<b>Spring Boot 2.x 起统一默认 CGLIB</b>（proxyTargetClass=true）——因为混合模式下，一个 @Service 有接口一个没有，容器里会出现"有的 Bean 能按接口注入、有的必须按类注入"的不一致，统一 CGLIB 消灭了这种心智负担。这个"为什么默认变了"的演进故事是很好的加分项。</p>
+    <div class="tipbox tb-mem"><div class="tb-title">💡 记忆锚点 · AOP 的完整拼图</div><p>@Transactional 生效的完整链路（终章四件套串烧）：<b>注解</b>（贴标签 @Transactional）→ <b>反射</b>（启动扫描发现它）→ <b>动态代理</b>（CGLIB/JDK 生成代理类，方法被 MethodInterceptor 包住）→ 代理方法内开事务、<b>反射调用</b>真身、提交/回滚。同时自调用失效（this.method() 绕过代理直接打真身）的原因也在这：<b>事务在代理层，不在真身层</b>——这个经典坑的答案就藏在代理的结构里。</p></div>
+    <div class="chain">
+      <div class="chain-item"><div class="cn">1</div><div class="cc"><div class="cq">追问：既然 CGLIB 能代理无接口的类，为什么 JDK 还要自带那套基于接口的？</div><div class="ca">时间线：JDK 代理 2000 年前后进 JDK（JDK 1.3），CGLIB 1999 年诞生但作为第三方库存在。JDK 不能依赖第三方库，只能自己实现一套——而"实现接口"是 JVM 层面最容易被动态满足的契约（接口没有构造器、没有状态，合成类最简单）。CGLIB 走 ASM 字节码生成的路子更自由但更重。另外 JDK 17 的强封装（sun.misc 不可用）一度让 CGLIB 失效，催生 Spring 改用 JDK 内置的 ClassFile API / ByteBuddy——技术演进从不停歇，但"接口 vs 继承"这两条路二十年没变过。</div></div></div>
+      <div class="chain-item"><div class="cn">2</div><div class="cc"><div class="cq">追问：动态代理和静态代理（手写代理类）什么时候选谁？</div><div class="ca">静态代理：你提前知道要代理谁、方法少且固定（比如给第三方 SDK 的某个类包一层重试），编译期可见、IDE 可导航、无魔法。动态代理：方法多/不确定（日志事务权限这种横切关注面要罩住所有方法），或代理对象要按配置在运行时决定（MyBatis 的 Mapper 接口，编译期根本不知道有哪些 SQL）。一句话：<b>确定性用静态，横切面和运行时决策用动态</b>。</div></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="s12">
+    <div class="sec-head"><span class="sec-no">12</span><h2>全模块小结：四块地基一块砖 <span class="badge b-high">收尾</span></h2></div>
+    <h3 class="kp">12.1 四问框架回顾</h3>
+    <div class="codebox"><pre class="diagram"><code>为什么出现？  集合装 Object 的强转炸弹 + 框架需要"配置驱动、运行时组装"
+什么场景？    集合类型安全 / IoC 容器造对象 / 注入私有字段 / 事务日志权限横切
+怎么出现的？  Java 5（2004）泛型+注解革命；反射是 JVM 与生俱来的自省能力；
+              JDK 1.3 动态代理；CGLIB 补齐无接口场景
+解决了什么？  编译期类型合同（泛型）+ 运行时元编程（反射/注解/代理）
+              —— 但各自留下代价：擦除限制、反射开销、代理的 final 红线</code></pre></div>
+    <h3 class="kp">12.2 一张表带走全部</h3>
+    <div class="summary-grid">
+      <div class="sum-card"><h5>泛型</h5><ul>
+        <li>动机：把强转炸弹拦在编译期</li>
+        <li>实现：类型擦除（T → 边界/Object + 调用点强转）</li>
+        <li>桥方法：擦除与多态的粘合剂</li>
+        <li>代价：无基本类型 / new T() / T.class / 泛型数组</li>
+        <li>PECS：生产者 extends，消费者 super</li>
+      </ul></div>
+      <div class="sum-card"><h5>反射</h5><ul>
+        <li>入口：Class 对象（每类全局唯一）</li>
+        <li>三件套：Constructor / Method / Field</li>
+        <li>越权：setAccessible(true) 破封装</li>
+        <li>慢的三本账：安全检查 / 装箱 / 无法内联</li>
+        <li>优化：缓存 Method → MethodHandle → APT</li>
+      </ul></div>
+      <div class="sum-card"><h5>注解</h5><ul>
+        <li>本质：extends Annotation 的接口，无行为</li>
+        <li>@Retention 三档：SOURCE / CLASS / RUNTIME</li>
+        <li>消费：运行时反射读 / 编译期 APT 生成代码</li>
+        <li>Lombok = APT 改 AST</li>
+        <li>vs decorator：标签 vs 会执行的函数</li>
+      </ul></div>
+      <div class="sum-card"><h5>动态代理</h5><ul>
+        <li>JDK：$Proxy0 extends Proxy implements 接口</li>
+        <li>必须接口的根因：单继承名额被 Proxy 占用</li>
+        <li>CGLIB：生成子类，final 是红线</li>
+        <li>Spring Boot 2+ 默认 CGLIB（一致性）</li>
+        <li>自调用失效：事务在代理层不在真身层</li>
+      </ul></div>
+    </div>
+    <h3 class="kp">12.3 全书收官检查清单</h3>
+    <p>九个模块走完，最后用一份"能对面试官脱稿讲清"的清单自检（前八章每章一条 + 本章）：</p>
+    <ul>
+      <li><b>① 内存模型</b>：能画 JVM 运行时数据区，讲清对象在堆、引用在栈、String 不可变</li>
+      <li><b>② 语法</b>：值传递的"副本"到底复制了什么（基本类型值 / 引用地址）</li>
+      <li><b>③ OOP</b>：方法表驱动的多态、重载重写的编译期/运行期分界</li>
+      <li><b>④ 集合</b>：HashMap put 全流程 + 树化 + 扩容 + CHM 演进（1.7 分段 → 1.8 CAS+synchronized）</li>
+      <li><b>⑤ JVM</b>：双亲委派"为什么"、GC 可达性、G1 的 Region 化</li>
+      <li><b>⑥ 并发</b>：JMM 三性、volatile 半截墙、synchronized 锁升级、AQS 一个 int 两个队列、线程池七参数与拒绝策略</li>
+      <li><b>⑦ Java 8+</b>：Lambda = invokedynamic + invokedynamic = MethodHandle、Stream 惰性求值</li>
+      <li><b>⑧ 异常 IO</b>：一棵 Throwable 树、try-with-resources 的 suppressed、BIO→NIO(epoll)→零拷贝的动机链</li>
+      <li><b>⑨ 本章</b>：擦除的推论体系、反射三本账、注解 + 反射 + 代理的 Spring 拼图、JDK 代理必须接口的根因</li>
+    </ul>
+    <p>九条都能脱稿讲两分钟，Java 后端的八股纵深就闭环了。剩下的战场是<b>项目细节</b>（你的 RAG、AgenticRAG、LangGraph 工程如何把这套语言底座用起来）和<b>算法手撕</b>——那是另外两条战线，手册到此功成身退。祝秋招顺利。</p>
+    <div class="tipbox tb-py"><div class="tb-title">🐍 终极 Python 对照 · 一以贯之</div><p>贯穿全书的对照关系收个尾：<b>Java 泛型是强制契约，Python typing 是君子协定</b>；<b>Java 反射要持证上岗（Class 对象 + 开销），Python 反射是母语</b>；<b>Java 注解等框架消费，Python 装饰器当场执行</b>；<b>Java 动态代理生成真类，Python 拦截天生免费</b>。面试被问"你从 Python 转 Java 最大的思维转变"，这四句就是满分答案的骨架：<b>从"运行时一切皆可"到"编译期担保一切"——自由换确定性，代价换性能</b>。</p></div>
+
+    <div class="pagenav">
+      <a href="08-exceptions-io.html">← 模块 8：异常与 IO</a>
+      <a href="index.html">全书完 · 回到目录 ↑</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<button class="top-btn" id="topBtn" title="回到顶部">↑</button>
+
+<script>
+/* 简易 Java 语法高亮（关键词/字符串/注释/数字） */
+function highlightJava(src) {
+  return src.replace(/(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b(?:public|private|protected|static|final|class|interface|extends|implements|void|int|long|boolean|double|float|char|byte|short|new|return|if|else|for|while|try|catch|finally|throw|throws|this|super|import|package|abstract|synchronized|volatile|transient|native|strictfp|enum|record|var|instanceof)\b)|(\b\d+(?:\.\d+)?[LlFfDd]?\b)|(@\w+)/gm,
+    function (m, com, str, kw, num, anno) {
+      if (com) return '<span class="tok-com">' + com + '</span>';
+      if (str) return '<span class="tok-str">' + str + '</span>';
+      if (kw)  return '<span class="tok-kw">' + kw + '</span>';
+      if (num) return '<span class="tok-num">' + num + '</span>';
+      if (anno) return '<span class="tok-anno">' + anno + '</span>';
+      return m;
+    });
+}
+document.querySelectorAll('pre:not(.diagram) code').forEach(function (c) {
+  var html = c.innerHTML;
+  /* 保护已存在的 span（本页手写的 tok-* 标记） */
+  html = html.replace(/<span class="tok-[^"]*">([\s\S]*?)<\/span>/g, function (m) {
+    return m.replace(/\//g, '§SLASH§').replace(/@/g, '§AT§').replace(/"/g, '§DQ§');
+  });
+  html = highlightJava(html);
+  html = html.replace(/§SLASH§/g, '/').replace(/§AT§/g, '@').replace(/§DQ§/g, '"');
+  c.innerHTML = html;
+});
+
+/* 目录滚动高亮 */
+var tocLinks = document.querySelectorAll('#toc a[href^="#"]');
+var secs = [];
+tocLinks.forEach(function (a) {
+  var id = a.getAttribute('href').slice(1);
+  var s = document.getElementById(id);
+  if (s) secs.push({ link: a, sec: s });
+});
+function spy() {
+  var pos = window.scrollY + 120, cur = secs[0];
+  secs.forEach(function (s) { if (s.sec.offsetTop <= pos) cur = s; });
+  tocLinks.forEach(function (a) { a.classList.remove('active'); });
+  if (cur) cur.link.classList.add('active');
+}
+window.addEventListener('scroll', function () {
+  spy();
+  document.getElementById('topBtn').style.display = window.scrollY > 600 ? 'block' : 'none';
+});
+spy();
+document.getElementById('topBtn').onclick = function () { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+/* Q&A 批量展开/收起 */
+document.getElementById('btn-expand').onclick = function () { document.querySelectorAll('details.qa').forEach(function (d) { d.open = true; }); };
+document.getElementById('btn-collapse').onclick = function () { document.querySelectorAll('details.qa').forEach(function (d) { d.open = false; }); };
+</script>
+<script src="anno.js"></script>
+
+</body>
+</html>
+

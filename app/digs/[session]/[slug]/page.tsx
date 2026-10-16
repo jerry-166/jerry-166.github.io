@@ -86,10 +86,10 @@ export default async function DigPage({ params }: PageProps) {
     <Layout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <Link
-          href="/digs"
+          href={`/digs/${dig.sessionSlug}`}
           className="inline-flex items-center text-sm text-ink/50 hover:text-ink-dark transition-colors mb-8"
         >
-          ← 返回深挖列表
+          ← 返回本会话
         </Link>
 
         <header className="mb-10">
@@ -98,10 +98,13 @@ export default async function DigPage({ params }: PageProps) {
           </h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-ink/50">
-            {/* 会话名：本主题所属的深挖会话 */}
-            <span className="px-2 py-0.5 bg-bamboo/15 text-bamboo-dark rounded-sm text-xs">
+            {/* 会话名：本主题所属的深挖会话，点击回会话页 */}
+            <Link
+              href={`/digs/${dig.sessionSlug}`}
+              className="px-2 py-0.5 bg-bamboo/15 text-bamboo-dark rounded-sm text-xs hover:bg-bamboo/25 transition-colors"
+            >
               {dig.sessionTitle}
-            </span>
+            </Link>
             {dig.date && <time dateTime={dig.date}>{formatDate(dig.date)}</time>}
             <span className="text-ink/40">
               {dig.steps.length} 问

@@ -247,7 +247,8 @@ function excerptOf(md: string, max = 80): string {
   return t.length > max ? `${t.slice(0, max)}…` : t
 }
 
-// 轮次视图：每场会话内部按「原始轮次」归位，还原当年一问一问挖下来的顺序
+// 轮次视图：会话内部按「原始轮次」归位，还原当年一问一问挖下来的顺序
+
 export interface SessionChronicle {
   sessionSlug: string
   sessionTitle: string
@@ -255,32 +256,55 @@ export interface SessionChronicle {
   rounds: { round: number; steps: ChronicleStep[] }[]
 }
 
-export function getDigChronicle(): SessionChronicle[] {
-  return parseAllSessions().map((session) => {
-    const map = new Map<number, ChronicleStep[]>()
-    for (const dig of session.digs) {
-      for (const s of dig.steps) {
-        if (!map.has(s.round)) map.set(s.round, [])
-        map.get(s.round)!.push({
-          slug: dig.slug,
-          sessionSlug: session.slug,
-          topicTitle: dig.title,
-          stepIndex: s.index,
-          kind: s.kind,
-          excerpt: excerptOf(s.question),
-        })
-      }
+// 单场会话的轮次视图数据（接收已解析的会话对象，避免重复扫描目录）
+export function getSessionChronicle(session: DigSession): SessionChronicle {
+  const map = new Map<number, ChronicleStep[]>()
+  for (const dig of session.digs) {
+    for (const s of dig.steps) {
+      if (!map.has(s.round)) map.set(s.round, [])
+      map.get(s.round)!.push({
+        slug: dig.slug,
+        sessionSlug: session.slug,
+        topicTitle: dig.title,
+        stepIndex: s.index,
+        kind: s.kind,
+        excerpt: excerptOf(s.question),
+      })
     }
-    return {
-      sessionSlug: session.slug,
-      sessionTitle: session.title,
-      sessionDate: session.date,
-      rounds: Array.from(map.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(([round, steps]) => ({
-          round,
-          steps: steps.sort((a, b) => a.stepIndex - b.stepIndex),
-        })),
-    }
+  }
+  return {
+    sessionSlug: session.slug,
+    sessionTitle: session.title,
+    sessionDate: session.date,
+    rounds: Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([round, steps]) => ({
+        round,
+        steps: steps.sort((a, b) => a.stepIndex - b.stepIndex),
+      })),
+  }
+}
+
+// 单场会话（/digs/[session] 页面与 metadata 用；build 时目录扫描自动发现）
+export function getDigSession(sessionSlug: string): DigSession | null {
+  return parseAllSessions().find((s) => s.slug === sessionSlug) ?? null
+}
+
+// 一级路由静态路径：每场会话一个页面（/digs/[session]）
+export function getAllDigSessionSlugs() {
+  return parseAllSessions().map((session) => ({
+    params: {
+      session: session.slug,
+    },
+  }))
+}
+
+// 日期展示格式（目录页 / 会话页共用）
+export function formatDigDate(dateStr: string): string {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   })
 }

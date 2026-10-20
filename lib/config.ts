@@ -132,37 +132,7 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
-    title: 'Python 八股教程书 · 第一册：架构与内存模型',
-    volume: '卷一',
-    description:
-      '从真实学习追问整理的 Python 底层八股：MRO 与 C3 线性化（super 走序列不走继承图）、ob_type 与 __dict__ 三线供应、魔术方法 vs 魔术属性、生成器协程（send/yield from 三件套）、async-await 演化时间线、事件循环与 selector/epoll、编译还是解释（常量折叠）。每章带追问原话框与面试作答模板。',
-    href: '/books/python-bagu-books/vol1.html',
-    tags: ['Python', '面试', '内存模型', 'asyncio'],
-    accent: '#2f7fb5',
-    category: 'backend',
-  },
-  {
-    title: 'Python 八股教程书 · 第二册：面向对象编程',
-    volume: '卷二',
-    description:
-      'OOP 从三大支柱到 Pythonic 用法：封装与名称改写（consenting adults）、property 四件套与描述符、魔术方法按协议背（扑克场景正解：Enum + dataclass + 容器协议 + 组合，零继承）、MRO 与 Mixin 四条用法、鸭子类型的多态本质、ABC 与元类（type 双重身份）、组合优于继承与框架级 DI 对比。',
-    href: '/books/python-bagu-books/vol2.html',
-    tags: ['Python', 'OOP', '面试', '设计'],
-    accent: '#5f8f4f',
-    category: 'backend',
-  },
-  {
-    title: 'Python 八股教程书 · 第三册：并发编程',
-    volume: '卷三',
-    description:
-      'asyncio 深水区一钻到底：骨架五件套与第六面墙（IO 事件源三级台阶）、面试一句话主线（"解耦"是催问券）、四个动词与三条通道、19 步编号轨迹看一个协程任务的一生、__wakeup 的三个家、预售机制（grep 不到的那次 set_result）、yield 三层考证（源码层×0 / 字节码层 YIELD_FROM / 运行层唯一）、帧的照片模型与 C 层三化石，附实测数字弹药库。',
-    href: '/books/python-bagu-books/vol3.html',
-    tags: ['Python', 'asyncio', '并发', '面试'],
-    accent: '#b56f2f',
-    category: 'backend',
-  },
-  {
-    title: 'Python 八股教程书 · 完整合并版',
+    title: 'Python 八股教程书 · 三册合一（架构与内存 / 面向对象 / 并发编程）',
     volume: '合卷',
     description:
       '三册合一：架构与内存模型 + 面向对象编程 + 并发编程。97 个目录链接跨册直达（b1-/b2-/b3- 前缀锚点），6 张 SVG 机制图、38 组代码、41 张表格；每册自带比喻词典、面试速答卡与事实核查表。适合打印级通读与面试前总复习。',

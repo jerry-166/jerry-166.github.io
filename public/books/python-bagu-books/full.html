@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python 八股教程书 · 完整合并版</title>
+<style>
+/* ============ 全局主题：深色 IDE 风 ============ */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --alice:#3fb950; --bob:#58a6ff; --carol:#d29922; --agent:#bc8cff;
+  --danger:#f85149; --warn:#e3b341; --ok:#3fb950;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.8 system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--bob);text-decoration:none} a:hover{text-decoration:underline}
+code{font-family:var(--mono);background:#21262d;padding:1px 6px;border-radius:4px;font-size:13px;color:#79b8ff}
+pre{background:#0a0d12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;margin:12px 0}
+pre code{background:none;padding:0;color:#e6edf3;font-size:13px;line-height:1.7}
+/* ============ 布局：左侧目录 + 右侧正文 ============ */
+.layout{display:flex;max-width:1420px;margin:0 auto;align-items:flex-start}
+nav.toc{position:sticky;top:0;width:280px;min-width:280px;height:100vh;overflow:auto;padding:28px 14px;border-right:1px solid var(--border);background:var(--panel)}
+nav.toc .tocTitle{font-size:15px;font-weight:700;margin-bottom:14px;padding:0 8px}
+nav.toc a{display:block;padding:4px 10px;font-size:13px;color:var(--muted);border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{color:var(--text);text-decoration:none;background:var(--panel2)}
+nav.toc a.lv2{padding-left:22px;font-size:12.5px}
+nav.toc .tocFoot{margin-top:18px;padding:10px;font-size:12px;color:var(--dim);border-top:1px dashed var(--border)}
+main{flex:1;min-width:0;padding:36px 44px 80px;max-width:1080px}
+h1{font-size:26px;margin-bottom:8px}
+h1 small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:6px}
+section{margin-bottom:56px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+h2{font-size:21px;margin:34px 0 6px;padding-left:12px;border-left:4px solid var(--bob)}
+h2 .tag{font-size:12px;color:var(--dim);font-weight:400;margin-left:10px}
+h3{font-size:17px;margin:24px 0 6px;color:#79c0ff}
+h4{font-size:15px;margin:18px 0 4px;color:var(--warn)}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+/* ============ 语义框 ============ */
+.box{border:1px solid var(--border);border-left:4px solid var(--dim);border-radius:8px;padding:12px 16px;margin:14px 0;background:var(--panel2)}
+.box .boxTitle{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.box.metaphor{border-left-color:var(--warn)} .box.metaphor .boxTitle{color:var(--warn)}
+.box.mechanism{border-left-color:var(--bob)} .box.mechanism .boxTitle{color:var(--bob)}
+.box.counter{border-left-color:var(--danger)} .box.counter .boxTitle{color:var(--danger)}
+.box.interview{border-left-color:var(--agent)} .box.interview .boxTitle{color:var(--agent)}
+.box.warnbox{border-left-color:#d29922;background:#16130a} .box.warnbox .boxTitle{color:var(--warn)}
+.box.ask{border-left-color:var(--carol);background:#17131b} .box.ask .boxTitle{color:var(--carol)}
+/* ============ 表格 ============ */
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--text);font-weight:600;white-space:nowrap}
+td{color:var(--muted)} td b,td strong{color:var(--text)}
+tr:hover td{background:#161b2288}
+/* ============ 折叠推演 ============ */
+details{border:1px solid var(--border);border-radius:8px;margin:12px 0;background:var(--panel)}
+details summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--warn);font-weight:600;list-style:none}
+details summary::before{content:"▸ ";color:var(--warn)}
+details[open] summary::before{content:"▾ "}
+details .inner{padding:2px 18px 14px}
+/* ============ 图表容器 ============ */
+.figwrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:16px;margin:16px 0}
+.figwrap .figTitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.figwrap .figSub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.figwrap svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* ============ 杂项 ============ */
+.tocAnchorTop{position:fixed;right:26px;bottom:26px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px}
+.hl{color:var(--warn);font-weight:600}
+.hlg{color:var(--ok);font-weight:600}
+.small{font-size:12.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){nav.toc{display:none}.layout{display:block}}
+.step{color:var(--alice)}
+ul,ol{margin:8px 0 8px 24px}
+li{margin:4px 0}
+kbd{font-family:var(--mono);background:#21262d;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:12px}
+
+/* 合并版补充样式 */
+.bookDivider{margin:70px 0 30px;border:none;border-top:2px dashed var(--border);position:relative}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ================= 左侧总目录 ================= -->
+<nav class="toc" id="toc">
+<div class="tocTitle">🐍 Python 八股 · 完整合并版<br><span style="font-size:12px;color:var(--dim)">架构与内存 · 面向对象 · 并发编程</span></div>
+<a href="#top">总览 · 三册合一导读</a>
+<div style="margin-top:12px;padding:4px 10px 2px;font-size:12.5px;font-weight:700;color:var(--warn);border-bottom:1px dashed var(--border)">第一册 · 架构与内存模型</div>
+<a href="#b1-pre">序章 · 怎么读这本书</a>
+<a href="#b1-ch1">第 1 章 · MRO：类找方法的路线图</a>
+<a class="lv2" href="#b1-ch1-1">1.1 多继承的歧义问题</a>
+<a class="lv2" href="#b1-ch1-2">1.2 C3 线性化三规则</a>
+<a class="lv2" href="#b1-ch1-3">1.3 super() 走序列，不走继承图</a>
+<a href="#b1-ch2">第 2 章 · ob_type 与 __dict__</a>
+<a class="lv2" href="#b1-ch2-1">2.1 类型对象就是类</a>
+<a class="lv2" href="#b1-ch2-2">2.2 __dict__：属性仓库</a>
+<a class="lv2" href="#b1-ch2-3">2.3 ob_type：行为说明书</a>
+<a class="lv2" href="#b1-ch2-4">2.4 属性查找的完整链路</a>
+<a href="#b1-ch3">第 3 章 · 魔术方法 vs 魔术属性</a>
+<a class="lv2" href="#b1-ch3-1">3.1 callable 判别法</a>
+<a class="lv2" href="#b1-ch3-2">3.2 魔术方法全景表</a>
+<a class="lv2" href="#b1-ch3-3">3.3 魔术属性三线供应</a>
+<a href="#b1-ch4">第 4 章 · 生成器协程</a>
+<a class="lv2" href="#b1-ch4-1">4.1 send()：塞值进去</a>
+<a class="lv2" href="#b1-ch4-2">4.2 yield from：委托与透传</a>
+<a class="lv2" href="#b1-ch4-3">4.3 三件套与准协程</a>
+<a href="#b1-ch5">第 5 章 · async/await</a>
+<a class="lv2" href="#b1-ch5-1">5.1 三个常见误解修正</a>
+<a class="lv2" href="#b1-ch5-2">5.2 Future/Task/事件循环</a>
+<a class="lv2" href="#b1-ch5-3">5.3 await 走一圈六步</a>
+<a class="lv2" href="#b1-ch5-4">5.4 演化时间线</a>
+<a href="#b1-ch6">第 6 章 · 事件循环与 selector</a>
+<a class="lv2" href="#b1-ch6-1">6.1 协程是惰性的</a>
+<a class="lv2" href="#b1-ch6-2">6.2 迷你事件循环</a>
+<a class="lv2" href="#b1-ch6-3">6.3 selector 外包监控台</a>
+<a class="lv2" href="#b1-ch6-4">6.4 fd 与 epoll</a>
+<a class="lv2" href="#b1-ch6-5">6.5 select 睡等 vs 轮询</a>
+<a href="#b1-ch7">第 7 章 · 编译还是解释</a>
+<a class="lv2" href="#b1-ch7-1">7.1 三个铁证</a>
+<a class="lv2" href="#b1-ch7-2">7.2 CPython vs JVM</a>
+<a href="#b1-appA">附录 A · 比喻词典</a>
+<a href="#b1-appB">附录 B · 面试速答卡</a>
+<a href="#b1-appC">附录 C · 事实核查表</a>
+<div style="margin-top:12px;padding:4px 10px 2px;font-size:12.5px;font-weight:700;color:var(--warn);border-bottom:1px dashed var(--border)">第二册 · 面向对象编程</div>
+<a href="#b2-pre">序章 · 从一份自陈缺口讲起</a>
+<a href="#b2-ch1">第 1 章 · 类、对象与封装</a>
+<a class="lv2" href="#b2-ch1-1">1.1 类与对象的分工</a>
+<a class="lv2" href="#b2-ch1-2">1.2 可见性与名称改写</a>
+<a class="lv2" href="#b2-ch1-3">1.3 动态属性与 __slots__</a>
+<a href="#b2-ch2">第 2 章 · 三种方法与 property</a>
+<a class="lv2" href="#b2-ch2-1">2.1 实例/静态/类方法</a>
+<a class="lv2" href="#b2-ch2-2">2.2 property 四件套</a>
+<a class="lv2" href="#b2-ch2-3">2.3 描述符：统一答案</a>
+<a href="#b2-ch3">第 3 章 · 魔术方法按协议背</a>
+<a class="lv2" href="#b2-ch3-1">3.1 协议分组 + 扑克用例</a>
+<a class="lv2" href="#b2-ch3-2">3.2 扑克正解代码</a>
+<a href="#b2-ch4">第 4 章 · 继承进阶：Mixin</a>
+<a class="lv2" href="#b2-ch4-1">4.1 MRO 与 super() 真义</a>
+<a class="lv2" href="#b2-ch4-2">4.2 Mixin 四条用法</a>
+<a class="lv2" href="#b2-ch4-3">4.3 自写 Mixin 代码</a>
+<a href="#b2-ch5">第 5 章 · 多态本质：鸭子类型</a>
+<a class="lv2" href="#b2-ch5-1">5.1 不查类型，查方法名</a>
+<a class="lv2" href="#b2-ch5-2">5.2 total_ordering / __call__</a>
+<a href="#b2-ch6">第 6 章 · 抽象与元类</a>
+<a class="lv2" href="#b2-ch6-1">6.1 ABC + @abstractmethod</a>
+<a class="lv2" href="#b2-ch6-2">6.2 元类里到底有什么</a>
+<a class="lv2" href="#b2-ch6-3">6.3 元类实战与轻量替代</a>
+<a href="#b2-ch7">第 7 章 · 组合与依赖注入</a>
+<a class="lv2" href="#b2-ch7-1">7.1 组合优于继承</a>
+<a class="lv2" href="#b2-ch7-2">7.2 Mixin vs 框架级 DI</a>
+<a href="#b2-appA">附录 A · 比喻词典</a>
+<a href="#b2-appB">附录 B · 面试速答卡</a>
+<a href="#b2-appC">附录 C · 事实核查表</a>
+<div style="margin-top:12px;padding:4px 10px 2px;font-size:12.5px;font-weight:700;color:var(--warn);border-bottom:1px dashed var(--border)">第三册 · 并发编程</div>
+<a href="#b3-pre">序章 · 一条从"说不清"到"钻到 C 层"的下钻线</a>
+<a href="#b3-ch1">第 1 章 · 骨架全景：五件套与第六面墙</a>
+<a class="lv2" href="#b3-ch1-1">1.1 IO 事件源机器：三级台阶</a>
+<a class="lv2" href="#b3-ch1-2">1.2 积木清单：知名 API 都是老零件</a>
+<a class="lv2" href="#b3-ch1-3">1.3 uvloop：冻结的中间层</a>
+<a href="#b3-ch2">第 2 章 · 面试主线：背这句，不是背"解耦"</a>
+<a class="lv2" href="#b3-ch2-1">2.1 "解耦"是催问券</a>
+<a class="lv2" href="#b3-ch2-2">2.2 追问一句答 + 实测数字</a>
+<a href="#b3-ch3">第 3 章 · 四个动词：生成器地基</a>
+<a class="lv2" href="#b3-ch3-1">3.1 动词翻译表 + 三个触发器</a>
+<a class="lv2" href="#b3-ch3-2">3.2 三条通道各司其职</a>
+<a class="lv2" href="#b3-ch3-3">3.3 12 行驱动者 = Task 的全部秘密</a>
+<a href="#b3-ch4">第 4 章 · 19 步一生：一个协程任务的一生</a>
+<a class="lv2" href="#b3-ch4-1">4.1 三件套方法归位 + 六阶段</a>
+<a class="lv2" href="#b3-ch4-2">4.2 三个数字 + 毕业作业</a>
+<a href="#b3-ch5">第 5 章 · 判卷五问：两个视角一个根</a>
+<a class="lv2" href="#b3-ch5-1">5.1 先订闹钟，再睡觉</a>
+<a class="lv2" href="#b3-ch5-2">5.2 关键修正：__step 没有在循环</a>
+<a class="lv2" href="#b3-ch5-3">5.3 __wakeup 的三段一生</a>
+<a class="lv2" href="#b3-ch5-4">5.4 跑完不是让出，是死亡</a>
+<a href="#b3-ch6">第 6 章 · 预售：grep 不到的那次 set_result</a>
+<a class="lv2" href="#b3-ch6-1">6.1 set_result 被当作"值"卖掉了</a>
+<a class="lv2" href="#b3-ch6-2">6.2 措辞精修三处 + 46 处</a>
+<a href="#b3-ch7">第 7 章 · yield 三层考证</a>
+<a class="lv2" href="#b3-ch7-1">7.1 协程到底用没用 yield</a>
+<a class="lv2" href="#b3-ch7-2">7.2 活化石与历史时间线</a>
+<a href="#b3-ch8">第 8 章 · 一钻到底：照片模型与 C 层化石</a>
+<a class="lv2" href="#b3-ch8-1">8.1 四层对照：你不写，机器在用</a>
+<a class="lv2" href="#b3-ch8-2">8.2 帧的照片模型</a>
+<a class="lv2" href="#b3-ch8-3">8.3 C 层三块化石</a>
+<a href="#b3-appA">附录 A · 比喻词典</a>
+<a href="#b3-appB">附录 B · 面试速答卡</a>
+<a href="#b3-appC">附录 C · 事实核查表</a>
+<div class="tocFoot">来源：三场真实学习会话整理<br>2026-10 · 秋招面试准备</div>
+</nav>
+
+<!-- ================= 正文 ================= -->
+<main>
+<h1 id="top">Python 八股教程书 · 完整合并版<br><small>架构与内存模型 + 面向对象编程 + 并发编程 —— 三册合一</small></h1>
+<p class="lead">本册由三场真实学习会话整理而成，覆盖 Python 八股的三大板块。三册由浅入深又各自独立：可按顺序通读，也可按目录直取所需章节。每册均带 <span style="color:var(--carol)">🧑‍🎓 追问</span>（原话提问 = 面试官追问剧本）、比喻框、机制框、反例框与 <span style="color:var(--agent)">🎭 面试作答</span>（30 秒版 + 2 分钟版）。</p><div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0"><div class="box metaphor" style="flex:1;min-width:260px"><div class="boxTitle">📖 第一册 · 架构与内存模型</div><p style="font-size:13px">MRO / ob_type / 魔术方法 / 生成器协程 / async-await / 事件循环 / 编译还是解释</p><p class="small">11 章 · 24 小节 · <a href="#b1-pre">从序章开始读 →</a></p></div><div class="box metaphor" style="flex:1;min-width:260px"><div class="boxTitle">📖 第二册 · 面向对象编程</div><p style="font-size:13px">封装 / property / 魔术方法协议 / Mixin / 鸭子类型 / 元类 / 组合与DI</p><p class="small">11 章 · 18 小节 · <a href="#b2-pre">从序章开始读 →</a></p></div><div class="box metaphor" style="flex:1;min-width:260px"><div class="boxTitle">📖 第三册 · 并发编程</div><p style="font-size:13px">骨架全景 / 一句话主线 / 四个动词 / 19步一生 / 预售 / yield三层考证 / C层化石</p><p class="small">12 章 · 21 小节 · <a href="#b3-pre">从序章开始读 →</a></p></div></div>
+<!-- ================= 第一册 · 架构与内存模型 ================= -->
+
+
+<h1 id="b1-top">Python 八股教程书 · 第一册<br><small>架构与内存模型：从 MRO 到事件循环，一条线串到底</small></h1>
+<p class="lead">本册内容整理自一场真实的学习会话：每个概念都按「为什么出现 → 基于什么场景 → 怎么出现 → 出现后解决了什么问题」的框架展开，所有比喻都来自真实语境。带 <span style="color:var(--carol)">🧑‍🎓 追问</span> 标记的框，是当时学习者的原话提问——那些问题就是面试官最爱的追问点。</p>
+
+<!-- ================================================================ -->
+<section id="b1-pre">
+<h2>序章 · 怎么读这本书<span class="tag">阅读指南</span></h2>
+<p>这一册的主线只有一条：<b>一个方法调用发出去之后，Python 内部到底发生了什么</b>。</p>
+<p>顺着这条主线走：</p>
+<ol>
+<li>调 <code>d.who()</code> → 解释器沿 <b>MRO</b> 找方法（第 1 章）；</li>
+<li>方法藏在谁的 <code>__dict__</code> 里、由 <code>ob_type</code> 指路（第 2 章）；</li>
+<li>顺藤摸瓜把「双下划线家族」分成了魔术方法和魔术属性两支（第 3 章）；</li>
+<li>然后把镜头转向函数的执行模型：生成器怎么一步步长成协程（第 4 章）；</li>
+<li><code>async/await</code> 怎么在这套机制上演化出来（第 5 章）；</li>
+<li>驱动它的调度中枢——事件循环和 selector，一直摸到内核门口（第 6 章）；</li>
+<li>最后回收一个经典问题：Python 到底是编译型还是解释型（第 7 章）。</li>
+</ol>
+<p>每章末尾的 <span style="color:var(--agent)">🎭 面试作答</span> 框都可以直接背——先给 30 秒版本，再展开 2 分钟版本。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch1">
+<h2>第 1 章 · MRO：类找方法的路线图<span class="tag">P0 高频考点</span></h2>
+
+<h3 id="b1-ch1-1">1.1 为什么出现：多继承的歧义问题</h3>
+<p>普通函数调用没有歧义：方法名写在哪，就去哪找。但多继承一出现，麻烦就来了——<b>一个方法同时出现在多个父类里，到底先去哪个找？</b></p>
+<p>MRO（Method Resolution Order，方法解析顺序）就是答案：它是一个<b>元组</b>，把从当前类到 object 的所有祖先类按线性顺序排好。运行时查找方法，就是沿这条队伍从头到尾问一遍，谁先应答用谁的。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：族谱排队</div>
+<p>把一个类的所有祖先想象成一支排好队的家族队伍：<b>自己站第一排，爸爸们按声明顺序站第二排，爷爷们往后排，object 永远垫底</b>。找方法就是从队头往队尾挨个问「你有 who 吗？」，第一个说「有」的就成交，后面的不再打扰。</p>
+</div>
+
+<h3 id="b1-ch1-2">1.2 C3 线性化：三条规则</h3>
+<p>CPython 用 <b>C3 线性化</b>算法计算这个顺序，规则就三条：</p>
+<ol>
+<li><b>子类永远排在父类前面</b>（不然爸爸会抢儿子的方法）；</li>
+<li><b>多个父类按声明顺序排</b>（<code>class D(B, C)</code> 里 B 先于 C）；</li>
+<li><b>同一个类只出现一次</b>（菱形继承的共同祖先去重）。</li>
+</ol>
+
+<pre><code class="language-python">class A:
+    def who(self): print("A")
+
+class B(A):
+    def who(self): print("B")
+
+class C(A):
+    def who(self): print("C")
+
+class D(B, C):      # 菱形继承：D → B、C → A
+    pass
+
+D().who()           # 输出 B —— 沿 MRO 先找到 B 的，C 根本没被查
+D.__mro__           # (D, B, C, A, object) —— 这条队伍就是 MRO
+# 队伍怎么来的：
+#   规则1：D 排最前（子类在前）
+#   规则2：B 在 C 前（class D(B, C) 的声明顺序）
+#   规则3：A 只出现一次（B、C 共同的祖先去重，排在他们之后）</code></pre>
+
+<p>如果继承图无法线性化（比如两个类互相要求对方在前），Python 会直接报 <code>TypeError: Cannot create a consistent method resolution</code>——不给运行时埋雷。</p>
+
+<details><summary>展开：菱形继承的查找路径图</summary>
+<div class="inner">
+<div class="figwrap">
+<div class="figTitle">MRO：菱形继承的查找路径</div>
+<div class="figSub">D 继承 B 和 C，B、C 都继承 A；C3 线性化为 D → B → C → A → object</div>
+<svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="b1-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+    <marker id="b1-arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/>
+    </marker>
+  </defs>
+  <!-- 菱形结构 -->
+  <rect x="310" y="20" width="100" height="40" rx="8" fill="#1c2129" stroke="#58a6ff" stroke-width="2"/>
+  <text x="360" y="45" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">D</text>
+  <rect x="160" y="120" width="100" height="40" rx="8" fill="#1c2129" stroke="#d29922" stroke-width="2"/>
+  <text x="210" y="145" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">B</text>
+  <rect x="460" y="120" width="100" height="40" rx="8" fill="#1c2129" stroke="#bc8cff" stroke-width="2"/>
+  <text x="510" y="145" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">C</text>
+  <rect x="310" y="220" width="100" height="40" rx="8" fill="#1c2129" stroke="#8b949e" stroke-width="2"/>
+  <text x="360" y="245" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">A</text>
+  <line x1="330" y1="60" x2="240" y2="118" stroke="#8b949e" stroke-width="1.5" marker-end="url(#b1-arr)"/>
+  <line x1="390" y1="60" x2="480" y2="118" stroke="#8b949e" stroke-width="1.5" marker-end="url(#b1-arr)"/>
+  <line x1="230" y1="160" x2="330" y2="218" stroke="#8b949e" stroke-width="1.5" marker-end="url(#b1-arr)"/>
+  <line x1="490" y1="160" x2="390" y2="218" stroke="#8b949e" stroke-width="1.5" marker-end="url(#b1-arr)"/>
+  <!-- 查找路径 -->
+  <path d="M 210 168 L 210 300 L 510 300 L 510 168" fill="none" stroke="#3fb950" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#b1-arrG)"/>
+  <text x="250" y="325" fill="#3fb950" font-size="13">d.who() 沿 MRO 查：D 没有 → B 有，停在 B（C 从未被查）</text>
+</svg>
+</div>
+</div>
+</details>
+
+<h3 id="b1-ch1-3">1.3 super() 走序列，不走继承图</h3>
+<p>最容易考的一问：<b>super() 到底跳到哪？</b>直觉答案是「父类」，这是错的。正确答案是：<b>跳到 MRO 的下一个类</b>。</p>
+
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：super() 等价于 super(B, self)</div>
+<p><code>super()</code> 的落点不是编译期定的，是运行时按两步算出来的：拿 <code>type(self).__mro__</code> → 在这条队伍里找到当前类（比如 B）→ 从<b>下一位</b>开始找。B 的下一位是谁？由<b>实例的类</b>的 MRO 说了算，跟「B 的父类是谁」无关。</p>
+</div>
+
+<pre><code class="language-python">class A:
+    def who(self): print("A")
+class B(A):
+    def who(self):
+        print("B")
+        super().who()      # 落点运行时才知道 —— 关键就在这行
+class C(A):
+    def who(self):
+        print("C")
+        super().who()
+class D(B, C): pass
+
+B().who()   # 输出 B A  ← B 实例：MRO=(B, A, object)，super 跳到 A
+D().who()   # 输出 B C A ← D 实例：MRO=(D, B, C, A, object)，B 里的 super 跳到 C！</code></pre>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「第一个问题是 D 走到 B，我可以理解 D 应该也走到了 C，而不是说 B 里面的 super who 走到了 C。B 和 C 没有关系啊？」</p>
+</div>
+
+<p>这个追问质量很高，答案分两层：</p>
+<table>
+<tr><th>机制</th><th>谁发起</th><th>走法</th></tr>
+<tr><td><b>属性查找</b> <code>d.who()</code></td><td>解释器</td><td>沿 MRO 找到<b>第一个命中就停</b>：D → B，结束。C 从头到尾没被查过</td></tr>
+<tr><td><b>super() 链</b></td><td>你写的代码</td><td>沿<b>同一条 MRO</b> 显式往下续：B → C → A</td></tr>
+</table>
+<p>所以「走到 C」的不是查找，是 B 方法体里那句 <code>super().who()</code>。B 和 C 之间确实没有继承关系——但它们是 D 的<b>线性化序列里的邻居</b>；super 走序列，不走继承图。这就是为什么 mixin 模式能工作：mixin 不需要认识谁，只要它在最终类的 MRO 里排对位置就行。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：MRO 与 super()</div>
+<p><b>30 秒版：</b>MRO 是类查找方法的线性顺序，CPython 用 C3 线性化计算：子类在前、父类按声明顺序、去重。super() 不是跳到父类，是跳到「实例类的 MRO 里当前类的下一位」——落点由实例决定，不由代码位置决定。</p>
+<p><b>2 分钟版：</b>先讲问题来源：多继承时方法可能出现在多个父类，需要一条无歧义的查找顺序。再讲三条规则和菱形继承例子（D→B→C→A→object）。然后甩出关键区分：属性查找找到第一个命中就停；super() 链是显式沿同一条 MRO 往下续。举例：同一份 B.who() 代码，B 实例上 super 跳到 A，D 实例上跳到 C——因为 super() 等价于 super(B, self)，运行时取 type(self).__mro__ 找下一位。最后补一句：MRO 无法线性化时直接 TypeError，错误在类定义期就暴露。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch2">
+<h2>第 2 章 · ob_type 与 __dict__：对象的内部世界<span class="tag">P1 高频考点</span></h2>
+
+<h3 id="b1-ch2-1">2.1 类型对象就是类：三个容易混的概念</h3>
+<p>讨论对象模型之前，先把三个词拆干净：</p>
+<table>
+<tr><th>概念</th><th>是什么</th><th>一句话</th></tr>
+<tr><td><b>ob_type</b></td><td>字段名</td><td>每个对象头部那个类型指针，指向「它的类型」</td></tr>
+<tr><td><b>类型对象</b></td><td>就是类</td><td><code>type(42)</code> 是 int、<code>type(d)</code> 是 D——你自己写的类同样是类型对象；类自己也是对象，<code>type(D)</code> 是 <code>type</code></td></tr>
+<tr><td><b>object</b></td><td>根类</td><td>所有类隐式继承它，每条 MRO 的最后一站，兜底提供 <code>__init__</code>、<code>__repr__</code></td></tr>
+</table>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「object type 不是 int、string 那些吗？难道 object type 可以是类？一个对象去找方法的时候，会走到 object type 这个类，这个类又有它的一个 MRO，进行了 C3 线性化，然后去里面一个一个去找方法？」</p>
+</div>
+<p>这段复述只改一个词就全对：对象找方法时走到的是<b>它自己的类</b>（D），不是「object type 这个类」。链路是：<code>d --ob_type--&gt; D --__mro__--&gt; 逐类翻 __dict__</code>。int、str 是类，你自己写的 D 也是类——类型对象不神秘，它就是类。</p>
+
+<h3 id="b1-ch2-2">2.2 __dict__：对象的「属性仓库」</h3>
+<p>每个对象身上（几乎）都有一个 <code>__dict__</code>，就是个字典，存这个对象<b>自己的属性</b>。分两种：</p>
+
+<pre><code class="language-python">class Point:
+    color = "red"                  # 类属性 → 存进「类的 __dict__」
+
+    def __init__(self, x, y):
+        self.x = x                 # 实例属性 → 存进「实例的 __dict__」
+        self.y = y
+
+    def show(self):                # 方法 → 也存进「类的 __dict__」
+        return f"({self.x}, {self.y})"
+
+p = Point(1, 2)
+
+p.__dict__        # {'x': 1, 'y': 2}  ← 实例仓库：只有数据，没有方法
+Point.__dict__    # mappingproxy({'color': 'red', '__init__': ..., 'show': ...})</code></pre>
+
+<p>四条要点：</p>
+<ul>
+<li><b>方法不住在实例身上，住在类的 __dict__ 里</b>。第 1 章说「沿 MRO 逐类查 __dict__」，查的就是这排仓库——哪个仓库先命中用哪个；</li>
+<li><b>取属性的完整路径</b>：<code>p.x</code> 先翻 <code>p.__dict__</code>（命中返回）；<code>p.color</code> 实例仓库没有 → 沿类的 MRO 翻类仓库；全没有才 <code>AttributeError</code>；</li>
+<li><b>赋值只写实例仓库</b>：<code>p.color = "blue"</code> 往 <code>p.__dict__</code> 加了一条，把类里的 "red" <b>遮住</b>（shadow），类的 __dict__ 纹丝不动——这就是为什么改一个实例不影响别的实例；</li>
+<li>两个花边：类的 <code>__dict__</code> 是 mappingproxy（只读视图，防止绕过语法直接塞东西进类）；定义了 <code>__slots__</code> 的类<b>没有</b> __dict__，属性存在固定槽位——「__slots__ 省内存」的原理就在这。</li>
+</ul>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：两层仓库</div>
+<p>实例仓库是你随身的口袋，类仓库是全村共用的祠堂。找东西先掏口袋，口袋没有再去祠堂（按 MRO 的顺序挨家祠堂问）；<b>往口袋里放新东西不会动祠堂</b>，所以你改自己的不影响别人。</p>
+</div>
+
+<h3 id="b1-ch2-3">2.3 ob_type 的用处：它是「行为说明书」</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「这个 object type 有什么用？是用于 type 包裹的时候去判断它的类型吗？」</p>
+</div>
+<p>type() 判断只是它<b>最不重要</b>的一个用途。ob_type 真正的身价是：Python 一切动态行为都靠它决定「这个对象该怎么表现」。</p>
+<table>
+<tr><th>用途</th><th>例子</th><th>说明</th></tr>
+<tr><td>类型判断</td><td><code>type(x) is int</code>、<code>isinstance(x, T)</code></td><td>type() 只是<b>读出</b> ob_type 指向谁</td></tr>
+<tr><td>方法派发</td><td><code>d.show()</code></td><td>沿 ob_type 指向的类的 MRO 找 show——第 1 章的链路</td></tr>
+<tr><td>运算符行为</td><td><code>1 + 2</code>、<code>"a" + "b"</code></td><td>执行引擎查 type(左值) 的 <code>__add__</code>，同一运算符不同类型不同结果</td></tr>
+<tr><td>迭代/长度</td><td><code>for x in obj</code>、<code>len(obj)</code></td><td>查它的类有没有 <code>__iter__</code>、<code>__len__</code></td></tr>
+<tr><td>造类本身</td><td><code>type("D", (B, C), {...})</code></td><td>type 是「类的类」（元类），类都是它造出来的</td></tr>
+</table>
+<p>一句话：ob_type 指向的类型对象是所有行为的<b>说明书</b>。判断类型只是翻开说明书看封面，方法派发和运算符分派才是每行代码都在用的功能。</p>
+
+<h3 id="b1-ch2-4">2.4 属性查找的完整链路（把两章拼起来）</h3>
+<pre><code class="language-python">d = D()
+d.__dict__          # {} —— 实例身上没有 who
+'who' in D.__dict__ # False
+'who' in B.__dict__ # True ← 方法住在 B 的 __dict__ 里
+type(d).__mro__     # (D, B, C, A, object) ← 查找沿这条走
+# 完整链路：d --ob_type--> D --__mro__--> 逐类翻 __dict__，B 命中</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：__dict__ 与属性查找</div>
+<p><b>30 秒版：</b>每个对象有 __dict__ 属性仓库：实例仓库存实例属性，类仓库存类属性和方法。取属性先翻实例 __dict__，没有再沿 type(X) 的 MRO 逐类翻类 __dict__，全没有才 AttributeError；赋值只写实例仓库，遮住类属性但不修改它。</p>
+<p><b>2 分钟版：</b>展开三条：一是方法住在类 __dict__ 而非实例身上，这解释了为什么一千个实例共享一份方法、内存不爆炸；二是 shadow 机制：p.color = "blue" 只是实例口袋里加了一条，类仓库不动，其他实例不受影响；三是 __slots__：定义后实例没有 __dict__，属性存固定槽位，省掉每个实例一个字典的开销——大规模对象（比如百万级数据类）的常规优化。最后点题：这套「口袋+祠堂」的两层结构，配合 MRO，就是 Python 属性系统的全部。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch3">
+<h2>第 3 章 · 魔术方法 vs 魔术属性<span class="tag">P1 概念辨析</span></h2>
+
+<h3 id="b1-ch3-1">3.1 一个 callable 判别法</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「我之前应该让你给我展示过它的一个魔术方法，但是你好像并没有给我展示这个 dict 属性。我就奇怪，这个 dict 是魔术方法吗？如果是的话，它还有别的魔术方法，你没有给我说明吗？」</p>
+</div>
+<p>答案：<code>__dict__</code> <b>不是魔术方法，是「魔术属性」</b>。双下划线家族其实分两支，判别标准一句话：<b>魔术方法是「函数」，被你写的语法隐式调用；魔术属性是「数据」，挂在你身上等你主动去读</b>。</p>
+
+<pre><code class="language-python">callable(d.__dict__)     # False —— 是个字典，不是函数 → 魔术属性
+callable(Demo.__init__)  # True  —— 魔术方法，可调用
+callable(d.__call__)     # True  —— 魔术方法，可调用</code></pre>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：钩子 vs 数据兄弟</div>
+<p>魔术方法是<b>钩子</b>：你写 <code>d + other</code>、<code>len(d)</code>、<code>with d:</code>，Python 替你悄悄调用对应的 <code>__add__</code>、<code>__len__</code>、<code>__enter__</code>——你不喊它，它只在语法触发时出现。魔术属性是<b>数据兄弟</b>：<code>__dict__</code>、<code>__mro__</code>、<code>__closure__</code> 只是安静挂在身上的仓库和账本，你不主动读它就永远不工作。</p>
+</div>
+
+<h3 id="b1-ch3-2">3.2 魔术方法全景表</h3>
+<table>
+<tr><th>类别</th><th>代表方法</th><th>被什么触发</th></tr>
+<tr><td>创建与销毁</td><td><code>__new__</code>、<code>__init__</code>、<code>__del__</code></td><td><code>Demo(3)</code>、对象被回收</td></tr>
+<tr><td>字符串表示</td><td><code>__repr__</code>、<code>__str__</code>、<code>__format__</code></td><td><code>print(x)</code>、f-string</td></tr>
+<tr><td>比较与哈希</td><td><code>__eq__</code>、<code>__lt__</code>、<code>__hash__</code></td><td><code>==</code>、<code>&lt;</code>、sorted、当 dict 键</td></tr>
+<tr><td>算术运算</td><td><code>__add__</code>、<code>__mul__</code>、<code>__radd__</code></td><td><code>+</code>、<code>*</code></td></tr>
+<tr><td>容器协议</td><td><code>__len__</code>、<code>__getitem__</code>、<code>__iter__</code>、<code>__contains__</code></td><td><code>len()</code>、<code>[]</code>、for、in</td></tr>
+<tr><td>可调用</td><td><code>__call__</code></td><td><code>x()</code></td></tr>
+<tr><td>属性访问</td><td><code>__getattr__</code>、<code>__setattr__</code>、<code>__getattribute__</code></td><td>读/写 <code>x.a</code>（找不到时兜底）</td></tr>
+<tr><td>上下文管理</td><td><code>__enter__</code>、<code>__exit__</code></td><td>with</td></tr>
+<tr><td>描述符</td><td><code>__get__</code>、<code>__set__</code></td><td>property、classmethod 的底层</td></tr>
+<tr><td>异步协议</td><td><code>__await__</code>、<code>__aiter__</code>、<code>__aenter__</code></td><td>await、async for、async with</td></tr>
+</table>
+<p>值得盯住的细节：一个「全副武装」的演示类里，整个脚本<b>没有一处显式调用 <code>.__add__()</code>、<code>.__len__()</code></b>——全是 <code>d + Demo(1)</code>、<code>len(d)</code> 这种普通语法，钩子被隐式触发。还有一个彩蛋：<code>list(d)</code> 会多触发一次 <code>__len__</code>——因为 list() 构造时会先问对象「你大概多长」来预分配空间，协议之间也会互相调用。</p>
+
+<h3 id="b1-ch3-3">3.3 魔术属性的来源：三线供应</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「我知道 __init__、__call__ 这几个魔术方法是由元类提供的；而关于迭代、调用、运算符比较以及上下文等一些魔术方法，是由 object 类提供的。那我想知道，魔术属性应该也是由 object 类提供的吧？」</p>
+</div>
+<p>两个前提都要修，先看事实：</p>
+<ul>
+<li><b>「__init__、__call__ 由元类提供」——半对。</b> <code>Demo(3)</code> 这整个动作确实走元类：<code>type.__call__</code> 在 type 身上，它内部再去调 __new__ 和 __init__。但 __init__/__new__ 本身是 <b>object</b> 提供的（证据：<code>Demo.__init__ is object.__init__ → True</code>，你没写 init 时直接用 object 的）；而 <code>d()</code>（实例被调用）查的是 Demo 的 <code>__call__</code>，object 不提供，得自己写；</li>
+<li><b>「迭代、运算符、上下文由 object 提供」——不对。</b> object 只提供一小撮默认：__init__、__new__、__repr__、__eq__、__hash__。__iter__、__len__、__add__、__enter__ <b>没有任何默认实现</b>，你不写就是 <code>TypeError: object is not iterable</code>。这正是鸭子类型的立足点：<b>协议靠你实现，不靠从 object 白拿</b>。</li>
+</ul>
+<p>魔术属性的完整答案是<b>分三线供应，规则统一</b>：</p>
+<table>
+<tr><th>谁的魔术属性</th><th>描述符挂在哪</th><th>例子</th></tr>
+<tr><td>实例的</td><td>object 身上 + 造类时注入每个类的命名空间</td><td><code>__dict__</code>（getset_descriptor）、<code>__class__</code></td></tr>
+<tr><td>类的</td><td><b>type</b> 身上</td><td><code>__mro__</code>（member_descriptor）、<code>__name__</code>、<code>__bases__</code></td></tr>
+<tr><td>函数的</td><td><b>FunctionType</b> 身上</td><td><code>__code__</code>、<code>__closure__</code>、<code>__defaults__</code></td></tr>
+</table>
+<p>统一规则：<b>查 X 的魔术属性和查普通属性走同一条路——沿 type(X) 的 MRO 找</b>。实例沿 (Demo, object)，类沿 (type, object)，函数沿 (FunctionType, …)。魔术属性不是特殊通道，找到的只是一个 C 级描述符。两个收尾认识：描述符和数据是分离的——描述符只定义「怎么读写」，数据存在每个对象自己的 C 结构里，所以 <code>d.__dict__</code> 是 <code>{'x': 1}</code> 而 <code>d2.__dict__</code> 是 <code>{}</code>；例外是 <code>__wrapped__</code>——object 和 type 身上都没有它，它是 functools.wraps 手动塞的普通属性。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：魔术方法 vs 魔术属性</div>
+<p><b>30 秒版：</b>双下划线家族分两支：魔术方法是函数钩子，被语法隐式触发（len() 触发 __len__、+ 触发 __add__）；魔术属性是数据（__dict__、__mro__、__closure__），要主动去读。判别法一条：callable() 测试。来源上，魔术属性沿 type(X) 的 MRO 查，描述符分别在 object、type、FunctionType 身上。</p>
+<p><b>2 分钟版：</b>先给判别法，再给全景表里的三四个高频族（容器协议、比较哈希、上下文管理、异步协议）。然后讲两个容易答错的细节：一，object 只提供 __init__/__new__/__repr__/__eq__/__hash__ 等一小撮默认，__iter__/__len__/__add__ 没有默认实现——鸭子类型的协议是「你不写就没有」；二，「类() 被调用」这个动作本身走 type.__call__（元类），但 __init__ 的默认版本来自 object。最后点题：这套机制统一在「沿 type(X) 的 MRO 找属性」一条路上——Python 的对象模型没有第二套查找逻辑。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch4">
+<h2>第 4 章 · 生成器协程：yield from 与 send()<span class="tag">P0 高频考点</span></h2>
+
+<p>为什么叫「协程」？普通函数是<b>调用-返回</b>一次就结束；生成器是<b>暂停-恢复</b>多次产出值；加了 send() 之后还能<b>接收外部传进来的值</b>——函数和调用方能双向通信，这就有了协程的雏形。</p>
+
+<h3 id="b1-ch4-1">4.1 send()：不只是取值，还能塞值进去</h3>
+<p>普通 yield 生成器是单向的（只产出）：</p>
+<pre><code class="language-python">def gen():
+    yield 1
+    yield 2
+    yield 3
+
+g = gen()
+next(g)    # 1  ← 取值
+next(g)    # 2</code></pre>
+<p>给 yield 加接收能力——<code>x = yield value</code>：yield value 把 value 抛出去、暂停；下次 <code>g.send(数据)</code> 把<b>数据塞回 yield 表达式</b>，赋值给 x，函数继续跑：</p>
+<pre><code class="language-python">def accumulator():
+    total = 0
+    while True:
+        x = yield total      # 抛出 total，暂停；send(n) 时 x = n
+        total += x           # 接收到外部传来的 x，累加
+
+acc = accumulator()
+next(acc)          # 0  ← 第一次必须 next「启动」，跑到第一个 yield，返回 total=0
+acc.send(10)       # 10 ← 把 10 塞给 x，total=0+10=10，抛出
+acc.send(20)       # 30 ← 把 20 塞给 x，total=10+20=30，抛出
+acc.send(5)        # 35</code></pre>
+<p>send() 的两条规则：<b>第一次必须用 next() 启动</b>（首个 yield 前没有接收点，send 无处可塞，会报错）；send(v) 和 next() 一样返回下一个 yield 抛出的值——区别只是 next() 塞的是 None，send(v) 塞的是你指定的值。</p>
+
+<details><summary>展开：send() 双向通信时序图</summary>
+<div class="inner">
+<div class="figwrap">
+<div class="figTitle">send()：调用方与生成器双向通信</div>
+<div class="figSub">yield 既是出口（抛出值）也是入口（接收 send 的值）</div>
+<svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="b1-arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+    <marker id="b1-arrY" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e3b341"/>
+    </marker>
+  </defs>
+  <!-- 角色 -->
+  <rect x="80" y="20" width="160" height="42" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+  <text x="160" y="46" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="700">调用方</text>
+  <rect x="480" y="20" width="160" height="42" rx="8" fill="#161b22" stroke="#e3b341" stroke-width="2"/>
+  <text x="560" y="46" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="700">生成器</text>
+  <!-- 生命线 -->
+  <line x1="160" y1="70" x2="160" y2="360" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <line x1="560" y1="70" x2="560" y2="360" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <!-- 消息 -->
+  <line x1="160" y1="100" x2="560" y2="100" stroke="#58a6ff" stroke-width="2" marker-end="url(#b1-arrB)"/>
+  <text x="360" y="92" text-anchor="middle" fill="#58a6ff" font-size="13">① next() 启动</text>
+  <line x1="560" y1="140" x2="160" y2="140" stroke="#e3b341" stroke-width="2" marker-end="url(#b1-arrY)"/>
+  <text x="360" y="132" text-anchor="middle" fill="#e3b341" font-size="13">② yield total=0（暂停）</text>
+  <line x1="160" y1="180" x2="560" y2="180" stroke="#58a6ff" stroke-width="2" marker-end="url(#b1-arrB)"/>
+  <text x="360" y="172" text-anchor="middle" fill="#58a6ff" font-size="13">③ send(10) → 塞回 x=10</text>
+  <line x1="560" y1="220" x2="160" y2="220" stroke="#e3b341" stroke-width="2" marker-end="url(#b1-arrY)"/>
+  <text x="360" y="212" text-anchor="middle" fill="#e3b341" font-size="13">④ total=10，yield 10（暂停）</text>
+  <line x1="160" y1="260" x2="560" y2="260" stroke="#58a6ff" stroke-width="2" marker-end="url(#b1-arrB)"/>
+  <text x="360" y="252" text-anchor="middle" fill="#58a6ff" font-size="13">⑤ send(20) → 塞回 x=20</text>
+  <line x1="560" y1="300" x2="160" y2="300" stroke="#e3b341" stroke-width="2" marker-end="url(#b1-arrY)"/>
+  <text x="360" y="292" text-anchor="middle" fill="#e3b341" font-size="13">⑥ total=30，yield 30（暂停）…循环</text>
+  <text x="360" y="345" text-anchor="middle" fill="#8b949e" font-size="12.5">yield 既是出口也是入口——双向通信达成</text>
+</svg>
+</div>
+</div>
+</details>
+
+<h3 id="b1-ch4-2">4.2 yield from：委托子生成器</h3>
+<p>yield from 让一个生成器<b>把产出职责委托给另一个生成器</b>：</p>
+<pre><code class="language-python"># 不用 yield from：手动逐个转发
+def chain(a, b):
+    for x in a:
+        yield x      # 从 a 取一个，抛给调用方
+    for x in b:
+        yield x
+
+# 用 yield from：直接委托整个子生成器
+def chain(a, b):
+    yield from a     # 把 a 的产出全部转发，a 结束才继续
+    yield from b
+
+list(chain([1, 2], [3, 4]))   # [1, 2, 3, 4]</code></pre>
+<p>它等价于把子生成器的每个值透传出去，但还做了三件手动 for 做不到的事：</p>
+<table>
+<tr><th>yield from 自动做的事</th><th>说明</th></tr>
+<tr><td><b>1 值透传</b></td><td>子生成器的产出直接给调用方</td></tr>
+<tr><td><b>2 send 透传</b></td><td>调用方的 send 塞回子生成器</td></tr>
+<tr><td><b>3 return 透传</b></td><td>子生成器的 return 值成为表达式结果：<code>result = yield from sub</code></td></tr>
+</table>
+<p>手动 for+yield 只能做第 1 件，后两件做不到。验证「return 透传」：</p>
+<pre><code class="language-python">def sub():
+    yield 1
+    yield 2
+    return "done"          # 子生成器的返回值
+
+def outer():
+    result = yield from sub()   # 透传 1、2；sub 结束后 result = "done"
+    print(f"sub 返回: {result}")
+    yield 3                    # sub 结束后 outer 继续
+
+g = outer()
+next(g)   # 1       ← sub 产出，透传给调用方
+next(g)   # 2       ← sub 产出，透传
+next(g)   # 打印 "sub 返回: done"，然后产出 3</code></pre>
+<p>yield from 的价值：<b>把多层生成器串起来时，send 和 return 能穿透中间层直达底层</b>。这是异步编程的基石——await 本质上是增强版的 yield from。</p>
+
+<h3 id="b1-ch4-3">4.3 三件套与准协程</h3>
+<pre><code class="language-python">g = accumulator()
+next(g)              # 启动
+
+g.send(10)           # 塞值进去（数据通道）
+g.throw(ValueError)  # 在 yield 处抛异常，生成器内可 try/except 捕获
+g.close()            # 在 yield 处抛 GeneratorExit，生成器收尾退出</code></pre>
+<p>throw 让调用方能往生成器<b>注入异常</b>，close 通知生成器<b>终止</b>。三个方法让生成器从「被动产出器」变成「能接收值、能被注入异常、能被通知终止的<b>受控执行体</b>」——这就是协程的雏形。</p>
+<p>把 send + yield from 拼起来，一个能接收数据、能委托的「准协程」：</p>
+<pre><code class="language-python">def sub_accumulator():
+    """子生成器：累加，send 进来的数加到 total"""
+    total = 0
+    while True:
+        x = yield total      # 抛出 total，暂停等 send
+        if x is None:        # None 表示结束信号
+            return total     # 返回累加结果
+        total += x
+
+def main():
+    result = yield from sub_accumulator()   # 委托，sub 的 return 值传给 result
+    print(f"最终: {result}")
+
+g = main()
+next(g)         # 启动，sub 跑到 yield，返回 total=0
+g.send(10)      # 10  ← sub 收到 10，total=10
+g.send(20)      # 30
+g.send(None)    # 打印 "最终: 30"，sub return 30 传给 result</code></pre>
+<p>整个链条：调用方 send → 外层 yield from 透传 → 子生成器收到并处理 → 子 return → 外层 result 接住。<b>外层只做「接线」，真正干活的是子生成器。</b></p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：生成器怎么变协程</div>
+<p><b>30 秒版：</b>生成器本来只产出；PEP 342 加了 send/throw/close——send 把值塞回 yield 表达式，实现双向通信；PEP 380 加了 yield from——委托子生成器并透传产出、send、return。三者合起来，生成器成了能暂停恢复、能双向通信、能受控终止的执行体，就是协程雏形；async/await 底层就是这套协议。</p>
+<p><b>2 分钟版：</b>按演化讲：先讲 yield 单向产出（暂停-恢复），再讲 x = yield value 双向版（send 塞值、首次必须 next 启动、next 就是 send(None)），再讲 yield from 三件透传（值、send、return）——手动 for 只能做第一件。举例 accumulator：send(10) → total=10 → yield 10。最后收在 send/throw/close 三件套：这是「受控执行体」的完整协议，原生协程对象至今沿用同一套 send/throw/close，只是挂起点从 yield 换成了 await。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch5">
+<h2>第 5 章 · async/await：从生成器协程到原生协程<span class="tag">P0 高频考点</span></h2>
+
+<h3 id="b1-ch5-1">5.1 三个常见误解修正</h3>
+<p>学习者的类比（async=子生成器用 yield 收参数，await=外部调用 send 传参数）<b>骨架对，三处要修</b>——这三处正是面试的区分点：</p>
+<table>
+<tr><th>误解</th><th>修正</th></tr>
+<tr><td>「async 用 yield 接收参数干活」</td><td>这条通道 asyncio <b>压根不用</b>：send 的永远是 None，只是「继续跑」的信号；原生协程里写 yield 会变成异步生成器（另一个东西）</td></tr>
+<tr><td>「await 时传入参数」</td><td>方向反了：<b>await 是等结果</b>。值走 yield from 的 <b>return 透传通道</b>（见下方 Future.__await__）</td></tr>
+<tr><td>「我的代码驱动协程」</td><td>驱动者是<b>事件循环</b>：唤醒、传值、抛异常全是循环和 Task 干的，你的代码只负责写 await</td></tr>
+</table>
+
+<pre><code class="language-python"># Future.__await__ 的真身（简化）——值走 return 通道的铁证
+def __await__(self):
+    if not self.done():
+        yield self           # 把 Future 抛给 Task：我还没好，先挂起
+    return self.result()    # 值从这里 return，沿 await 链一路上传</code></pre>
+
+<h3 id="b1-ch5-2">5.2 状态总账房：Future / Task / 事件循环</h3>
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：取餐叫号屏、一桌的总账、总调度台</div>
+<p><b>Future 是一次性的取餐叫号屏</b>：PENDING → FINISHED（记 result 或 exception）/ CANCELLED，一个屏管一件事。<b>Task 是一整桌的总账本</b>：包住一条协程负责驱动，协程抛的异常记在 Task 身上，没人取才在 GC 时打警告。<b>事件循环是总调度台</b>：管三本账——就绪队列（谁该跑了）、定时器堆（何时该跑）、selector（I/O 好了没）。</p>
+</div>
+
+<h3 id="b1-ch5-3">5.3 跟一个 await 走完一圈（六步）</h3>
+<ol>
+<li><code>Task.__step</code> 调 <code>coro.send(None)</code>，协程跑到 <code>await fut</code>；</li>
+<li><code>fut</code> 未完成：Task 把自己挂到 fut 的完成回调上，控制权还给循环；</li>
+<li>循环去跑别的就绪任务，或用 <code>selector.select(timeout)</code> 等 I/O——<b>单线程的「同时」就发生在这里</b>；</li>
+<li>I/O 就绪：回调调 <code>fut.set_result(数据)</code>，顺手把 Task.__step 重新排进就绪队列；</li>
+<li>轮到它：<code>coro.send(None)</code> 恢复，Future.__await__ 里 <code>return self.result()</code>，值沿 await 链上传；</li>
+<li>协程继续跑到下一个 await，或结束（<code>StopIteration.value</code> 成为 Task 的结果）。</li>
+</ol>
+<p>「谁成功谁失败」的用户出口：</p>
+<pre><code class="language-python">results = await asyncio.gather(fetch_a(), fetch_b())   # 全成功给结果列表；一个失败立刻抛
+
+async with asyncio.TaskGroup() as tg:                   # 3.11+：一个失败 → 取消其余 → 抛 ExceptionGroup
+    tg.create_task(fetch_a())
+    tg.create_task(fetch_b())</code></pre>
+<p><b>真正实现并发的杠杆是 create_task</b>：<code>await job()</code> 是顺序（当场跑完才继续），<code>create_task(job())</code> 才是把协程注册给循环、让它和别的任务交错跑。单线程并发 = 在 await 点之间来回切换，把 I/O 等待时间让给别人——<b>I/O 密集赚翻，CPU 密集不加速（GIL 还在）</b>。</p>
+
+<h3 id="b1-ch5-4">5.4 演化时间线：为什么会分家</h3>
+<table>
+<tr><th>版本 · 年份</th><th>里程碑</th><th>意义</th></tr>
+<tr><td>2.2 · 2001</td><td>PEP 255 <code>yield</code></td><td>生成器：惰性迭代</td></tr>
+<tr><td>2.5 · 2006</td><td>PEP 342 <code>send/throw</code></td><td>生成器升格协程</td></tr>
+<tr><td>3.3 · 2012</td><td>PEP 380 <code>yield from</code></td><td>委托 + return 透传</td></tr>
+<tr><td>3.4 · 2014</td><td>asyncio + <code>@coroutine</code></td><td>生成器协程写异步的官方库</td></tr>
+<tr><td>3.5 · 2015</td><td>PEP 492 <code>async/await</code></td><td><b>原生协程，与生成器语法分家</b></td></tr>
+<tr><td>3.6</td><td>PEP 525 异步生成器</td><td>async for 补全生态</td></tr>
+<tr><td>3.7</td><td>asyncio.run</td><td>高层 API 定型</td></tr>
+<tr><td>3.11 · 2022</td><td>TaskGroup、性能翻倍</td><td>结构化并发</td></tr>
+</table>
+<p>分家原因一句话：生成器协程里 yield 一身二职（数据通道 + 挂起点），写错不报错；原生协程把挂起收窄成 await、await 只能接 awaitable，错误在定义期就暴露。<b>机制没换</b>（还是那套挂起帧、还是 send/throw/close 协议），<b>语义收紧了</b>。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：async/await 与生成器的关系</div>
+<p><b>30 秒版：</b>async/await 是生成器协程的语法分家：机制同源（协程对象一样有 send/throw/close，一样靠挂起帧暂停恢复，await ≈ yield from），但 asyncio 里 send 永远传 None（只是唤醒信号），数据走 Future.__await__ 的 return 通道上传；驱动者是事件循环，不是用户代码。</p>
+<p><b>2 分钟版：</b>先讲同源：PEP 342/380 让生成器有了双向通信和委托透传，3.4 时代用 @coroutine + yield from 写异步；3.5 分家出 async/await，原因是 yield 一身二职容易写错、且错误只在运行时暴露，原生协程把挂起点收窄为 await、定义期就检查 awaitable。再讲三条通道：唤醒通道 send(None)；数据通道 Future.result() 沿 await 链 return 上传；异常通道 task.cancel() → coro.throw(CancelledError)。最后讲杠杆：await 本身不产生并发，create_task 把协程注册给循环才产生交错——单线程并发发生在 select 等待的那一觉里。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch6">
+<h2>第 6 章 · 事件循环与 selector：摸到内核门口<span class="tag">P0 高频考点</span></h2>
+
+<h3 id="b1-ch6-1">6.1 协程是惰性的：没有循环它根本不跑</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「原来 await 是顺序的，只有加入了事件循环，它才是一个并发的。没有事件循环它也还是阻塞呗。」</p>
+</div>
+<p>比阻塞更彻底：<b>协程对象是惰性的，根本不会跑</b>。<code>async def</code> 函数被调用只产出协程对象，一行代码都不执行，直到被 send() 驱动；asyncio.run() 的第一件事就是建循环。所以并发公式是：<b>多任务 + 一个调度器</b>，async/await 只贡献「挂起点」这个原材料，本身不给并发。</p>
+
+<h3 id="b1-ch6-2">6.2 迷你事件循环：三个部件</h3>
+<p>手写一个 60 行的循环（不用 asyncio），核心就三个部件，对照 asyncio 内部：</p>
+<table>
+<tr><th>迷你循环</th><th>asyncio 里对应</th><th>作用</th></tr>
+<tr><td><code>ready</code> 双端队列</td><td><code>loop._ready</code></td><td>就绪队列：下一个该跑的协程在这排队</td></tr>
+<tr><td><code>timers</code> 定时器堆</td><td><code>loop._scheduled</code></td><td>闹钟堆：(唤醒时刻, 协程)</td></tr>
+<tr><td><code>coro.send(value)</code></td><td>Task 里的 coro.send(None)</td><td>驱动协程跑到下一个挂起点</td></tr>
+<tr><td><code>StopIteration.value</code></td><td>Task 的结果</td><td>协程 return 的值从这里捞出来</td></tr>
+<tr><td><code>yield ("sleep", t)</code></td><td><code>await asyncio.sleep(t)</code></td><td>挂起时向循环递交「我要睡多久」</td></tr>
+<tr><td>（没实现）</td><td><code>selector</code>（epoll）</td><td>真实循环多这一样：I/O 就绪时叫醒任务</td></tr>
+</table>
+
+<pre><code class="language-python">while ready or timers:                  # 还有活干就转
+    if not ready:                       # 没人可跑 → 睡到最近的闹钟响
+        wake_at, _, coro = heapq.heappop(timers)
+        time.sleep(max(0, wake_at - time.monotonic()))
+        ready.append((coro, None))
+        continue
+
+    coro, value = ready.popleft()
+    try:
+        request = coro.send(value)      # 驱动协程，直到下一个挂起点
+    except StopIteration as e:          # 跑完了
+        results[coro] = e.value         # return 值捞出来
+        continue
+
+    if request[0] == "sleep":           # 协程请求睡觉 → 上闹钟
+        heapq.heappush(timers, (time.monotonic() + request[1], next(tick), coro))</code></pre>
+
+<p>当时对真实 asyncio 流程的复述被打分 90 分，被修正的三处细节（也是面试易错点）：</p>
+<table>
+<tr><th>易错说法</th><th>修正</th></tr>
+<tr><td>「小顶堆，先执行时间短的任务」</td><td>堆确实是小顶堆，但按<b>到期时刻</b>排，不是任务时长——弹出的永远是「下一个该响的闹钟」</td></tr>
+<tr><td>「循环最后一步把 socket 交给 selector」</td><td>注册发生在<b>协程请求等待的那一刻</b>（request 分支里）；select() 调用发生在<b>没人可跑时</b>——两件事时机不同</td></tr>
+<tr><td>「操作系统和程序实时通信」</td><td>OS 不推送，是程序<b>主动问</b>：select/epoll_wait 阻塞等待，OS 只在被问时回答「哪些 fd 就绪了」</td></tr>
+</table>
+<p>「没有任务了就等着呗」——对，但分三种情况：ready 空但 timers/I/O 有货 → 阻塞在<b>唯一的等待点</b>等最近的事件（真实 asyncio 里 <code>select(timeout=距最近闹钟)</code>，I/O 和定时器共用这一个等待点）；全空 → while 条件不成立，循环退出收尾；有人不挂起（纯 CPU 循环）→ 单线程被独占，别人全卡住——<b>协作式调度的代价</b>。</p>
+
+<h3 id="b1-ch6-3">6.3 selector：外包给操作系统的监控台</h3>
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：外包监控台</div>
+<p>selector 是「<b>外包给操作系统的监控台</b>」——你把一堆 socket 登记给它，然后在一个地方睡觉，OS 谁就绪了就叫醒你并告诉你「是哪几个」。没有它，单线程想同时等 3 个连接，只能挨个 recv 试试（忙轮询烧 CPU）或者一个连接开一个线程（1000 连接就是 1000 线程）。它就是「<b>一个线程 + 一次等待 + N 个连接</b>」的那个开关。</p>
+</div>
+<p>三个动作对到代码就是三行：</p>
+<ul>
+<li>请求分支里 <code>sel.register(target, EVENT_READ, data=coro)</code>——登记，顺手把协程当包裹存进 data 字段；</li>
+<li>等待区 <code>sel.select(timeout)</code>——全脚本唯一一次真正的睡觉；</li>
+<li>醒来后 <code>sel.unregister</code> + <code>key.data</code> 取回协程塞回 ready。</li>
+</ul>
+<p><b>关键道具是 data 字段</b>：登记时把协程存在登记簿上，fd 就绪时从登记簿上把协程领回来——这就是 asyncio 里「Future.set_result 的完成回调把任务排回就绪队列」的迷你版。</p>
+
+<p>任务 A 的完整闭环（六步对应六行代码）：</p>
+<ol>
+<li><code>coro.send(None)</code> 跑到 <code>yield from wait_read(r_A)</code>，把 <code>("read", r_A)</code> 抛给循环——协程挂起，<b>它自己不碰 selector，只递申请单</b>；</li>
+<li>循环在 request 分支里 <code>sel.register(r_A, EVENT_READ, data=coro_A)</code>——fd 进登记簿，协程存进 data；</li>
+<li>ready 空了，循环算出 <code>timeout = 0.30 - now = 0.15</code>（距最近闹钟），调 <code>sel.select(0.15)</code>——<b>线程在这里睡着，这一觉同时等两件事：3 个 fd 谁可读、闹钟响</b>；</li>
+<li>t=0.20 后台线程 sendall，内核把 r_A 标记可读，select 立刻醒来返回 <code>[(key_A, ...)]</code>——<b>是 OS 叫醒的，不是我们轮询发现的</b>；</li>
+<li><code>sel.unregister(r_A)</code>（一次性，用完即注销），<code>key_A.data</code> 领回 coro_A，塞进 ready；</li>
+<li>下一轮 <code>coro_A.send(None)</code>，从 yield 处恢复，<code>recv(1024)</code> 拿到数据（fd 已被担保可读，绝不阻塞），函数 return，StopIteration.value 进 results。</li>
+</ol>
+
+<table>
+<tr><th>方案</th><th>等待方式</th><th>代价</th></tr>
+<tr><td>阻塞式 + 每连接一线程</td><td>每个线程各自阻塞在 recv</td><td>1000 连接 = 1000 线程，切换和内存开销爆炸</td></tr>
+<tr><td>非阻塞式 + 轮询</td><td>挨个 recv 试，设非阻塞</td><td>CPU 空转，大部分试读是白试</td></tr>
+<tr><td><b>selector（多路复用）</b></td><td><b>登记后睡一觉，OS 叫醒</b></td><td><b>1 线程 1 等待点，N 连接随便挂</b></td></tr>
+</table>
+
+<h3 id="b1-ch6-4">6.4 fd：内核发的取件号；epoll 比 select 强在哪</h3>
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：取件号</div>
+<p>fd（file descriptor）= 内核发给每个 I/O 资源的<b>取件号</b>，一个小整数：socket 是 3 号、文件是 5 号，管道、终端都有号——Unix「一切皆文件」的落地。Python 的 socket 对象只是包装纸，sel.register 真正登记进内核的是 fileno() 那个数字。</p>
+</div>
+<p>顺带三个高频小问题：</p>
+<ul>
+<li><b>recv(1024) 是什么、为什么 1024？</b>recv 就是「取件」：把内核替你存在接收缓冲区里的字节搬进 Python 内存；1024 是<b>这一次最多取多少字节</b>的缓冲区大小，纯属习惯值。recv 返回「现在有的」，可能少于 1024——发了 7 字节就还你 7 字节；10MB 大文件得循环拼到够数为止。它平时是阻塞调用，但醒来时内核已担保可读，所以必不阻塞——「先确认就绪、再动手」。</li>
+<li><b>OS 不知道协程的存在</b>：ready 队列和 timers 堆是循环自己的账本；selector 登记簿是「循环写入、内核盯梢」；OS 只认 fd，叫醒到 fd 就收工。「fd → 协程」的换算是循环用 key.data 自己做的。</li>
+<li><b>模拟实验里的角色分配</b>：socketpair() 造一对互通的真 socket——写端 w 给后台线程（扮演「0.2 秒后才回包的假服务器」），读端 r 给事件循环登记进 selector；中间隔的是<b>真内核</b>：sendall 的字节由内核搬进 r 的接收缓冲区并标记可读、叫醒 select。内核侧机制和真实网络通信一字不差。</li>
+</ul>
+<p><b>epoll 强在哪</b>：老 select 每次调用都要把全部 fd 拷进内核再挨个扫一遍；epoll 在内核里<b>常驻一份就绪清单</b>，返回的直接就是就绪的那几个——fd 一多差距就爆炸。DefaultSelector 自动挑当前系统最强的实现：Linux 是 epoll，macOS 是 kqueue，兜底才是老家伙 select。</p>
+
+<h3 id="b1-ch6-5">6.5 「不还是 for 循环去问吗？」——select 睡等 vs 轮询</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「while ready or timers or sel.get_map(): … for key, _ in sel.select(timeout): … 可是这里不还是 for 循环去问吗？」</p>
+</div>
+<p>不是。这个 for <b>不问任何东西</b>——等待发生在 sel.select(timeout) 这一次调用的<b>内部</b>，for 只是在拆它醒来后交回来的返回值列表。实测数据说话：同样等 0.5 秒，select 只花了 <b>0.146 毫秒</b> CPU（线程真在睡），轮询烧掉 <b>0.5 秒</b> CPU、空转了 <b>567,650 次</b>。</p>
+<table>
+<tr><th>片段</th><th>发生什么</th><th>问 OS 几次</th></tr>
+<tr><td><code>sel.select(timeout)</code></td><td><b>一次系统调用</b>：问一遍「谁就绪了？」然后线程挂起，数据到达或闹钟到点才返回</td><td>问 1 次，睡到底</td></tr>
+<tr><td>返回值 <code>[(key_A, ...)]</code></td><td>一个<b>普通 Python 列表</b>，通常 0~2 项</td><td>0 次</td></tr>
+<tr><td><code>for key, _ in ...</code></td><td>遍历上面这个列表，逐项拆包</td><td>0 次，纯内存操作</td></tr>
+</table>
+<p>两个循环也别混：<b>外层 while 是调度循环</b>，一圈代表「处理一批就绪事件 + 跑一轮协程」，节奏是「问一次 → 睡 → 醒 → 干活」慢慢转；「每秒问一百万次」的那种 <code>while True</code> 才叫轮询。睡觉发生在括号里，for 发生在睡醒后。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：事件循环的工作原理</div>
+<p><b>30 秒版：</b>事件循环是个 while 调度循环，管三个结构：就绪队列（待驱动的协程）、定时器堆（按到期时刻排的小顶堆）、selector 登记簿（fd → 协程）。协程在挂起点递交申请（睡多久/等哪个 fd），循环驱动其他任务；没人可跑时阻塞在唯一等待点 select(timeout)，被 OS 或闹钟叫醒后把就绪协程塞回队列。单线程并发就发生在这场重叠的等待里。</p>
+<p><b>2 分钟版：</b>先纠正两个常见误区：协程是惰性的，async def 调用只产出对象、不执行代码，必须被循环 send(None) 驱动——所以「多任务 + 调度器」才等于并发；等待不是轮询，select 是一次系统调用内部挂起，被 OS 主动叫醒，for 只是拆返回值。再讲数据流六步：协程 yield 申请单 → 循环 register(fd, data=coro) → 循环睡在 select(timeout) → OS 标记可读并叫醒 → key.data 换回协程塞回 ready → send(None) 恢复、recv 取件、StopIteration 收结果。最后补协作式调度的代价：谁不挂起谁独占线程，CPU 密集任务会把别人全卡住——所以 asyncio 只适合 I/O 密集。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-ch7">
+<h2>第 7 章 · Python 是编译型还是解释型？<span class="tag">P0 经典问题</span></h2>
+
+<p>经典疑问：「教程说 Python 是解释型语言，Java 是编译为字节码然后由虚拟机运行——到底哪个对？」</p>
+<p><b>结论：两种说法各对一半。机制上 Python 和 Java 是同一种东西</b>：源码 → 编译成字节码 → 虚拟机执行。教程没讲错运行机制，错在分类标签——「解释型」是历史遗留的简化叫法。真正的区别不在「有没有编译」，而在<b>编译发生在什么时候、编译产物给谁看</b>。</p>
+
+<h3 id="b1-ch7-1">7.1 三个可以亲手跑的铁证</h3>
+<pre><code class="language-python"># 证据一：编译阶段真实存在，且在执行前完成
+# compile() 一行代码都没执行，但看常量表：
+import dis
+code = compile("y = 1 + 2 * 3", "<test>", "exec")
+print(code.co_consts)   # (7,)  ← 1 + 2*3 这道算术在「编译期」就算完了（常量折叠）！
+dis.dis(code)           # 只有 LOAD_CONST 7 / STORE_NAME y —— 运行时直接取结果
+
+code2 = compile("z = a + 1", "<test>", "exec")
+print(code2.co_consts)  # (1,)  ← a 是变量，没法折叠，保留 BINARY_ADD 指令等运行时再算
+# 同一门语言里，有的计算编译期完成、有的留到运行时——「存在编译阶段」的铁证</code></pre>
+<pre><code class="language-python"># 证据二：虚拟机吃的是字节码，不是源码
+# 用 py_compile 生成 .pyc 后删掉 victim.py，直接跑 .pyc 照样出结果
+# —— 和「删掉 .java 只留 .class，java 命令照样能跑」是一模一样的事
+
+# 证据三：编译时机是「加载时」，且只缓存被导入的模块
+# cached_mod.py 当主脚本跑，不生成 __pycache__；
+# 被 import 后立刻生成 .pyc —— 主脚本每次在内存里现编译，导入的模块才落盘复用</code></pre>
+
+<h3 id="b1-ch7-2">7.2 CPython 和 JVM 到底差在哪</h3>
+<table>
+<tr><th>维度</th><th>CPython</th><th>Java (JVM)</th></tr>
+<tr><td>源码→字节码</td><td><b>加载时隐式编译</b>，用户无感</td><td><b>运行前显式 javac</b>，独立步骤</td></tr>
+<tr><td>产物</td><td>内存里的 code object；仅导入模块落盘 .pyc</td><td>.class 文件，正经构建产物</td></tr>
+<tr><td>分发形态</td><td>分发<b>源码</b> .py</td><td>分发<b>字节码</b> .class/.jar</td></tr>
+<tr><td>编译期检查</td><td>几乎没有：名字、类型都留到运行时才发现</td><td>强类型检查，大量错误编译期拦截</td></tr>
+<tr><td>VM 执行策略</td><td>逐条解释字节码（3.13 起有实验性 JIT，默认不开）</td><td>HotSpot：解释器起步 + 分层 JIT，热点编译成机器码</td></tr>
+<tr><td>字节码形态</td><td>栈式虚拟机</td><td>栈式虚拟机（这点两家一样）</td></tr>
+</table>
+<p>一句话概括：<b>Java 把编译做成看得见的工序，Python 把编译藏进加载的瞬间</b>。用户感知差异太大，于是各自得了不同的标签。而「.pyc 是编译的证据」这个常见说法也不准确——<b>.pyc 只是缓存，真正的编译每次都在，只是主脚本的那份不落盘</b>。</p>
+<p>为什么教程还叫 Python「解释型」？四个原因叠出来的印象：有 REPL（敲一行跑一行，体验上纯解释）；没有可见的编译命令（对比 javac）；生态分发的是源码不是字节码；谱系上被归进「脚本语言」家族。这些感知都对，但都推不出「没有编译阶段」——常量折叠就推翻了它。</p>
+
+<p>放到完整光谱里看更清楚：</p>
+<table>
+<tr><th>执行模型</th><th>代表</th><th>路径</th></tr>
+<tr><td>编译成本地机器码</td><td>C / Rust / Go</td><td>源码 → 机器码 → CPU 直接执行</td></tr>
+<tr><td>字节码 + JIT</td><td>Java / C#</td><td>源码 → 字节码 → VM 解释 + 热点编译</td></tr>
+<tr><td>字节码 + 纯解释</td><td><b>CPython</b></td><td>源码 → 字节码 → VM 逐条执行</td></tr>
+<tr><td>直接遍历 AST</td><td>Ruby 1.8 时代</td><td>源码 → AST → 走树求值（连字节码都没有）</td></tr>
+</table>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：Python 是编译型还是解释型？</div>
+<p><b>30 秒版：</b>准确说是「编译为字节码、由虚拟机解释执行」——和 Java 同构，只是把编译藏进了加载瞬间。证据：compile() 不执行代码但常量表里已有常量折叠的结果（1+2*3 变成 7）；删掉 .py 直接跑 .pyc 照样工作；主脚本不生成 .pyc、被 import 的模块才落盘缓存。</p>
+<p><b>2 分钟版：</b>先给结论再上三个证据：一、常量折叠——纯常量算术在编译期完成，变量运算保留 BINARY_ADD 到运行时，说明存在真实的编译阶段；二、.pyc 可独立执行，说明 VM 吃的是字节码不是源码；三、编译时机是加载时、隐式、只缓存导入模块——.pyc 是缓存不是「编译的证据」。然后对比 JVM：javac 显式独立、强类型编译期检查、HotSpot 有分层 JIT；CPython 隐式无感、几乎无编译期检查、逐条解释（3.13 才有实验性 JIT）。最后一句定位：它不是「没有编译的解释型」，是「藏起编译的字节码+纯解释」。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-appA">
+<h2>附录 A · 比喻词典<span class="tag">口试时的表达弹药</span></h2>
+<table>
+<tr><th>术语</th><th>比喻</th><th>一句话展开</th></tr>
+<tr><td>MRO</td><td>族谱排好的队伍</td><td>自己在队头，爸爸们按声明顺序排第二排，object 永远垫底；找方法从队头往队尾问，第一个应答的成交</td></tr>
+<tr><td>super()</td><td>沿队伍传话</td><td>不是「传给爸爸」，是传给队伍里的下一位——下一位是谁由实例的 MRO 决定</td></tr>
+<tr><td>__dict__</td><td>口袋与祠堂</td><td>实例仓库是随身口袋，类仓库是全村共用的祠堂；找东西先掏口袋再巡祠堂，放新东西只进口袋</td></tr>
+<tr><td>ob_type</td><td>行为说明书</td><td>对象一切动态行为的依据；type() 判断只是看封面，方法派发和运算符分派才是每行都在用的</td></tr>
+<tr><td>魔术方法</td><td>钩子</td><td>你写语法，Python 替你调：len() 触 __len__、+ 触 __add__；不写语法它不出现</td></tr>
+<tr><td>魔术属性</td><td>数据兄弟</td><td>__dict__/__mro__/__closure__ 是安静挂着的账本仓库，要你主动去读；判别法 callable()</td></tr>
+<tr><td>send()</td><td>双向传菜</td><td>yield 之前只往外传菜；send 让外面往回递纸条，塞进 yield 表达式赋给 x</td></tr>
+<tr><td>yield from</td><td>接线员</td><td>外层只接线：产出、纸条（send）、结算单（return）三样全部透传，直达底层</td></tr>
+<tr><td>Future</td><td>取餐叫号屏</td><td>一次性占位符：PENDING → FINISHED/CANCELLED，一个屏管一件事</td></tr>
+<tr><td>Task</td><td>一桌的总账本</td><td>包住一条协程负责驱动，整条协程的成败都记在这本账上</td></tr>
+<tr><td>事件循环</td><td>总调度台三本账</td><td>就绪队列（谁该跑）、定时器堆（何时跑）、selector（I/O 好了没）</td></tr>
+<tr><td>timers 堆</td><td>闹钟堆</td><td>小顶堆但按到期时刻排——弹出的永远是下一个该响的闹钟，不管任务跑多久</td></tr>
+<tr><td>selector</td><td>外包监控台</td><td>把一堆 socket 登记给 OS，在一个地方睡觉，OS 谁就绪叫醒谁并报上名来</td></tr>
+<tr><td>fd</td><td>取件号</td><td>内核发给每个 I/O 资源的小整数编号，socket/文件/管道统统用它</td></tr>
+<tr><td>recv</td><td>取件</td><td>从内核接收缓冲区搬字节进 Python 内存；1024 只是单次上限的习惯值</td></tr>
+<tr><td>epoll vs select</td><td>常驻清单 vs 全量重扫</td><td>epoll 在内核里留就绪清单、直接返回就绪的那几个；老 select 每次全量拷进内核挨个扫</td></tr>
+<tr><td>.pyc</td><td>缓存不是证据</td><td>它只是导入模块的落盘缓存；真正的编译每次都在，主脚本那份不落盘</td></tr>
+<tr><td>常量折叠</td><td>编译期就把算术做完</td><td>1+2*3 在字节码里已经是 7——编译阶段存在的铁证</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-appB">
+<h2>附录 B · 面试速答卡<span class="tag">考前 10 分钟过一遍</span></h2>
+<table>
+<tr><th>考题</th><th>速答（30 秒版）</th></tr>
+<tr><td><b>Q1 MRO 是什么？super() 跳到哪？</b></td><td>MRO 是 C3 线性化的方法查找顺序（子类在前/声明顺序/去重）；super() 跳到实例类 MRO 的下一位，不是「父类」——落点由实例决定</td></tr>
+<tr><td><b>Q2 __dict__ 是什么？和类属性什么关系？</b></td><td>对象的属性仓库。实例库存实例属性，类库存类属性和方法；赋值只写实例库（shadow 机制），__slots__ 的类没有 __dict__</td></tr>
+<tr><td><b>Q3 魔术方法和魔术属性的区别？</b></td><td>callable() 判别：方法是语法触发的函数钩子（__add__/__len__）；属性是挂在身上的数据（__dict__/__mro__/__closure__）；后者沿 type(X) 的 MRO 查，描述符在 object/type/FunctionType 三线供应</td></tr>
+<tr><td><b>Q4 生成器怎么变协程？</b></td><td>send 塞值（双向通信，首启必须 next）+ yield from 三透传（值/send/return）+ throw/close 三件套 = 受控执行体；async/await 底层就是这套协议</td></tr>
+<tr><td><b>Q5 await 和 yield from 什么关系？</b></td><td>同源但收紧：await ≈ yield from，但 asyncio 里 send 永远传 None（唤醒信号），数据走 Future.__await__ 的 return 通道，驱动者是事件循环</td></tr>
+<tr><td><b>Q6 事件循环怎么工作？</b></td><td>三结构（ready 队列/定时器堆/selector 登记簿）+ 唯一等待点 select(timeout)；协程惰性必须被驱动；OS 只认 fd 不认协程，key.data 换回协程</td></tr>
+<tr><td><b>Q7 select 是轮询吗？</b></td><td>不是。等待发生在一次系统调用内部（线程挂起被 OS 叫醒）；for 只是拆返回值列表。实测：等 0.5s，select 花 0.146ms CPU，轮询烧 0.5s CPU 空转 56 万次</td></tr>
+<tr><td><b>Q8 Python 编译型还是解释型？</b></td><td>编译为字节码+VM 纯解释，和 Java 同构但编译藏进加载时；证据：常量折叠、.pyc 独立可执行、只有导入模块落盘缓存；区别于 JVM：无显式 javac、无编译期类型检查、无分层 JIT（3.13 才有实验性 JIT）</td></tr>
+<tr><td><b>Q9 asyncio 适合什么场景？</b></td><td>I/O 密集（等待重叠就是并发）；CPU 密集不加速——协作式调度里谁不挂起谁独占线程，GIL 也还在</td></tr>
+<tr><td><b>Q10 await 不 create_task 会怎样？</b></td><td>纯顺序执行，没有并发。await 只是挂起等待；create_task 才把协程注册给循环参与轮转——「多任务+调度器」才等于并发</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="b1-appC">
+<h2>附录 C · 事实核查表<span class="tag">防口误 · 每条都能亲手验证</span></h2>
+<table>
+<tr><th>#</th><th>论断</th><th>验证方式</th></tr>
+<tr><td>1</td><td>MRO 是元组，C3 线性化，D.__mro__ 可查</td><td><code>D.__mro__</code> / <code>D.mro()</code></td></tr>
+<tr><td>2</td><td>super() 落点由实例类决定，同一份代码两个落点</td><td>B().who() 输出 B A，D().who() 输出 B C A（4 类菱形继承示例）</td></tr>
+<tr><td>3</td><td>方法住在类 __dict__，实例 __dict__ 只有数据</td><td><code>p.__dict__</code>、<code>Point.__dict__</code> 对比；'who' in B.__dict__ → True</td></tr>
+<tr><td>4</td><td>类 __dict__ 是只读 mappingproxy</td><td><code>type(Point.__dict__)</code> → mappingproxy</td></tr>
+<tr><td>5</td><td>魔术属性/方法判别：callable()</td><td>callable(d.__dict__) → False；callable(Demo.__init__) → True</td></tr>
+<tr><td>6</td><td>object 不提供 __iter__/__len__/__add__ 默认</td><td>hasattr(object, '__iter__') → False；不写就 TypeError: not iterable</td></tr>
+<tr><td>7</td><td>__mro__ 描述符在 type 身上，__dict__ 描述符注入每个类</td><td>'__mro__' in vars(type)；'__dict__' in vars(Demo) → True（getset_descriptor）</td></tr>
+<tr><td>8</td><td>send 首启必须 next；next 就是 send(None)</td><td>acc.send(10) 未启动 → TypeError: can't send non-None value</td></tr>
+<tr><td>9</td><td>yield from 透传 return 值</td><td>result = yield from sub() → result == "done"（本册 4.2 例）</td></tr>
+<tr><td>10</td><td>asyncio 的 send 只传 None，数据走 return 通道</td><td>读 Future.__await__ 源码：yield self + return self.result()</td></tr>
+<tr><td>11</td><td>协程对象是惰性的，调用 async def 不执行代码</td><td>coro = job() 后无任何输出；asyncio.run 才开始跑</td></tr>
+<tr><td>12</td><td>timers 按到期时刻排，不按任务时长</td><td>读 mini loop：heappush(timers, (wake_at, seq, coro))</td></tr>
+<tr><td>13</td><td>select 是睡等非轮询</td><td>time.process_time 对比：select 0.146ms vs 轮询 0.5s/56.7 万次</td></tr>
+<tr><td>14</td><td>fd 是小整数；register 登记的是 fileno()</td><td>print(sock.fileno()) → 3、4、5；sel.get_map() 看登记簿</td></tr>
+<tr><td>15</td><td>recv 返回「现在有的」，可能少于 1024</td><td>发 7 字节 recv(1024) 得 7 字节</td></tr>
+<tr><td>16</td><td>编译阶段存在：常量折叠</td><td>compile("y=1+2*3").co_consts → (7,)</td></tr>
+<tr><td>17</td><td>.pyc 可独立执行，VM 吃字节码</td><td>删 victim.py，python victim.cpython-310.pyc 照跑</td></tr>
+<tr><td>18</td><td>只有被 import 的模块落盘 .pyc</td><td>主脚本跑完无 __pycache__，import 后立即出现</td></tr>
+</table>
+<p class="small">生成于 2026-10-20 · 整理自真实学习会话 · 第一册（架构与内存模型）完</p>
+</section>
+
+
+<!-- ================= 第二册 · 面向对象编程 ================= -->
+
+
+<h1 id="b2-top">Python 八股教程书 · 第二册<br><small>面向对象编程：从三大支柱到组合、Mixin 与依赖注入</small></h1>
+<p class="lead">本册源自一次「自查→补缺」的真实学习：先是一份从头到尾的 OOP 梳理，随之自陈三个缺口——<b>场景思维不够、魔术方法不懂、ABC/元类不了解</b>。整册内容就沿着这三个缺口的补齐路线展开。带 <span style="color:var(--carol)">🧑‍🎓 追问</span> 标记的框是当时的原话提问，它们就是面试官的追问剧本。</p>
+
+<!-- ================================================================ -->
+<section id="b2-pre">
+<h2>序章 · 从一份自陈缺口讲起<span class="tag">阅读指南</span></h2>
+<p>先看这份梳理里被<b>证实正确</b>的部分：</p>
+<ul>
+<li>类是抽象范式、对象是实体；</li>
+<li>封装 = 隐藏实现细节、暴露简单接口；</li>
+<li>顶级父类 object，静态方法不传类本身、类方法传——都对。</li>
+</ul>
+<p>然后是三个缺口，对应本册三章的「为什么」：</p>
+<table>
+<tr><th>自陈缺口</th><th>补齐章节</th><th>核心钥匙</th></tr>
+<tr><td>场景思维不够（扑克游戏想成了一堆继承）</td><td>第 3、7 章</td><td><b>组合优于继承</b>（has-a 而非 is-a）+ 魔术方法让对象吃 Python 原生语法</td></tr>
+<tr><td>魔术方法不懂、没怎么用过</td><td>第 3 章</td><td><b>按协议背</b>，不按方法名背：每个协议配一个扑克用例</td></tr>
+<tr><td>ABC / metaclass 不了解</td><td>第 6 章</td><td><b>type 是造类的类</b>；ABCMeta 在 __call__ 里强制扫 abstractmethod</td></tr>
+</table>
+<p>主线一句话：<b>你已经掌握了 OOP 的「是什么」，缺的是「Python 式地怎么用」——而那把钥匙是协议（魔术方法）+ 组合，不是更深的继承树。</b></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch1">
+<h2>第 1 章 · 类、对象与封装<span class="tag">P1 基础但藏考点</span></h2>
+
+<h3 id="b2-ch1-1">1.1 类与对象的分工</h3>
+<p>类是从一堆对象/实体中<b>抽取公共部分</b>形成的范式（属性 + 方法）；对象是实际的实体，拥有类的属性和方法，<b>还可以自己升级改造</b>（动态语言特色）。这条主线引出两个深入方向：可见性（封装的强度）和动态性（改造的自由度）。</p>
+
+<h3 id="b2-ch1-2">1.2 可见性与名称改写：Python 没有"真的私有"</h3>
+<p>梳理里说"私有双下划线、保护单下划线"——但停在表面。背后还有一层：<b>名称改写（name mangling）</b>。</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：__x 会被改名</div>
+<p><code>__x</code> 不是"真的私有"——解释器把它改名为 <code>_ClassName__x</code>，外面仍能 <code>obj._Student__name</code> 访问到。单下划线 <code>_x</code> 则连改名都没有，纯靠自觉。Python 没有真正的 private，这是 <b>"consenting adults"（成年人的约定）哲学</b>：约定优先于强制。</p>
+</div>
+<div class="box counter"><div class="boxTitle">⛔ 面试反例：说"Python 私有属性外面访问不到"</div>
+<p>错。双下划线触发的只是名称改写：外界用 <code>obj._ClassName__attr</code> 照样读写。它的设计目的更多是<b>避免子类意外覆盖</b>，而不是防外访问。说"Python 没有真私有，只有约定"才是加分答案。</p>
+</div>
+
+<h3 id="b2-ch1-3">1.3 动态属性与 __slots__</h3>
+<p>Python 是动态语言：运行时可以改变结构——新函数、新属性可以引进，已有的可以删除。落到对象上就是两件事：</p>
+<pre><code class="language-python">class Student: pass
+
+s = Student()
+s.name = "trae"        # (a) 动态添加：实例化之后，"点属性=值"随时能加
+
+class Strict:
+    __slots__ = ("name", "score")   # (b) 限制动态添加：只允许这两个属性
+    # __slots__ 让实例不再有 __dict__，属性存固定槽位
+    # —— 顺带省掉"每个实例一个字典"的内存开销（大规模对象的常规优化）
+
+t = Strict()
+t.name = "ok"           # ✓ 在白名单里
+t.age = 18              # ❌ AttributeError: 'Strict' object has no attribute 'age'</code></pre>
+<p>面试常把两者串着问：<b>__slots__ 的一石二鸟</b>——既限制动态添加（白名单），又省内存（没有 __dict__，存固定槽位）。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：Python 的"私有"和 __slots__</div>
+<p><b>30 秒版：</b>双下划线触发名称改写（__x → _ClassName__x），不是真私有——Python 的哲学是约定优先于强制（consenting adults）。__slots__ 做两件事：声明属性白名单禁止动态添加，同时去掉实例 __dict__ 换固定槽位省内存。</p>
+<p><b>2 分钟版：</b>展开三点：一，name mangling 的主要目的其实是防止子类无意覆盖父类内部属性，而不是访问控制；单下划线纯约定、连改名都没有；两种都拦不住真想访问的人。二，__slots__ 的机制：类定义它后实例没有 __dict__， setattr 走槽位描述符，白名单外直接 AttributeError；继承时注意——子类不定义 __slots__ 会重新长出 __dict__，限制失效。三，动态性本质：Python 实例属性默认存在实例的 __dict__ 里（第一册第 2 章的"口袋"），动态添加就是往口袋里塞新键，__slots__ 相当于把口袋换成固定格子。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch2">
+<h2>第 2 章 · 三种方法与 property<span class="tag">P0 高频考点</span></h2>
+
+<h3 id="b2-ch2-1">2.1 实例方法 / 静态方法 / 类方法</h3>
+<table>
+<tr><th>种类</th><th>装饰器</th><th>第一个参数</th><th>典型用途</th></tr>
+<tr><td><b>实例方法</b></td><td>（无）</td><td>self（实例）</td><td>操作单个对象的状态</td></tr>
+<tr><td><b>类方法</b></td><td>@classmethod</td><td>cls（类本身）</td><td>工厂方法（以另一种方式构造实例）、操作类级状态</td></tr>
+<tr><td><b>静态方法</b></td><td>@staticmethod</td><td>无自动传入</td><td>和类相关但不碰实例/类的工具函数</td></tr>
+</table>
+<p>共同点：类方法和静态方法都可以通过"类名.方法名"调用。区别一句话：<b>类方法会传入类本身，静态方法不会</b>。classmethod 最典型的高频用法是<b>备选构造器</b>（工厂方法）：<code>Card.from_string("♠A")</code>。</p>
+
+<h3 id="b2-ch2-2">2.2 property 四件套：读、写、删，以及"增"不存在</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「property 怎么判断调的是哪个？增删改查」「property 补充代码示例，什么是 setter，正确用法是什么？」</p>
+</div>
+<p>关键认知：property 的回调<b>不看"你写了哪个方法名"，看"你对这个属性做了什么操作"</b>——读、赋值、删除三种语法，分别触发 getter / setter / deleter：</p>
+
+<pre><code class="language-python">class Temperature:
+    def __init__(self, celsius=0):
+        self._c = celsius              # 真实数据放私有字段，property 只是门面
+
+    @property
+    def celsius(self):                 # 查：t.celsius      → getter
+        return self._c
+
+    @celsius.setter                    # 改：t.celsius = 100 → setter（可做校验）
+    def celsius(self, value):
+        if value < -273.15:
+            raise ValueError("低于绝对零度")   # 赋值时校验——setter 的核心价值
+        self._c = value
+
+    @celsius.deleter                   # 删：del t.celsius   → deleter
+    def celsius(self):
+        self._c = 0
+
+    @property
+    def fahrenheit(self):               # 计算属性，只读（没写 setter）
+        return self._c * 9 / 5 + 32</code></pre>
+
+<p>五条铁律：</p>
+<ol>
+<li>真实数据存 <code>_</code> 私有字段（<code>_c</code>），property 是它的<b>门面</b>；</li>
+<li>setter 的方法名必须和 property 同名（都叫 celsius），装饰器写 <code>@celsius.setter</code>，不是 @property.setter；</li>
+<li><b>只读属性 = 只写 @property 不写 setter</b>；再赋值会抛 AttributeError；</li>
+<li>别在 getter 里干重活（每次 t.celsius 都跑一遍 getter，别塞 IO/DB 查询）；</li>
+<li>判断"调的是哪个"就看你做了什么操作：读→getter、赋值→setter、del→deleter。</li>
+</ol>
+
+<div class="box counter"><div class="boxTitle">⛔ "增"对应不到任何回调</div>
+<p>属性在 @property 被定义的那一刻就存在了，运行时无法"新增"一个已被 property 接管的属性——你以为是"增"的 <code>t.celsius = 1</code>，走的是 setter，不是新增。查改删三种操作三种回调，唯独没有"增"的钩子。</p>
+</div>
+
+<h3 id="b2-ch2-3">2.3 描述符：三种方法为什么"能那样用"的统一答案</h3>
+<p>实现 <code>__get__</code>/<code>__set__</code> 的类叫<b>描述符（descriptor）</b>。property 本身就是一个数据描述符（同时实现 __get__ 和 __set__，所以能拦住读写删三种操作）；<b>类方法、静态方法、super() 底层都靠它</b>。这是"property/classmethod 为什么能那样用"的统一答案——也是第一册"魔术属性三线供应"的续篇：描述符只定义"怎么读写"，数据存在对象自己的 C 结构里。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：门面与仓库</div>
+<p>property 是<b>门面</b>，_c 才是<b>仓库</b>。客人在门面上读/写/删，门面把每种动作翻译成对应的回调（getter/seller/deleter），中间可以加校验、记日志、触发副作用——仓库里的真货从不直接露面。</p>
+</div>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：property 与三种方法</div>
+<p><b>30 秒版：</b>property 是数据描述符，把读写删三种语法翻译成 getter/setter/deleter 三个回调；setter 是赋值校验的正点（如温度不能低于绝对零度）；只写 @property 就是只读属性。staticmethod 不自动传参、classmethod 传 cls，后者的招牌用法是工厂方法。</p>
+<p><b>2 分钟版：</b>先答"怎么判断调哪个"：看操作不看名字——t.celsius 走 getter、赋值走 setter（可校验可转换）、del 走 deleter，且没有"增"的回调（property 定义的属性无法被运行时新增）。再给 Temperature 例子展示校验和计算属性（fahrenheit 只读派生）。最后上价值：property、classmethod、staticmethod、super 底层统一是描述符协议（__get__/__set__），这就是"三种方法为什么能那样用"的答案——能说出描述符这一层，就把 80% 的候选人甩在身后了。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch3">
+<h2>第 3 章 · 魔术方法按协议背<span class="tag">P0 最大缺口 × 扑克场景串联</span></h2>
+
+<h3 id="b2-ch3-1">3.1 核心一句话 + 协议分组表（每个协议配一个扑克用例）</h3>
+<div class="box mechanism"><div class="boxTitle">⚙️ 一句话定位</div>
+<p><b>魔术方法让自定义对象"长得像内置类型"</b>——把 len()、[]、for、+、in、with 这些语法运算翻译成你的方法调用。所以背法是按协议背、配场景用，不是死记方法名。</p>
+</div>
+<table>
+<tr><th>协议</th><th>方法</th><th>扑克里的用例</th></tr>
+<tr><td>表示</td><td><code>__repr__</code>（给开发者）、<code>__str__</code>（给用户）、<code>__format__</code></td><td>print(card) 打出"♠A"而不是 &lt;Card object at 0x...&gt;</td></tr>
+<tr><td>比较</td><td><code>__eq__</code>/<code>__lt__</code>/<code>__le__</code>/<code>__gt__</code>/<code>__ge__</code>/<code>__hash__</code></td><td><code>sorted(hand)</code> 给手牌排序（__lt__）；card 当 dict 键（__hash__）</td></tr>
+<tr><td>容器/序列</td><td><code>__len__</code>、<code>__getitem__</code>、<code>__setitem__</code>、<code>__contains__</code></td><td><code>len(deck)</code> 剩余牌数；<code>deck[0]</code> 翻牌；<code>card in deck</code> 验牌</td></tr>
+<tr><td>迭代器</td><td><code>__iter__</code>、<code>__next__</code></td><td><code>for c in deck</code> 发牌循环</td></tr>
+<tr><td>运算符重载</td><td><code>__add__</code>、<code>__radd__</code>（反向）、<code>__iadd__</code>（增量 +=）</td><td>deck1 + deck2 合并两副牌</td></tr>
+<tr><td>可调用</td><td><code>__call__</code></td><td>把"洗牌策略"对象当函数调 shuffle(deck)</td></tr>
+<tr><td>上下文管理</td><td><code>__enter__</code>/<code>__exit__</code>（或 @contextmanager）</td><td>with Game() as g: 进局自动记账、退局自动结算</td></tr>
+<tr><td>属性访问拦截</td><td><code>__getattr__</code>/<code>__getattribute__</code>/<code>__setattr__</code></td><td>查牌时报友好错误而不是裸 AttributeError</td></tr>
+</table>
+
+<h3 id="b2-ch3-2">3.2 扑克正解：一次串起四个缺口</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话·场景思维的自白）</div>
+<p>「通过这个扑克游戏，我看出来自己的场景思维不是很强。我会去想卡片是什么样子，但我不会去想扑克。我更多的是去想它的继承关系，比如有个"牌"，然后有一堆东西去继承它。但实际上我想多了，应该想的是：在这个场景下，我们要使用到哪些对象。」</p>
+</div>
+<p>这段自白的病根：<b>下意识给所有东西找继承关系</b>。Pythonic 的正解是——<b>Deck / Hand 各自持有 Card 列表（组合），再靠魔术方法让它们直接吃 Python 语法</b>：len(deck)、deck[0]、for c in deck、sorted(hand) 全部"天然就成立"，根本不用写 deck.getCards() 这种 Java 味接口。</p>
+
+<pre><code class="language-python">from dataclasses import dataclass
+from enum import Enum
+
+class Suit(Enum):                  # 枚举：花色比裸字符串安全（拼错立刻暴露）
+    SPADE = "♠"; HEART = "♥"; CLUB = "♣"; DIAMOND = "♦"
+
+@dataclass(order=True)             # 值对象：自动生成 __init__/__repr__/__eq__/__lt__
+class Card:
+    rank: int
+    suit: Suit
+
+class Deck:                         # 注意：没有继承 Card！Deck"有一堆"Card（组合 has-a）
+    def __init__(self):
+        self.cards = [Card(r, s) for r in range(1, 14) for s in Suit]
+    def __len__(self): return len(self.cards)          # len(deck)     剩几张
+    def __getitem__(self, i): return self.cards[i]     # deck[0]、切片、随机访问
+    def __iter__(self): return iter(self.cards)        # for c in deck 发牌循环
+    def __contains__(self, c): return c in self.cards  # c in deck      验牌</code></pre>
+
+<p>这段代码一次补齐四个缺口：<b>Enum</b>（类型安全的花色）、<b>@dataclass</b>（值对象样板代码全免）、<b>容器协议</b>（四种魔术方法接住四种原生语法）、<b>组合</b>——而继承一行都没用。注意 <code>@dataclass(order=True)</code> 自动生成 <code>__lt__</code> 等比较方法，sorted(hand) 直接能用。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：怎么用魔术方法设计一个类</div>
+<p><b>30 秒版：</b>按协议背不按方法名背：表示、比较、容器、迭代、运算符、上下文、属性访问。设计类时先问"这个对象要吃哪些原生语法"——要 len 就 __len__、要下标就 __getitem__、要 for 就 __iter__、要排序就 __lt__。核心价值：让自定义对象长得像内置类型，调用方写原生语法而不是 getXxx()。</p>
+<p><b>2 分钟版：</b>拿扑克举例串一遍：Card 用 @dataclass(order=True) 白嫖 repr/eq/lt（值对象）；Suit 用 Enum 防拼写错误；Deck 用组合持有 Card 列表，实现 __len__/__getitem__/__iter__/__contains__ 四件套，于是 len(deck)、deck[0]、for c in deck、card in deck 全部天然成立。顺势点出设计观：能用组合就别继承（Deck has-a Card 而不是 is-a），魔术方法替代 Java 味的 getter 接口——这就是"Python 式地怎么用"。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch4">
+<h2>第 4 章 · 继承进阶：MRO、super() 真义与 Mixin<span class="tag">P0 高频考点</span></h2>
+
+<h3 id="b2-ch4-1">4.1 菱形问题的答案：MRO + C3</h3>
+<p>梳理里自陈"多重继承有菱形问题，不太知道"——答案就是 <b>MRO（方法解析顺序）+ C3 线性化</b>：Python 3 用 C3 把继承图<b>展平成一条确定、单调的线性顺序</b>，<code>ClassName.__mro__</code> 可查。菱形继承下不会重复调用顶层 <code>object.__init__</code>，靠的就是这条线性表（C3 三规则：子类在前、父类按声明顺序、去重——详见第一册第 1 章）。</p>
+
+<div class="box counter"><div class="boxTitle">⛔ "super().__init__ 调用父类"只对单继承成立</div>
+<p><b>super() 的真正含义：不是"父类"，是"MRO 里位于当前类之后的下一个类"</b>。多重继承中 super() 跳到的未必是直接父类——这正是菱形继承能协作的关键。面试时说"super 跳到父类"是扣分答案，说"跳到实例类 MRO 的下一位"是加分答案。</p>
+</div>
+
+<h3 id="b2-ch4-2">4.2 Mixin：多重继承的正当用法</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「Mixin 啥意思？正确用法是啥？」「Mixin 是不是我自己也可以实现注入什么的？」</p>
+</div>
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：插件</div>
+<p>Mixin 直译"混入"。它不是 is-a 意义上的父类，而是一小段可复用能力的<b>插件</b>，通过多重继承"混"进你的类。就像手机装 App：手机（你的类）不需要重新出厂（改基类），装上 App（混入 Mixin）就有新能力。</p>
+</div>
+<p>正确用法四条：</p>
+<ol>
+<li><b>单一职责</b>：一个 mixin 只加一种能力；</li>
+<li><b>不单独实例化</b>：它是配件不是成品；</li>
+<li><b>避免 mixin 之间互相菱形继承</b>；</li>
+<li><b>命名用 XxxMixin 后缀</b>。</li>
+</ol>
+<p>关于"自己实现注入"：<b>是的，Mixin 就是个普通类，你随便写</b>。所谓"注入" = 把它放进目标类的基类列表，它定义的方法就进了目标类的 MRO，实例查找时能命中。<b>不是运行时注入，是类定义时就定好的</b>。</p>
+
+<h3 id="b2-ch4-3">4.3 自写 Mixin：super 协作是灵魂</h3>
+<pre><code class="language-python">class ToDictMixin:                       # 你自己写的 mixin：序列化能力
+    def to_dict(self):
+        return {k: v for k, v in vars(self).items() if not k.startswith("_")}
+
+class CacheMixin:                        # 再写一个：缓存能力
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)       # 灵魂：用 super 保证在继承链里协作
+        self._cache = {}                 #   ——直接写 self._cache 会跳过其他基类的 __init__
+
+    def cached_get(self, key, loader):
+        if key not in self._cache:
+            self._cache[key] = loader()  # 惰性加载：第一次才算，之后走缓存
+        return self._cache[key]
+
+class UserService(ToDictMixin, CacheMixin):   # 把两种能力混进来
+    def __init__(self):
+        super().__init__()
+        self.name = "trae"
+
+svc = UserService()
+svc.to_dict()                            # {'name': 'trae'} —— 来自 ToDictMixin
+svc.cached_get("u1", lambda: load_user("u1"))  # 来自 CacheMixin</code></pre>
+<p>要点：mixin 里用 <code>super().__init__()</code> 而不是直接覆盖，这样它在多重继承链里能和其他基类<b>协作</b>（协作式多继承）——这正是 4.1 里"super 跳到 MRO 下一位"的直接应用：CacheMixin 的 super() 跳到的是 UserService MRO 里的下一位，不是它的"父类"。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：Mixin 是什么、怎么用</div>
+<p><b>30 秒版：</b>Mixin 是通过多重继承混入的小能力插件，单一职责、不单独实例化、命名带 Mixin 后缀、互相不做菱形继承。它和 DI 的区别：mixin 在类定义期注入方法，DI 在运行时注入对象实例——后者能运行时换实现。</p>
+<p><b>2 分钟版：</b>先定义（能力插件，不是 is-a 父类），再给例子（ToDictMixin 给任何类加序列化、CacheMixin 加缓存），然后讲两个工程细节：一，mixin 的 __init__ 里必须 super().__init__(*a, **kw) 协作，因为 MRO 链上它后面还有别的基类，直接覆盖会断链；二，mixin 是类定义期的静态组合，FastAPI Depends / Spring 那种是运行时的实例注入，两回事但常被混问。收尾一句：Mixin 是多重继承在 Python 里的正当用法——C3 + super() 让"多能力组合"不翻车。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch5">
+<h2>第 5 章 · 多态本质：鸭子类型<span class="tag">P0 概念题</span></h2>
+
+<h3 id="b2-ch5-1">5.1 不查类型，查方法名</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「多态本质和抽象与元没有太听懂」</p>
+</div>
+<p>梳理里用<b>里氏替换原则</b>讲多态（子类重写父类方法、调用相同方法出不同结果）——这是 Java 视角。Python 多态的真正引擎是<b>鸭子类型</b>，关键认知：</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：Python 的多态不要求继承同一基类</div>
+<p>Python 的多态<b>不查"你是什么类型、是不是某基类的子类"，只查"你有没有这个方法名"</b>。运行时按属性名查找（沿 type(x) 的 MRO），找到就调。所以 Dog 和 Robot 毫无继承关系，只要都有 speak()，就能被同一个函数统一处理。</p>
+</div>
+
+<pre><code class="language-python">def draw_all(things):       # 不关心 things 是不是某个基类的子类
+    for t in things:
+        t.draw()            # 有 .draw() 就行——这就是鸭子类型
+
+# Dog 和 Robot 没有任何继承关系，照样都能进 draw_all
+class Dog:   def draw(self): print("🐕 简笔画")
+class Robot: def draw(self): print("🤖 矢量图")
+
+draw_all([Dog(), Robot()])   # 都能画——只看"有没有 draw"，不看"是谁的子类"</code></pre>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：类型关卡 vs 协议关卡</div>
+<p>Java 的多态要过<b>类型关卡</b>：必须继承 Animal 才能放进 <code>List&lt;Animal&gt;</code>。Python 把这道关卡拆了，换成<b>协议关卡</b>：走起来像鸭子、叫起来像鸭子，那就当鸭子。协议（sequence、iterator、context manager……）就是鸭子类型的"官方认证"——实现约定的一组方法，就算这个协议的成员。</p>
+</div>
+
+<h3 id="b2-ch5-2">5.2 两个配套工具：total_ordering 与 __call__</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「totalordering？call？」</p>
+</div>
+<pre><code class="language-python"># @functools.total_ordering —— 比较方法的"自动补全器"
+# 只要定义 __eq__ + 一个比较方法（如 __lt__），它帮你推导出剩下的 __le__/__gt__/__ge__
+from functools import total_ordering
+
+@total_ordering
+class Card:
+    def __init__(self, rank): self.rank = rank
+    def __eq__(self, o): return self.rank == o.rank
+    def __lt__(self, o): return self.rank < o.rank
+    # 自动获得 __le__ / __gt__ / __ge__（由 == 和 < 推导），省得手写六个
+
+# __call__ —— 让实例像函数一样被调用；判断能不能调用用内置 callable(obj)
+class Adder:
+    def __init__(self, n): self.n = n
+    def __call__(self, x): return x + self.n   # obj() 触发 __call__
+
+add5 = Adder(5)
+add5(10)        # 15 —— 实例当函数用
+callable(add5)  # True</code></pre>
+<p>补一个延伸：<code>@functools.singledispatch</code> 是 Python 对"方法重载"的近似方案——按<b>第一个参数的类型</b>分派到不同实现（Python 没有真重载，靠它和默认参数补位）。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：Python 多态和 Java 多态的区别</div>
+<p><b>30 秒版：</b>Java 多态基于继承 + 里氏替换（过"类型关卡"）；Python 多态基于鸭子类型——运行时只查方法名不查继承关系（过"协议关卡"），有同名方法就能统一处理。协议是鸭子类型的官方认证。</p>
+<p><b>2 分钟版：</b>先讲机制差异：Java 在编译期绑定类型检查（List&lt;Animal&gt; 的关卡），Python 在运行期沿 MRO 按属性名查找，找到就调——所以 Dog 和 Robot 无继承也能多态。再讲这条设计的代价与补偿：代价是"拼错方法名"要到运行时才炸（AttributeError）；补偿一，ABC + @abstractmethod 把口头协议变成强制契约；补偿二，typing.Protocol（结构化子类型）给静态检查器看。最后可以带一句 total_ordering（比较协议的自动补全）和 singledispatch（按类型分派，Python 版"重载"）展示工具箱。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch6">
+<h2>第 6 章 · 抽象与元类：ABC、type 与 metaclass<span class="tag">P1 拉分题</span></h2>
+
+<h3 id="b2-ch6-1">6.1 ABC + @abstractmethod：把口头协议变成强制契约</h3>
+<pre><code class="language-python">from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self): ...        # 留空，强制子类实现
+
+Shape()                        # ❌ TypeError: abstract method area 没实现，实例化被拦
+class Circle(Shape):
+    def area(self): return 3.14   # 实现了
+Circle()                       # ✓ 可实例化</code></pre>
+<p>用法定位：ABC 用来<b>声明接口/协议</b>——"子类必须实现这些方法，没实现就别想被造出来"。日常 90% 的接口约束场景，ABC 就够了。补充两件配套工具：<code>collections.abc</code> 里的 Sequence/Iterable/Container 是现成协议基类；<code>ABC.register(X)</code> 能把非继承类"注册"成<b>虚拟子类</b>（isinstance 成立），给鸭子类型盖个章。</p>
+
+<h3 id="b2-ch6-2">6.2 元类里到底有什么：一个必须修正的直觉</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「我有点懂这个元类了，但是我想知道这个里面有什么。它肯定会去放一些公共的内容，对吧？比如说放一些基础的魔术方法？type 是默认有的对吧，如果没有 abc」</p>
+</div>
+<div class="box counter"><div class="boxTitle">⛔ 关键混淆：基础魔术方法来自 object，不来自元类</div>
+<p>"元类放一些公共内容/基础魔术方法"——<b>方向对了一半</b>。默认的基础魔术方法（__repr__、__eq__、__hash__、__init__、__getattribute__……）<b>不是元类放的，是 object 放的</b>：每个类都隐式继承 object，所以实例都有这些（第一册第 3 章讲过：object 也只提供这一小撮默认，__iter__/__len__ 没有默认）。元类干的是另一件事：<b>控制"类怎么被造出来"</b>——type 提供的是"造类机器"：__new__（建出类对象）、__init__（初始化类）、__call__（实例化时触发）。</p>
+</div>
+
+<details><summary>展开：同一个 Card 类的两个身份（两层链路图）</summary>
+<div class="inner">
+<div class="figwrap">
+<div class="figTitle">type 三层链：类自己也是对象</div>
+<div class="figSub">实例 ← 类造出来；类 ← 元类（type / ABCMeta）造出来；"一切皆对象"不虚——连类都是 type 的实例</div>
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="b2-arrX" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+  <!-- 元类层 -->
+  <rect x="460" y="20" width="200" height="46" rx="8" fill="#17131b" stroke="#bc8cff" stroke-width="2"/>
+  <text x="560" y="40" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700">元类层：type / ABCMeta</text>
+  <text x="560" y="58" text-anchor="middle" fill="#8b949e" font-size="11.5">"造类的类"——控制类怎么被造出来</text>
+  <!-- 类层 -->
+  <rect x="130" y="140" width="180" height="46" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+  <text x="220" y="160" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700">普通类：Card</text>
+  <text x="220" y="178" text-anchor="middle" fill="#8b949e" font-size="11.5">type 的实例（type 造的）</text>
+  <rect x="460" y="140" width="200" height="46" rx="8" fill="#17131b" stroke="#d29922" stroke-width="2"/>
+  <text x="560" y="160" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700">抽象类：Shape(ABC)</text>
+  <text x="560" y="178" text-anchor="middle" fill="#8b949e" font-size="11.5">ABCMeta 的实例（ABCMeta 造的）</text>
+  <!-- 实例层 -->
+  <rect x="130" y="300" width="180" height="46" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+  <text x="220" y="320" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700">实例：card = Card()</text>
+  <text x="220" y="338" text-anchor="middle" fill="#8b949e" font-size="11.5">类造出来的对象</text>
+  <rect x="460" y="300" width="200" height="46" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+  <text x="560" y="320" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700">Circle().area() ✓</text>
+  <text x="560" y="338" text-anchor="middle" fill="#8b949e" font-size="11.5">实现了 area 才放行</text>
+  <!-- 箭头：造出来 -->
+  <line x1="470" y1="66" x2="240" y2="138" stroke="#8b949e" stroke-width="1.8" marker-end="url(#b2-arrX)"/>
+  <text x="330" y="95" text-anchor="middle" fill="#8b949e" font-size="12">class X: 等价 X = type('X', (), {})</text>
+  <line x1="560" y1="66" x2="560" y2="138" stroke="#d29922" stroke-width="1.8" marker-end="url(#b2-arrX)"/>
+  <text x="620" y="100" text-anchor="middle" fill="#d29922" font-size="12">metaclass=ABCMeta</text>
+  <line x1="220" y1="186" x2="220" y2="298" stroke="#8b949e" stroke-width="1.8" marker-end="url(#b2-arrX)"/>
+  <text x="180" y="248" text-anchor="middle" fill="#8b949e" font-size="12">实例化</text>
+  <line x1="560" y1="186" x2="560" y2="298" stroke="#d29922" stroke-width="1.8" marker-end="url(#b2-arrX)"/>
+  <text x="628" y="248" text-anchor="middle" fill="#d29922" font-size="12">__call__ 里先扫 @abstractmethod</text>
+  <!-- object 说明 -->
+  <text x="120" y="240" fill="#8b949e" font-size="11.5">基础魔术方法</text>
+  <text x="120" y="256" fill="#8b949e" font-size="11.5">(__repr__/__eq__...) </text>
+  <text x="120" y="272" fill="#8b949e" font-size="11.5">住在 object —— 继承给实例</text>
+</svg>
+</div>
+<p class="small">对照读法：默认魔术方法沿「object → 类 → 实例」的<b>继承链</b>给到实例；元类沿「type/ABCMeta → 类」的<b>制造链</b>控制类本身。两条链别混。</p>
+</div>
+</details>
+
+<p>回答原话里的三个小问：</p>
+<ul>
+<li><b>"type 是默认有的对吧"</b>——对。不写 metaclass= 时，所有类都用 type 当元类；</li>
+<li><b>"如果没有 abc"</b>——没有自定义元类时退回默认 type，类照常造，<b>没有任何强制校验</b>。ABC 只是把 type 换成 ABCMeta，多加了"实例化前查 @abstractmethod"这一道检查——而这一道就在元类的 <code>__call__</code> 里；</li>
+<li><b>"元类放公共内容"</b>——修正：那是 object 的事。元类也能往类里"塞东西"，但那是你在 __new__ 里手动加的，跟"默认魔术方法来自 object"是两码事。</li>
+</ul>
+
+<h3 id="b2-ch6-3">6.3 元类实战：LoggedMeta 与轻量替代</h3>
+<pre><code class="language-python">class LoggedMeta(type):                 # 继承 type，自己写元类
+    def __new__(mcs, name, bases, ns):  # 造类时触发（import 时就跑一次）
+        cls = super().__new__(mcs, name, bases, ns)
+        print(f"[元类 __new__] 造出了类 {name}")
+        return cls
+
+    def __call__(cls, *a, **kw):         # ClassName() 实例化时触发（每次）
+        print(f"[元类 __call__] 要实例化 {cls.__name__}")
+        return super().__call__(*a, **kw)
+
+class Foo(metaclass=LoggedMeta):        # 用你的元类造这个类
+    pass
+# 造类时打印：[元类 __new__] 造出了类 Foo
+f = Foo()
+# 实例化时打印：[元类 __call__] 要实例化 Foo</code></pre>
+<p>对照记忆：<b>__new__ 在"造类"那一刻跑一次（类定义时），__call__ 在每次 Foo() 时跑</b>。ABCMeta 重写的就是 __call__——在 super().__call__ 之前先扫 @abstractmethod，没全实现就 TypeError。这解释了一个高频追问：<b>为什么 ABC 的强制力只在"实例化"时生效，而"定义子类"时不报错？</b>因为检查写在 __call__ 里，定义子类只是造类（走 __new__），不触发 __call__。</p>
+<p>工程提醒：元类不一定要天天写——现代更轻量的替代是 <code>__init_subclass__</code>（子类被定义时触发，能做注册/校验）和 <code>__class_getitem__</code>（让 Foo[int] 可下标）。元类常见于框架：ORM、Django Model、ABCMeta、enum.EnumMeta。而 <code>type</code> 的"既是查询函数（type(obj)）又是造类的元类（X = type('X', (), {})）"这一<b>双重身份</b>，是理解"一切皆对象"的钥匙。</p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：ABC 与元类</div>
+<p><b>30 秒版：</b>ABC = 接口契约：@abstractmethod 标记必须实现的方法，没实现就实例化不了。它的强制力在 ABCMeta（元类）的 __call__ 里——实例化前扫一遍抽象方法。type 是默认元类（造普通类），ABCMeta 是 ABC 用的元类（造抽象类 + 强制检查）。</p>
+<p><b>2 分钟版：</b>先答 ABC 用法（Shape 例子：Shape() 报 TypeError，实现 area 的 Circle 通过；ABC.register 给鸭子类型盖章），再上元类层：class X: 等价 X = type('X', (), {})——type 既是 type(obj) 查询函数又是造类的元类，类自己也是对象。然后主动澄清易混点：默认基础魔术方法来自 object 的继承链，不是元类放的；元类提供造类机器（__new__ 造类/__call__ 实例化拦截），ABCMeta 正是重写 __call__ 加了抽象方法检查——所以定义子类不报错、实例化才报。收尾：日常用 ABC + __init_subclass__ 就够，元类留给框架（ORM/Enum）。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-ch7">
+<h2>第 7 章 · 组合优于继承与依赖注入<span class="tag">P1 设计题</span></h2>
+
+<h3 id="b2-ch7-1">7.1 has-a vs is-a：场景思维的第一性原理</h3>
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：是"是一辆"还是"有一辆"</div>
+<p>继承表达 <b>is-a</b>（是一辆）：电动汽车 is-a 汽车。组合表达 <b>has-a</b>（有一辆）：车库 has-a 一堆车。扑克场景里，Deck "有一堆" Card（has-a），而不是"是一张" Card（is-a）——想把一切塞进继承树，就是把车库硬说成一种汽车。<b>能用组合就别用继承</b>。</p>
+</div>
+<p>落到场景建模的方法论：<b>名词 → 类、动词 → 方法、关系 → 组合/继承</b>。每次想画继承树前，先问"谁拥有谁（has-a）"——这一问，就是当时"扑克那关想多了"的解药。</p>
+
+<h3 id="b2-ch7-2">7.2 Mixin vs 框架级依赖注入：FastAPI 的 Depends</h3>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问（原话）</div>
+<p>「框架级的依赖注入，就相当于是 Spring Boot 那种运行时会有依赖注入，是吧？」</p>
+</div>
+<p>对，基本就是。框架级 DI 有个<b>容器</b>（IoC 容器），在启动/运行时按你声明的依赖关系，构造对象图并把实例塞进需要它的地方——Spring Boot 是最典型的实现。和 mixin 的关键区别不在"有没有注入"，而在"注入的是<b>方法</b>还是<b>对象实例</b>""是<b>类定义期</b>定死还是<b>运行时</b>可换"：</p>
+<table>
+<tr><th>维度</th><th>Mixin</th><th>框架级依赖注入（Spring Boot 式）</th></tr>
+<tr><td>注入时机</td><td>类定义时（静态）</td><td>容器启动/运行时（动态）</td></tr>
+<tr><td>注入对象</td><td>方法/能力（行为混进类）</td><td>对象实例（依赖塞进对象）</td></tr>
+<tr><td>关系本质</td><td>is-a 行为组合</td><td>has-a 依赖由外部提供</td></tr>
+<tr><td>运行时换实现</td><td>不能，写死在继承链</td><td>能，改绑定即可（DI 的核心价值）</td></tr>
+<tr><td>声明方式</td><td>放进基类列表</td><td>注解/类型注解 + 容器配置</td></tr>
+</table>
+<p>Python 里最贴近、最好背的例子是 <b>FastAPI 的 Depends</b>：</p>
+<pre><code class="language-python">from fastapi import Depends, FastAPI
+
+class UserService:
+    def get(self, uid): return {"id": uid}
+
+def get_user_service():        # provider：告诉容器"怎么造"
+    return UserService()
+
+app = FastAPI()
+
+@app.get("/users/{uid}")
+def read_user(uid, svc: UserService = Depends(get_user_service)):
+    #                        ^^^^^^^ 运行时被注入，函数里从没自己 new
+    return svc.get(uid)</code></pre>
+<p><code>Depends(get_user_service)</code> 声明"我依赖一个 UserService，运行时由框架塞进来"——函数体里从没出现 <code>UserService()</code>，和 Spring 的 @Autowired 本质一模一样。FastAPI 的 Depends 是 Python 里最轻量的 DI；要完整的 IoC 容器（配置、生命周期、作用域）就用 <code>dependency-injector</code> 这类库。一句话收尾：<b>mixin 注入方法，DI 注入对象实例——后者能在运行时替换实现，这正是它存在的意义。</b></p>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答：组合、继承与 DI 怎么选</div>
+<p><b>30 秒版：</b>继承表达 is-a，组合表达 has-a，能用组合就别继承（Deck has-a Card，不是 is-a）。需要给一批类加可复用能力用 Mixin（类定义期、注入方法）；需要运行时可替换的依赖用 DI（注入对象实例，FastAPI Depends / Spring @Autowired）。</p>
+<p><b>2 分钟版：</b>按场景选：真子类型关系（Circle is-a Shape）→ 继承 + ABC 契约；能力拼装（序列化/缓存）→ Mixin 多重继承 + super 协作；跨层依赖（Service 注入 Router）→ DI 容器。展开 DI：IoC 容器负责"谁依赖谁"的装配，你只声明（Depends/@Autowired），好处是解耦 + 可测试（单测时换个 provider 就能 mock）+ 运行时可换实现。再对比 mixin：mixin 是静态的类定义期组合，编译后能力写死在 MRO 里，不能运行时替换——所以它适合"能力"，DI 适合"依赖"。这是把 OOP 设计题答出层次感的三段式。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-appA">
+<h2>附录 A · 比喻词典<span class="tag">口试时的表达弹药</span></h2>
+<table>
+<tr><th>术语</th><th>比喻</th><th>一句话展开</th></tr>
+<tr><td>名称改写</td><td>门牌换名不拆门</td><td>__x 改名 _ClassName__x，访客照着新门牌仍能敲门——防的是子类误碰，不是外人</td></tr>
+<tr><td>consenting adults</td><td>成年人约定</td><td>Python 不设铁栏杆，双下划线是"请勿触碰"的牌子；约定优先于强制</td></tr>
+<tr><td>property</td><td>门面与仓库</td><td>真货（_c）在仓库，门面把读/写/删三种动作翻译成 getter/setter/deleter，中间可加校验</td></tr>
+<tr><td>setter</td><td>带安检的入口</td><td>赋值先过安检（温度不能低于绝对零度），再入库</td></tr>
+<tr><td>描述符</td><td>翻译官</td><td>property/classmethod/staticmethod/super 底层共用的一套"怎么读写属性"的协议</td></tr>
+<tr><td>魔术方法</td><td>语法翻译器</td><td>len() 翻成 __len__、[ ] 翻成 __getitem__——让自定义对象长得像内置类型</td></tr>
+<tr><td>@dataclass</td><td>值对象样板房</td><td>__init__/__repr__/__eq__/__lt__ 全自动，只声明字段</td></tr>
+<tr><td>Enum</td><td>带安检的花色牌</td><td>拼错立刻暴露，比裸字符串安全</td></tr>
+<tr><td>组合 has-a</td><td>车库有一堆车</td><td>Deck 有一堆 Card；别把车库说成"是一种车"</td></tr>
+<tr><td>继承 is-a</td><td>是一辆</td><td>只给真正的子类型关系用（Circle is-a Shape）</td></tr>
+<tr><td>鸭子类型</td><td>协议关卡替代类型关卡</td><td>不查"是不是 Animal 子类"，只查"会不会 quack()"</td></tr>
+<tr><td>Mixin</td><td>给手机装 App</td><td>能力插件：单一职责、不单独实例化、命名带后缀、super 协作</td></tr>
+<tr><td>元类</td><td>造类的机器</td><td>类造实例，元类造类；type 是默认机器，ABCMeta 是带质检的机器</td></tr>
+<tr><td>ABCMeta.__call__</td><td>出厂质检</td><td>实例化前扫一遍 @abstractmethod，没装齐零件不让出厂</td></tr>
+<tr><td>IoC 容器</td><td>装配车间</td><td>你声明"我依赖谁"（Depends/@Autowired），车间负责造好塞进来</td></tr>
+<tr><td>mixin vs DI</td><td>装 App vs 换电池</td><td>mixin 装上就焊死（方法注入）；DI 的电池随时可换（实例注入、运行时可替换）</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-appB">
+<h2>附录 B · 面试速答卡<span class="tag">考前 10 分钟过一遍</span></h2>
+<table>
+<tr><th>考题</th><th>速答（30 秒版）</th></tr>
+<tr><td><b>Q1 Python 的私有属性是真私有吗？</b></td><td>不是。双下划线触发名称改写（__x → _ClassName__x），外面用改写名照样访问；目的是防子类误覆盖。哲学：约定优先于强制（consenting adults）</td></tr>
+<tr><td><b>Q2 staticmethod 和 classmethod 区别？</b></td><td>classmethod 自动传 cls、招牌用法是工厂方法（备选构造器）；staticmethod 什么都不传、是挂在类命名空间的普通函数。两者都能类名直接调</td></tr>
+<tr><td><b>Q3 property 怎么判断调哪个？setter 是什么？</b></td><td>看操作不看方法名：读→getter、赋值→setter（校验正点）、del→deleter；没有"增"的回调。只写 @property 即只读；setter 名必须与 property 同名</td></tr>
+<tr><td><b>Q4 __slots__ 干什么用？</b></td><td>一石二鸟：属性白名单（禁止动态添加）+ 省内存（实例没有 __dict__，存固定槽位）。注意子类不定义 __slots__ 会重新长出 __dict__</td></tr>
+<tr><td><b>Q5 魔术方法怎么记？举例。</b></td><td>按协议背：表示/比较/容器/迭代/运算符/可调用/上下文/属性访问。扑克例：@dataclass(order=True) 白嫖比较、Deck 实现 __len__/__getitem__/__iter__/__contains__ 让 len(deck)、deck[0]、for、in 天然成立</td></tr>
+<tr><td><b>Q6 super() 是跳到父类吗？</b></td><td>不是。跳到"实例类 MRO 的下一位"——多重继承下未必是直接父类；菱形继承靠 C3 线性化 + super 链协作，不重复调 object.__init__</td></tr>
+<tr><td><b>Q7 什么是 Mixin？四条正确用法？</b></td><td>能力插件，多重继承混入类。单一职责、不单独实例化、mixin 间不菱形继承、XxxMixin 后缀；__init__ 里必须 super().__init__ 协作</td></tr>
+<tr><td><b>Q8 Python 多态和 Java 多态区别？</b></td><td>Java 过类型关卡（继承 Animal 才进 List）；Python 鸭子类型过协议关卡——只查方法名不查继承。代价是错误运行时才暴露，补偿是 ABC 强制契约 + typing.Protocol</td></tr>
+<tr><td><b>Q9 ABC 的强制力在哪实现？</b></td><td>ABCMeta（元类）的 __call__ 里：实例化前扫 @abstractmethod，没全实现就 TypeError。所以定义子类不报错、实例化才报错</td></tr>
+<tr><td><b>Q10 元类是什么？和 object 什么分工？</b></td><td>元类是造类的类（type 是默认元类）；基础魔术方法（__repr__/__eq__ 等）来自 object 的继承链，不是元类放的；元类控制"类怎么被造"（__new__/__call__）</td></tr>
+<tr><td><b>Q11 组合优于继承怎么理解？</b></td><td>has-a 替代 is-a：Deck 有一堆 Card，而不是 Deck 是一种 Card。建模法：名词→类、动词→方法、关系→先问 has-a</td></tr>
+<tr><td><b>Q12 Mixin 和依赖注入的区别？</b></td><td>mixin 类定义期注入方法（静态、不能运行时换）；DI 运行时注入对象实例（FastAPI Depends / Spring @Autowired，可换实现可 mock——DI 的核心价值）</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="b2-appC">
+<h2>附录 C · 事实核查表<span class="tag">防口误 · 每条都能亲手验证</span></h2>
+<table>
+<tr><th>#</th><th>论断</th><th>验证方式</th></tr>
+<tr><td>1</td><td>双下划线触发名称改写，外面可访问</td><td>obj._Student__name（改名后的全名）</td></tr>
+<tr><td>2</td><td>__slots__ 白名单外添加报错</td><td>class Strict: __slots__=("a",); s.b=1 → AttributeError</td></tr>
+<tr><td>3</td><td>子类不定义 __slots__ 会重新长出 __dict__</td><td>class Sub(Strict): pass; Sub().__dict__ → {}（有字典了）</td></tr>
+<tr><td>4</td><td>property 只读（无 setter）赋值报错</td><td>t.fahrenheit = 1 → AttributeError: can't set attribute</td></tr>
+<tr><td>5</td><td>setter 触发校验</td><td>t.celsius = -300 → ValueError: 低于绝对零度</td></tr>
+<tr><td>6</td><td>total_ordering 由 == + < 推导四方法</td><td>定义 __eq__/__lt__ 后 hasattr(cls,'__le__') → True</td></tr>
+<tr><td>7</td><td>__call__ 让实例可调用</td><td>callable(Adder(5)) → True；add5(10) → 15</td></tr>
+<tr><td>8</td><td>@dataclass(order=True) 自动生成比较</td><td>Card(2,♠) &lt; Card(3,♥) → True；repr 自动可读</td></tr>
+<tr><td>9</td><td>类方法传 cls、静态方法不传</td><td>两方法的 __annotations__ / 签名对比</td></tr>
+<tr><td>10</td><td>鸭子类型不查继承</td><td>Dog/Robot 无共同基类，draw_all([Dog(), Robot()]) 照跑</td></tr>
+<tr><td>11</td><td>ABC 未实现抽象方法不能实例化</td><td>Shape() → TypeError: Can't instantiate abstract class</td></tr>
+<tr><td>12</td><td>强制检查在 __call__（定义子类不报错）</td><td>class Bad(Shape): pass 不报错；Bad() 才报 TypeError</td></tr>
+<tr><td>13</td><td>class X: 等价 X = type('X', (), {})</td><td>type(X) is type → True</td></tr>
+<tr><td>14</td><td>基础魔术方法来自 object 不来自元类</td><td>Foo.__repr__ is object.__repr__ → True（未自定义时）</td></tr>
+<tr><td>15</td><td>ABC.register 虚拟子类 isinstance 成立</td><td>Shape.register(dict); isinstance({}, Shape) → True</td></tr>
+<tr><td>16</td><td>mixin 的 super().__init__ 协作</td><td>删掉 super 调用，UserService 的 __init__ 不再被执行（MRO 断链）</td></tr>
+<tr><td>17</td><td>FastAPI Depends 运行时注入</td><td>函数体无 UserService()，断点可见 svc 由框架构造</td></tr>
+</table>
+<p class="small">生成于 2026-10-20 · 整理自真实学习会话 · 第二册（面向对象编程）完</p>
+</section>
+
+
+<!-- ================= 第三册 · 并发编程 ================= -->
+
+
+<h1 id="b3-top">Python 八股教程书 · 第三册<br><small>并发编程 · asyncio 深水区：从 19 步流程图到 C 层化石</small></h1>
+<p class="lead">本册源自一场"收官式"深挖：起点是「asyncio 的骨架是不是 loop、future、task、回调、取消，还有没有别的」；随后一路经过「面试只说"解耦"行不行」→「代码都是 AI 写的，我自己说还是混乱」→「看不懂别的 AI 给的 6 步流程」→「19 步一生」→「判卷五问」→「callback 什么时候挂上的」→「第 11 步的 set_result 哪来的」→「协程到底用没用 yield」→「底层怎么处理等待和运行」，终点钻到了 C 结构体。带 <span style="color:var(--carol)">🧑‍🎓 追问</span> 标记的框是当时的原话提问——它们就是面试官的追问剧本。</p>
+
+<!-- ================================================================ -->
+<section id="b3-pre">
+<h2>序章 · 一条从"说不清"到"钻到 C 层"的下钻线<span class="tag">阅读指南</span></h2>
+<p>整册可以用一句话主线串起来：</p>
+<blockquote><b>asyncio 的全部秘密 = 生成器机器 + 三个约定。</b>生成器机器是 yield / send 那套老机器（第三册核心）；三个约定是 Loop 只认回调队列、Future 是合同、Task 是会驱动协程的 Future。</blockquote>
+<p>下钻路线共 8 站，每站解决一个真实追问：</p>
+<table>
+<tr><th>站</th><th>追问（原话）</th><th>答案落点</th><th>章</th></tr>
+<tr><td>1</td><td>"骨架是 loop、future、task、回调、取消？还有没有别的"</td><td>五件套只是调度核，还差第六面墙：IO 事件源机器</td><td>第 1 章</td></tr>
+<tr><td>2</td><td>"只理解成解耦，面试不露馅对吧"</td><td>恰恰相反——"解耦"是催问券；真正要背的是一句话主线</td><td>第 2 章</td></tr>
+<tr><td>3</td><td>"看不懂别的 AI 给的 6 步流程"</td><td>缺的不是 asyncio，是生成器地基：4 个动词 + 3 个触发器</td><td>第 3 章</td></tr>
+<tr><td>4</td><td>"把整个流程给我串一遍"</td><td>19 步编号轨迹：一个协程任务的一生</td><td>第 4 章</td></tr>
+<tr><td>5</td><td>"暂停之后怎么就到了 task_step？"</td><td>两个 ✗ 同一个根：混淆"协程内的事"和"驱动者看到的事"</td><td>第 5 章</td></tr>
+<tr><td>6</td><td>"第 11 步的 set_result 是哪里来的？"</td><td>预售——它不以"调用"的形状存在于代码里</td><td>第 6 章</td></tr>
+<tr><td>7</td><td>"协程到底使用了 yield 吗"</td><td>三层答案：源码层没用、字节码层全是、运行层只有一个</td><td>第 7 章</td></tr>
+<tr><td>8</td><td>"底层怎么处理等待和运行"</td><td>帧的照片模型 + C 层三块化石：协程就是生成器换了个名牌</td><td>第 8 章</td></tr>
+</table>
+<p><b>读法建议</b>：第 1、2 章是"面试输出层"，第 3～6 章是"机制理解层"（本册精华），第 7、8 章是"底层考证层"（降维打击层）。时间紧就读第 2 章 + 附录 B。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch1">
+<h2>第 1 章 · 骨架全景：五件套与第六面墙<span class="tag">P0 总览</span></h2>
+
+<h3 id="b3-ch1-1">1.1 IO 事件源机器：三级台阶</h3>
+<p>开头这一问的结论：<b>loop、future、task、回调、取消这"五件套"是调度核，但骨架还剩最后一面承重墙没拆——IO 事件源机器（add_reader / Transport / Protocol）。除此之外，asyncio 里所有大名鼎鼎的东西没有一件是骨架，全是骨架零件的排列组合。</b></p>
+<p>这面墙从下往上分三级台阶（同一条链路的三个层级）：</p>
+<pre><code class="language-text">① IO 侧最底层一级:
+  ① add_reader: 回调拿到 b'hello-raw' → set_result → await 醒来
+
+②③ 中间层与顶层同台 (echo 服务器):
+  ③ 客户端: await reader.read() ← 内部 create_future, 睡在 data_received 上
+  ② Protocol.data_received: 回调拿到 b'hello-stream' → 原路写回
+  ③ read() 醒来: b'hello-stream'
+
+一条链: epoll事件 → 回调(字节) → 缓冲 → Future兑现 → await醒来</code></pre>
+<p>三级台阶的对应关系：台阶①是手写迷你循环里那一级——selector 事件进来，回调去读字节；台阶②的 <code>Protocol</code> 只是一份<b>事件回调清单</b>（<code>connection_made</code> / <code>data_received</code> / <code>connection_lost</code>），<code>data_received</code> 和①里的 <code>on_readable</code> 是同一物种；台阶③的 <code>StreamReader.read()</code> 内部就是 <code>create_future</code> + 睡在回调上。</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：StreamReader 也是 Future 机器（源码铁证）</div>
+<p>标准库 <code>streams.py</code> 的 <code>_wakeup_waiter</code> 亲手供认——<code>read()</code> 就是你手写过的 <code>wait</code> 的官方版：</p>
+<pre><code class="language-python">def _wakeup_waiter(self):
+    """Wakeup read*() functions waiting for data or EOF."""
+    waiter = self._waiter
+    if waiter is not None:
+        self._waiter = None
+        if not waiter.cancelled():
+            waiter.set_result(None)   # ← 和 Lock.release 兑现等待者是同一个动作</code></pre>
+<p><code>_wait_for_data</code> 的文档字符串更是自供状："StreamReader uses a future to link the protocol feed_data() method"。</p>
+</div>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：骨架永远是薄的那层</div>
+<p>看代码量的分布：整个 asyncio 包 13129 行，其中"合同"<code>futures.py</code> 只有 426 行，比"积木"<code>streams.py</code>（726 行）、<code>locks.py</code>（438 行）都薄——<b>骨架永远是薄的那层，厚的全是搭在骨架上的建筑</b>。就像一栋楼：承重墙就几面，房间里的大部分面积是后续装修出来的。</p>
+</div>
+
+<h3 id="b3-ch1-2">1.2 积木清单：知名 API 都是老零件</h3>
+<p>把 asyncio 里叫得上名字的 API 逐个拆开，会发现它们没有一件引入了新机器——全是骨架零件的排列组合：</p>
+<table>
+<tr><th>知名 API</th><th>拆开是什么</th><th>对应骨架零件</th></tr>
+<tr><td><code>sleep</code></td><td>定时器回调 + Future</td><td>最基础的组合</td></tr>
+<tr><td><code>gather</code> / <code>wait_for</code></td><td>Task + 回调槽位 / wait_any + cancel</td><td>调度核零件</td></tr>
+<tr><td><code>Lock</code> <code>Event</code> <code>Semaphore</code> <code>Queue</code></td><td>Future + 等待者队列</td><td>Future 机器复用</td></tr>
+<tr><td><code>StreamReader.read</code></td><td>Protocol 回调 + 缓冲 + Future</td><td>第六面墙零件</td></tr>
+<tr><td><code>run_in_executor</code></td><td>线程 + <code>call_soon_threadsafe</code> + Future</td><td>跨线程唤醒零件</td></tr>
+<tr><td><code>TaskGroup</code>（3.11 旗舰新特性）</td><td>Task + cancel + Future，<b>零新机制</b></td><td>纯零件组合</td></tr>
+</table>
+<p>配件级（抽掉任何一件，骨架照样站立）：<code>contextvars</code>、异常兜底 handler、debug 模式（慢回调检测）、平台分支（Windows 的 proactor、Unix 的信号与子进程管理）。</p>
+
+<h3 id="b3-ch1-3">1.3 uvloop：冻结的中间层的终极回报</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：中间冻结，两端随便换</div>
+<p><b>uvloop 能把整个 asyncio 提速数倍，靠的只是换掉"Loop + IO 墙"的实现——Future、Task、回调、取消、所有积木一行不动。</b>这就是"冻结的中间层"的终极回报：中间的合同（Future 机器）冻结不动，两端（上层的积木 API、下层的事件源实现）才能随便替换。类比后端熟悉的模式：中间件协议不变，上游业务和下游存储随便换。</p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 面试作答：asyncio 的骨架是什么？</div>
+<p><b>30 秒版</b>：Loop、Future、Task、回调、取消是调度核；再加一面 IO 事件源机器（add_reader / Transport / Protocol）才凑齐承重墙。其余知名 API——sleep、gather、Lock、Queue、TaskGroup——全是这些骨架零件的排列组合，零新机制。uvloop 提速数倍只换 Loop 和 IO 实现、Future/Task 一行不动，就是这句话的实证。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch2">
+<h2>第 2 章 · 面试主线：背这句，不是背"解耦"<span class="tag">P0 输出层</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"只能说还是有些混乱，或者我可以只理解这个代码，task、future 就大概知道是一个解耦吧。这样我面试的时候提到也不会露馅，对吧？"</p>
+</div>
+<h3 id="b3-ch2-1">2.1 "解耦"是催问券</h3>
+<div class="box counter"><div class="boxTitle">⛔ 反例："大概知道是解耦"恰恰是最容易被戳穿的答案</div>
+<p>"解耦"是人人都会说的词，它是一张<b>催问券</b>：面试官听到这个词，下一句必然是"解耦了什么？怎么解耦的？"——答不上来，才是真正的露馅时刻。用关键词冒充答案，是面试最大的坑。</p>
+</div>
+<p>完整答案其实只有一句话，而离说出它只差把已经会的东西串起来：</p>
+<blockquote><b>一句话主线（背这个）</b>：协程 <code>await</code> 一个 Future 就挂起；任何事件源（定时器、IO、线程）完成后 <code>set_result</code> 兑现它；Future 把任务排回就绪队列；循环从头到尾只认回调队列。所以<b>"等什么"和"怎么醒"被分开了</b>——加一种新的等待方式，循环一行不用改。Task 就是"会驱动协程的 Future"，协程的 <code>return</code> 被填进它自己。</blockquote>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：免死金牌</div>
+<p>说这段话的最佳开场是：<b>"我自己写过一个 80 行的迷你事件循环……"</b>——面试官可以追问任何人的口头知识，但<b>没法击穿你自己跑过的代码</b>。亲手写过的循环里若还有 gather、异常隔离、return_exceptions 两种模式，那更是"混乱的人写不出的 asyncio 级语义"。</p>
+</div>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：读懂和说出之间隔的东西叫"提取练习"</div>
+<p>全部材料都读得懂、但说出来就乱——因为读的时候永远在<b>"认"（recognize）</b>，从来不在<b>"取"（recall）</b>。再读十遍也没用；合上材料自己产出（默写、口播）才是把"认"变成"取"的唯一路径。验收标准两条：① 默写关卡跑出"10 空全对"；② 不看任何材料把口播稿说完。</p>
+</div>
+<p><b>口播稿</b>（睡前出声说一遍，说不顺的地方就是还没懂的地方）：</p>
+<blockquote>asyncio 的核心三层。<b>Loop</b> 是调度器，只做一件事：跑就绪队列里的回调，没活干就睡在 IO 多路复用和定时器上——它根本不认识协程。<b>Future</b> 是合同：协程 await 它时就挂起，谁完成了谁调 set_result，它把等待者排回就绪队列。<b>Task</b> 是会驱动协程的 Future：用 coro.send 推进协程，协程 return 的值填进 Task 自己。所以定时器、socket、线程，任何东西完成时只要 set_result 一个 Future，协程就能在下个轮次被唤醒——加新的等待方式不用改循环，这就是解耦。这套我默写过，80 行。</blockquote>
+
+<h3 id="b3-ch2-2">2.2 追问一句答 + 实测数字</h3>
+<p>高频追问的"一句话答案"弹药库：</p>
+<table>
+<tr><th>追问</th><th>一句话答案</th><th>靠什么说</th></tr>
+<tr><td>gather 顺序哪来的？</td><td>槽位按参数位置预留，结束时写回自己的槽</td><td>可自己实现过（按参数序收割，不按完成序）</td></tr>
+<tr><td>cancel 怎么生效？</td><td>下个机会点 throw CancelledError，协程可捕获</td><td>五幕剧验证过</td></tr>
+<tr><td>纯计算死循环会怎样？</td><td>卡死整个循环——投递口只有 await 点</td><td>无 await 的任务永不让出</td></tr>
+<tr><td>跨线程怎么唤醒协程？</td><td>self-pipe 写一个字节叫醒 epoll</td><td>手写跨线程唤醒验证过</td></tr>
+<tr><td>容器线程安全吗？</td><td>单条不撕裂，读改写序列照样丢数据</td><td>竞态实验验证过</td></tr>
+</table>
+<p><b>带实测数字的人会被记住</b>（数字弹药库）：</p>
+<table>
+<tr><th>对比项</th><th>实测数字</th><th>说明什么</th></tr>
+<tr><td>CPU 密集任务</td><td>进程池 27s vs 线程池 39s</td><td>CPU 密集场景进程池胜（绕开 GIL）</td></tr>
+<tr><td>单个执行体开销</td><td>协程 1.7KB vs 线程 13.6KB</td><td>协程比线程轻 8 倍——高并发 IO 密集的底气</td></tr>
+<tr><td>asyncio.Lock vs 线程 Lock</td><td>慢约 5 倍</td><td>协程锁走调度队列，单线程本可少用锁</td></tr>
+<tr><td>竞态窗口</td><td>一次函数调用内丢 48%</td><td>"窗口小就安全"是错觉，照样丢近半</td></tr>
+</table>
+<div class="box interview"><div class="boxTitle">🎭 面试作答：被问到没读过的东西怎么办</div>
+<p>被问到 uvloop 内部、aiohttp 内部、Windows proactor 这类没读过的细节，<b>不要装懂</b>，用这句兜底：<b>"这个细节我没读过，但我自己写过 80 行的迷你事件循环，从实现者的角度我理解是……"</b>——诚实 + 展示已验证的底座，比硬撑体面得多。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch3">
+<h2>第 3 章 · 四个动词：生成器地基<span class="tag">P0 精华</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>（贴了别的 AI 给的 6 步流程后）"概念不理解：搞不懂 await 和 wakeup 是什么，对 yield 和 yield from 也还不太懂。调用流程不清晰：看不懂每一步是什么、在什么情况下进入下一步。运行机制不明确：我知道 send 是启动，其他的我就不知道了。"</p>
+</div>
+<p>三个"不懂"其实是同一个洞：<b>asyncio 的一切都站在生成器机制上</b>。这轮零 asyncio 概念，只讲 4 个动词。</p>
+
+<h3 id="b3-ch3-1">3.1 动词翻译表 + 三个触发器</h3>
+<table>
+<tr><th>动词</th><th>一句话</th><th>备注</th></tr>
+<tr><td><code>yield</code></td><td><b>暂停</b>。右边的东西<b>交出去</b>给驱动者；恢复时，send 塞进来的东西落在它身上</td><td>全场唯一的暂停点在 <code>Future.__await__</code> 里的 <code>yield self</code></td></tr>
+<tr><td><code>send(x)</code></td><td><b>"继续跑"</b>，顺便把 x 送入。第一次 send 叫"启动"，之后每次都叫"恢复"——所以它不只是启动</td><td>asyncio 里 send 的永远是 None，只是"继续跑"的信号</td></tr>
+<tr><td><code>yield from</code> / <code>await</code></td><td><b>隧道</b>。把自己的暂停权借给里层，里层的暂停<b>不经过我的代码</b>直接弹到最外层驱动者手里</td><td>字节码层两者编译出同一条 YIELD_FROM</td></tr>
+<tr><td><code>__wakeup</code></td><td>一个<b>普通回调函数</b>，Task 预先挂在 Future 上的，名字就叫"该醒了"。工作只有一件：<b>再 send 一次</b></td><td>不是关键字，是方法名</td></tr>
+</table>
+<p>"什么时候进入下一步"的答案——归根结底只有 <b>3 个触发器</b>，没有第四种：</p>
+<ol>
+<li><b>函数自己跑到 yield</b> → 暂停，交出东西（整台 asyncio 里这一幕只发生在一个地方：<code>Future.__await__</code> 里的 <code>yield self</code>）</li>
+<li><b>驱动者调 send</b> → 恢复，从上次暂停的那一行继续</li>
+<li><b>函数跑完</b> → 抛 <code>StopIteration</code>，return 值藏在异常里被驱动者取出</li>
+</ol>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：字节码铁证——await 就是换了名字的 yield from</div>
+<p>实测对照（Python 3.10）：<code>yield from inner()</code> 和 <code>await inner()</code> 编译出的核心指令是<b>同一条 <code>YIELD_FROM</code></b>，唯一差别是前置安检门——<code>GET_YIELD_FROM_ITER</code>（是迭代器就行）vs <code>GET_AWAITABLE</code>（只放行 awaitable）。这是字面意义上的"换名字"。</p>
+</div>
+
+<h3 id="b3-ch3-2">3.2 三条通道各司其职</h3>
+<p>几乎所有人卡住的地方：<b>结果不走 yield 这条路</b>。三条通道从不混用：</p>
+<table>
+<tr><th>通道</th><th>负责什么</th><th>不负责什么</th></tr>
+<tr><td><code>yield self</code>（第 7 步）</td><td>只负责交出 Future——"请在完成时叫醒我"这个信号</td><td>不传结果</td></tr>
+<tr><td><code>send(None)</code>（第 15 步）</td><td>只负责说"继续跑"</td><td>送来的是 None，不是结果！</td></tr>
+<tr><td><b>return 通道</b>（第 16 步）</td><td><code>__await__</code> 被唤醒后执行 <code>return self._result</code>，return 值穿过隧道变成 await 表达式的值</td><td>——</td></tr>
+</table>
+<pre><code class="language-text"># 运行实测输出，注意第 2 行的括号
+[Fut]       __await__: yield self     ← 全系统唯一的暂停点
+[Fut]       被 send(None) 叫醒(注意: 送来的是 None 不是结果!)
+[download] ③ 醒来, await 表达式的值 = '0.2秒后的世界'   ← 结果走 return 通道</code></pre>
+<p>这就是为什么别的 AI 给的 6 步流程第⑥步说"send(None)"却拿到了结果——<b>送进来的是 None，结果是协程自己从 Future 里取出来 return 的</b>。</p>
+
+<h3 id="b3-ch3-3">3.3 12 行驱动者 = Task 的全部秘密</h3>
+<p>没有 Task 类、没有 Loop 类——赤手空拳当驱动者，12 行就能跑完一个协程的一生：</p>
+<pre><code class="language-python">def driver(coro):
+    """赤手空拳当驱动者：Task.__step 做的事和这里一模一样，
+    只是多包了一层'收到 Future 后挂号'的壳。"""
+    try:
+        # 第一次 send(None) = 启动：协程第一次真正跑起来
+        yielded = coro.send(None)
+        # send 的返回值 = 协程在 yield 处交出的东西（这里是 Future）
+        print(f"收到请求: 我在等一个 {yielded} 秒的定时器")
+        import time; time.sleep(0.2)      # 驱动者闲下来去等（真循环里 = epoll/定时器堆）
+        coro.send(None)                   # 第二次 send = 恢复：把协程从冻结点叫醒
+    except StopIteration as e:
+        # 协程跑完抛 StopIteration，return 值藏在 e.value 里
+        print(f"函数死了, return 值从异常里取出: {e.value}")
+
+driver(download())</code></pre>
+<pre><code class="language-text"># 实测输出：这段输出就是 Task 的全部秘密
+[download] ① 出发
+[驱动者]   ② 收到请求 '我在等一个 0.2 秒的定时器' → 去睡 0.2 秒
+[download] ③ 被叫醒, 驱动者塞进来的东西是 None
+[驱动者]   ④ 函数死了, return 值从异常里取出: '下载完成'</code></pre>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：yield 是双向窗口</div>
+<p>普通函数是<b>单程票</b>：进去、干完、出来，一次性。生成器/协程是<b>服务窗口</b>：可以暂停（yield = "下一位，先等我叫你"）、可以恢复（send = "到你 了，继续"）。yield 既是出口（把值递出去）也是入口（把 send 的值接进来）。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch4">
+<h2>第 4 章 · 19 步一生：一个协程任务的一生<span class="tag">P0 核心图</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"把所有方法提取出来，放在对应的类下面。然后设置一个协程任务，创建协程并放进 Loop 中去执行。给我一个基于代码函数的流程图，第一步到哪，下一步到哪，直接画条线连过去。"</p>
+</div>
+
+<h3 id="b3-ch4-1">4.1 三件套方法归位 + 六阶段</h3>
+<p>先把三件套的<b>全部方法</b>归位，每个方法一句话职责：</p>
+<table>
+<tr><th>类</th><th>方法</th><th>一句话职责</th></tr>
+<tr><td><code>Loop</code></td><td><code>__init__ / call_soon / call_later / create_future / create_task / run_until_complete / _run_once</code></td><td>调度器：只认就绪队列和定时器堆，<b>不认识协程</b></td></tr>
+<tr><td><code>Future</code></td><td><code>__init__ / done / result / add_done_callback / set_result / __await__</code></td><td>合同：存结果，完成时把挂号者排回队列</td></tr>
+<tr><td><code>Task(Future)</code></td><td><code>__init__ / __step / __wakeup</code>（其余全继承自 Future）</td><td>驱动器：send 推进协程，协程的 return 填进自己</td></tr>
+<tr><td>积木</td><td><code>sleep(loop, d)</code></td><td>定时器事件源，asyncio.sleep 的骨架</td></tr>
+</table>
+
+<div class="figwrap">
+<div class="figTitle">一个协程任务的一生：19 步六阶段全景</div>
+<div class="figSub">一个 <code>download</code> 协程从 create_task 到 task.done() 的完整编号轨迹——编号与真实运行时打印一致</div>
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="b3-ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- 阶段 A -->
+  <rect x="20" y="30" width="290" height="130" rx="10" fill="#0d2117" stroke="#3fb950"/>
+  <text x="34" y="56" fill="#3fb950" font-size="14" font-weight="bold">A · 装弹（1-2）</text>
+  <text x="34" y="80" fill="#e6edf3" font-size="12">create_task(download) 造出 Task</text>
+  <text x="34" y="100" fill="#8b949e" font-size="12">出生即排队：__step 进就绪队列</text>
+  <text x="34" y="120" fill="#8b949e" font-size="12">run_until_complete 发动机开始转</text>
+  <text x="34" y="142" fill="#6e7681" font-size="11">while not task.done(): _run_once()</text>
+  <!-- 阶段 B -->
+  <rect x="355" y="30" width="290" height="130" rx="10" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="369" y="56" fill="#58a6ff" font-size="14" font-weight="bold">B · 协程开跑（3-8）</text>
+  <text x="369" y="80" fill="#e6edf3" font-size="12">__step → coro.send(None) 推进</text>
+  <text x="369" y="100" fill="#8b949e" font-size="12">sleep: create_future + call_later 订闹钟</text>
+  <text x="369" y="120" fill="#e3b341" font-size="12">await → yield self ← 全场唯一暂停点(7)</text>
+  <text x="369" y="142" fill="#8b949e" font-size="11">挂号：fut.add_done_callback(__wakeup)(8)</text>
+  <!-- 阶段 C -->
+  <rect x="690" y="30" width="290" height="130" rx="10" fill="#161b22" stroke="#6e7681"/>
+  <text x="704" y="56" fill="#8b949e" font-size="14" font-weight="bold">C · 睡觉（9）</text>
+  <text x="704" y="80" fill="#e6edf3" font-size="12">就绪队列空了</text>
+  <text x="704" y="100" fill="#8b949e" font-size="12">循环睡在定时器堆上</text>
+  <text x="704" y="122" fill="#6e7681" font-size="11">单任务时是真睡；多任务时</text>
+  <text x="704" y="140" fill="#6e7681" font-size="11">"别的任务趁机跑"就发生在这里</text>
+  <!-- 箭头 A→B →C -->
+  <line x1="310" y1="95" x2="353" y2="95" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar)"/>
+  <line x1="645" y1="95" x2="688" y2="95" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar)"/>
+  <!-- 箭头 C↓D -->
+  <line x1="835" y1="160" x2="835" y2="203" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar)"/>
+  <!-- 阶段 D -->
+  <rect x="690" y="207" width="290" height="130" rx="10" fill="#211a08" stroke="#d29922"/>
+  <text x="704" y="233" fill="#d29922" font-size="14" font-weight="bold">D · 兑现（10-12）</text>
+  <text x="704" y="257" fill="#e6edf3" font-size="12">0.05s 到点，定时器回调搬进队列(10)</text>
+  <text x="704" y="277" fill="#8b949e" font-size="12">循环执行预订的 set_result(11)</text>
+  <text x="704" y="297" fill="#8b949e" font-size="12">call_soon(__wakeup) 排队(12)</text>
+  <text x="704" y="319" fill="#6e7681" font-size="11">不直接调——否则嵌套执行，顺序保证就没了</text>
+  <!-- 阶段 E -->
+  <rect x="355" y="207" width="290" height="130" rx="10" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="369" y="233" fill="#bc8cff" font-size="14" font-weight="bold">E · 复活到死亡（13-18）</text>
+  <text x="369" y="257" fill="#e6edf3" font-size="12">弹出 __wakeup(13-14) → __step(15)</text>
+  <text x="369" y="277" fill="#8b949e" font-size="12">send(None) 解冻；return 通道取结果(16)</text>
+  <text x="369" y="297" fill="#8b949e" font-size="12">download 跑完(17) → StopIteration</text>
+  <text x="369" y="319" fill="#6e7681" font-size="11">return 值填进 Task(18)——协程死亡 = Task 被兑现</text>
+  <!-- 阶段 F -->
+  <rect x="20" y="207" width="290" height="130" rx="10" fill="#2e0d0d" stroke="#f85149"/>
+  <text x="34" y="233" fill="#f85149" font-size="14" font-weight="bold">F · 收官（19）</text>
+  <text x="34" y="257" fill="#e6edf3" font-size="12">while 发现 task.done() 为真</text>
+  <text x="34" y="277" fill="#8b949e" font-size="12">退出循环</text>
+  <text x="34" y="297" fill="#8b949e" font-size="12">return task.result()</text>
+  <text x="34" y="319" fill="#6e7681" font-size="11">——就是第 18 步存进去的那个值</text>
+  <!-- 箭头 D→E→F -->
+  <line x1="688" y1="272" x2="647" y2="272" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar)"/>
+  <line x1="353" y1="272" x2="312" y2="272" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar)"/>
+  <!-- 底部注释 -->
+  <text x="500" y="372" fill="#6e7681" font-size="12" text-anchor="middle">最反直觉：第 5、6、7 步全部发生在第 4 步那个 send() 的内部——第 4 步和第 8 步是同一次 __step 调用</text>
+  <text x="500" y="392" fill="#6e7681" font-size="12" text-anchor="middle">蛇形读法：上排 A→B→C，下排 D→E→F（C 执行完往下进入 D）</text>
+</svg>
+</div>
+
+<p>逐阶段讲解：</p>
+<ul>
+<li><b>阶段 A（1-2）装弹</b>：<code>create_task(download(loop))</code> 造出 Task，Task 干的第一件事就是把自己推进就绪队列——<b>出生即排队</b>。</li>
+<li><b>阶段 B（3-8）协程开跑</b>：第 3 步循环弹出 <code>__step</code> 执行；第 4 步 <code>__step</code> 调 <code>coro.send(None)</code>，协程这才第一次跑起来。<span class="hl">最反直觉的一点：第 5、6、7 步全部发生在第 4 步那个 send() 的内部</span>——download 跑到 <code>await sleep</code>，sleep 创建 Future、挂定时器（第 6 步），然后 <code>await fut</code> 走进 <code>Future.__await__</code>，执行 <code>yield self</code>（第 7 步，全场唯一的暂停点），函数在这里冻结，<code>send()</code> 这才返回，把冻住的 Future 交回 <code>__step</code>——于是第 8 步挂号：<code>fut.add_done_callback(__wakeup)</code>，"你完成时叫我"。<b>第 4 步和第 8 步是同一次 __step 调用，中间夹着协程跑了半程</b>。</li>
+<li><b>阶段 C（9）睡觉</b>：就绪队列空了，循环睡在定时器上。单线程并发里"别的任务趁机跑"就发生在这——本演示只有一个任务，所以是真睡。</li>
+<li><b>阶段 D（10-12）兑现</b>：0.05 秒到点，定时器回调被搬进队列（10），循环执行 <code>fut.set_result(None)</code>（11-12）。注意第 12 步：存结果，然后 <code>call_soon(__wakeup)</code> <b>排队——不直接叫醒</b>。为什么不直接调？直接调就会在 set_result 里嵌套执行协程，队列的顺序保证就没了。</li>
+<li><b>阶段 E（13-18）复活到死亡</b>：下一圈循环执行排队的 <code>__wakeup</code>（13-14），它只干一件事：再 <code>__step</code> 一次（15），<code>send(None)</code> 把协程从第 7 步冻住的那行解冻。<span class="hl">第 16 步是关键：醒来后 __await__ 执行 return self._result——结果不是 send 送进来的（送的是 None），是协程自己从 Future 里取出来 return 的</span>。download 拿到值继续跑完（17），函数结束抛 <code>StopIteration</code>，<code>__step</code> 捕获它，把 return 值填进 Task 自己（18）——<b>协程死亡 = Task 这个 Future 被兑现</b>。</li>
+<li><b>阶段 F（19）收官</b>：<code>while</code> 发现 <code>task.done()</code> 为真，退出循环，<code>return task.result()</code>——就是第 18 步存进去的那个值。</li>
+</ul>
+
+<h3 id="b3-ch4-2">4.2 三个数字 + 毕业作业</h3>
+<table>
+<tr><th>数字</th><th>含义</th><th>为什么</th></tr>
+<tr><td><b>4 个编号，2 次调用</b></td><td><code>__step</code> 在 19 步里出现 4 个编号，但只被调用 2 次</td><td>4/8 是一次（开头那半程），15/18 是一次（结尾那半程）</td></tr>
+<tr><td><b>_run_once 转 4 圈</b></td><td>循环转了 4 圈</td><td>跑任务、睡觉、搬定时器、跑唤醒——各一圈</td></tr>
+<tr><td><b>yield 全场 1 个</b></td><td>真正执行的 yield 只有一个</td><td>第 7 步 <code>Future.__await__</code> 里那条 <code>yield self</code>（第 7 章展开）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：__step 执行次数公式</div>
+<p><b>__step 执行次数 = 1 + await 次数</b>（第一次是出生排队被循环执行，之后每次 await 被唤醒都由 <code>__wakeup</code> 叫它）。19 步流程里 download 只有一次 await，所以 __step 恰好 2 次。</p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 毕业作业（预测对了就是真懂）</div>
+<p>给 19 步流程里的 <code>download</code> 加<b>第二个 await</b>，先在纸上预测两个数——<b>__step 会执行几次</b>（按公式算）、<b>编号会涨到第几步</b>——再实际运行对答案。预测全对的那天，这台机器就是你亲手拆装过的了。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch5">
+<h2>第 5 章 · 判卷五问：两个视角一个根<span class="tag">P0 纠错</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话（五连问）</div>
+<p>"先去 A 的 callback 调了 call_later（set_result）吗？然后才去 await 这个 sleep 的 future？暂停之后怎么就到了 task_step？是因为它暂停了就不跑了，然后就到了 task_step，因为 step 一直在循环？第 13 步的 wakeup 是怎么来的，是就绪队列有 wakeup 的 callback 对吧？第 17 步跑完了协程，也会自动让出是吧？"</p>
+</div>
+<p>五问判卷：对三对半，两个 ✗ 是<b>同一个根</b>——把"协程内发生的事"和"驱动者看到的事"混在一个视角里看了。</p>
+<table>
+<tr><th>说法</th><th>判定</th></tr>
+<tr><td>① 先 <code>call_later</code> 再 <code>await</code></td><td>✓ 对，而且顺序<b>不能反</b></td></tr>
+<tr><td>② "因为 step 一直在循环"</td><td>✗ 前半对，后半错（5.2 拆解）</td></tr>
+<tr><td>③ set_result 之后排队叫醒</td><td>✓ 对，措辞拧一下：叫醒的是 Task，不是 future</td></tr>
+<tr><td>④ 第 13 步来自就绪队列里的 wakeup</td><td>✓ 完全正确</td></tr>
+<tr><td>⑤ "跑完也会自动让出"</td><td>✗ 不是让出，是死亡——通道不同（5.4 拆解）</td></tr>
+</table>
+
+<h3 id="b3-ch5-1">5.1 先订闹钟，再睡觉</h3>
+<p><code>sleep</code> 里三行的顺序是铁律：<code>create_future</code> → <code>call_later</code> → <code>await fut</code>。为什么不能反过来？因为 <b>await 一执行人就冻住了</b>——冻住之后排在后面的代码一句都不会跑，闹钟永远订不上，这个任务就死锁在暂停里。所以必须先安排好"谁来兑现我"（定时器回调就是未来的 set_result），再躺下。</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制："yield self 相当于返回那个 future"——精确，但返回给谁？</div>
+<p>它返回给的<b>不是 sleep 的调用者</b>，是<b>驱动者</b>：<code>yield self</code> 的效果 = <code>send()</code> 的返回值变成这个 Future。普通 return 只能给调用者，yield 的值是递到驱动者手上的——这就是为什么 <code>__step</code> 能拿到它。</p>
+</div>
+
+<h3 id="b3-ch5-2">5.2 关键修正：__step 没有在循环</h3>
+<p>"它暂停了就不跑了，然后就到了 task_step"——这半句<b>完全正确</b>。"因为 step 一直在循环"——这半句错了，<code>__step</code> 里没有任何循环。真相更简单也更漂亮：</p>
+<blockquote><b>coro.send(None) 是一个普通函数调用，而 yield 那一行就是它的返回点。</b>暂停和返回是同一瞬间的两个视角——协程看是"冻结"，__step 看是"send 调用返回了"。</blockquote>
+<p>看第 7 步冻结瞬间的真实调用栈：</p>
+<pre><code class="language-text">run_until_complete          ← 唯一的循环在这里(第2步的 while)
+ └─ _run_once #1                    (第3步)
+     └─ Task.__step                 (第4步)
+         └─ coro.send(None)   ┐
+             └─ download      │ 第5步
+                 └─ sleep     │ 第6步   这些帧此刻
+                     └─ __await__ │ 第7步   全在栈上
+                        └─ yield self ┘ ← 冻结点 = send 的返回点
+         ←─ send 在这行返回，返回值 = 那个 Future
+     ←─ __step 接着跑第8步(挂号)，然后自己 return
+ ←─ _run_once return，while 转下一圈 → 第9步</code></pre>
+<p>栈像普通函数返回一样<b>逐层自然退回</b>，没有任何人在"等它让出"。实测铁证（用 traceback 打印）：冻结瞬间栈是 <code>step → download → __await__</code>（协程的帧全在栈上）；send 返回后栈只剩 <code>step</code>——<b>协程的帧被收进协程对象里随身保存，醒来再放回来</b>。</p>
+<div class="box counter"><div class="boxTitle">⛔ 纠错：__step 是"被反复叫"，不是"自己在转"</div>
+<p><code>__step</code> 确实被调用了两次——但第一次是<b>出生时排队被循环执行</b>，第二次是 <code>__wakeup</code> 叫它。公式：<b>__step 执行次数 = 1 + await 次数</b>。唯一的循环在 <code>run_until_complete</code> 的 while 里。</p>
+</div>
+
+<h3 id="b3-ch5-3">5.3 __wakeup 的三段一生</h3>
+<p>把整条链补全，<code>__wakeup</code> 一生经过三个状态：</p>
+
+<div class="figwrap">
+<div class="figTitle">__wakeup 的三个家：从登记簿到调度队列到栈上</div>
+<div class="figSub">"等到用的时候直接就用了"的错觉，来自漏看了第 12 步那次搬家——set_result 是唯一的搬运工</div>
+<svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="b3-ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- 家1 登记簿 -->
+  <rect x="20" y="30" width="290" height="170" rx="10" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="34" y="56" fill="#58a6ff" font-size="14" font-weight="bold">① 登记（第 8 步）</text>
+  <text x="34" y="82" fill="#e6edf3" font-size="12">住在：fut._callbacks</text>
+  <text x="34" y="104" fill="#8b949e" font-size="12">Future 身上的登记簿——只是一条记录</text>
+  <text x="34" y="126" fill="#8b949e" font-size="12">不在任何队列里</text>
+  <text x="34" y="150" fill="#6e7681" font-size="11">此刻没有任何代码会执行它</text>
+  <text x="34" y="172" fill="#6e7681" font-size="11">推动者：__step 收到 Future 后立刻挂号</text>
+  <!-- 家2 调度队列 -->
+  <rect x="355" y="30" width="290" height="170" rx="10" fill="#211a08" stroke="#d29922"/>
+  <text x="369" y="56" fill="#d29922" font-size="14" font-weight="bold">② 排队（第 12 步）</text>
+  <text x="369" y="82" fill="#e6edf3" font-size="12">住在：loop._ready</text>
+  <text x="369" y="104" fill="#8b949e" font-size="12">Loop 手里的调度队列</text>
+  <text x="369" y="126" fill="#8b949e" font-size="12">这才进了"待执行"状态</text>
+  <text x="369" y="150" fill="#6e7681" font-size="11">推动者：set_result 遍历登记簿，</text>
+  <text x="369" y="168" fill="#6e7681" font-size="11">call_soon 搬运，搬完 clear() 清空</text>
+  <!-- 家3 栈上 -->
+  <rect x="690" y="30" width="290" height="170" rx="10" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="704" y="56" fill="#bc8cff" font-size="14" font-weight="bold">③ 执行（第 13 步）</text>
+  <text x="704" y="82" fill="#e6edf3" font-size="12">住在：栈上</text>
+  <text x="704" y="104" fill="#8b949e" font-size="12">真正被调用：cb(*args)</text>
+  <text x="704" y="126" fill="#8b949e" font-size="12">→ 调 __step → send(None)</text>
+  <text x="704" y="150" fill="#6e7681" font-size="11">推动者：循环从队列弹出执行</text>
+  <text x="704" y="172" fill="#6e7681" font-size="11">跑完即弃——一次性用品</text>
+  <!-- 箭头 -->
+  <line x1="310" y1="115" x2="353" y2="115" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar2)"/>
+  <line x1="645" y1="115" x2="688" y2="115" stroke="#8b949e" stroke-width="2" marker-end="url(#b3-ar2)"/>
+  <!-- 底部注释 -->
+  <rect x="20" y="225" width="960" height="60" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="40" y="250" fill="#e3b341" font-size="12.5">关键事实：__wakeup 是一次性用品——第 13 步跑完即弃。协程下次 await 到新 Future 时，挂的是一个新的 __wakeup。</text>
+  <text x="40" y="272" fill="#8b949e" font-size="12.5">所以"挂号"这个动作每个 await 都会发生一次，不是一劳永逸。future 是扳机，Task 是睡着的那个。</text>
+</svg>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：set_result 是唯一的搬运工</div>
+<p>第 12 步被<b>兑现</b>的是 future 本身（合同完成，<code>_done=True</code>）；被<b>排队叫醒</b>的是 Task（通过挂号在 future 上的 <code>__wakeup</code>）。<b>set_result 遍历登记簿，把 __wakeup 从 Future 的登记簿搬进 Loop 的就绪队列</b>——不经过这一步，第 13 步的队列里根本没有东西可弹。</p>
+</div>
+
+<h3 id="b3-ch5-4">5.4 跑完不是让出，是死亡</h3>
+<p>让出和死亡确实都是"控制权回到 __step"，但走的是<b>两条不同的通道</b>：</p>
+<table>
+<tr><th>结局</th><th>走的通道</th><th>后果</th></tr>
+<tr><td>让出（await 挂起）</td><td>send <b>正常返回</b></td><td>还能再 send 醒来（第 15 步）</td></tr>
+<tr><td>死亡（函数跑完）</td><td>send <b>抛 StopIteration</b>，return 值藏在 <code>e.value</code></td><td><b>永不再醒</b>——再 send 直接报错</td></tr>
+</table>
+<pre><code class="language-python"># 实测：对跑完的协程再 send
+coro.send(None)   # RuntimeError: cannot reuse already awaited coroutine
+# —— 死掉的协程是一次性用品，和 Future 一样不能复用</code></pre>
+<p>第 17 步 download 的 <code>return '任务A的数据'</code> 变成 <code>StopIteration.value</code>，被 <code>__step</code> 的 <code>except</code> 接住，填进 Task 自己（第 18 步）。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch6">
+<h2>第 6 章 · 预售：grep 不到的那次 set_result<span class="tag">P1 进阶</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"11 步的 set_result 是哪里来的？看代码里面只有在 StopIteration 那里会有调用 set_result，但是我们的 download 应该没有结束吧？难道说是 download 里面的 sleep 结束了？"</p>
+</div>
+
+<h3 id="b3-ch6-1">6.1 set_result 被当作"值"卖掉了</h3>
+<p>推理链<b>完全正确</b>——是 sleep 造的那个 Future 被定时器兑现了。但"为什么在代码里找不到这次调用"这个困惑值得钉死，因为答案藏着一个机制：<b>预售</b>。回看 sleep 的第 6 步：</p>
+<pre><code class="language-python">loop.call_later(0.05, fut.set_result, None)
+# ↑ 注意：这一行里 set_result 没有被调用（没有括号执行）！
+# 它是被当作一个"值"（函数引用），连同参数 (None,) 一起塞进了定时器堆。
+# 0.05 秒后到点，_run_once 执行 cb(*args) —— 那才是调用，
+# 调用者是循环，不是任何协程代码。</code></pre>
+<pre><code class="language-text"># 实验第一幕：把定时器堆掏出来看
+cb   = &lt;bound method Future.set_result of &lt;__main__.Future object at 0x...&gt;&gt;
+args = (None,)
+# 定时器堆里躺着的就是 set_result 本身——预售的订单</code></pre>
+<p>所以 grep 源码里的 <code>set_result(</code> 只能找到 StopIteration 那一处：这次调用在代码里长得像"传值"，不像"调用"。</p>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：预售</div>
+<p>就像预售的演唱会门票：<b>钱现在不结，票提前订好，到点自动核销</b>。set_result 提前 0.05 秒被"卖"进定时器堆，到点由循环执行。这也解释了 5.1 的"先订闹钟再睡觉"——<b>冻结的协程什么都干不了</b>，"醒来后谁来兑现我"必须在躺下之前就安排好。</p>
+</div>
+<p>两次 set_result 的完整对照（实验第二幕实测）：</p>
+<table>
+<tr><th></th><th>第 11 步</th><th>第 18 步</th></tr>
+<tr><td>被兑现的对象</td><td>睡眠 Future（sleep 内部造的）</td><td>Task 自己（Task 也是 Future）</td></tr>
+<tr><td>谁调的 set_result</td><td><code>_run_once</code>（执行定时器回调）</td><td><code>Task.__step</code>（except StopIteration 里）</td></tr>
+<tr><td>语义</td><td>事件源兑现合同 → 唤醒等待者</td><td>协程死亡 → Task 兑现自己</td></tr>
+<tr><td>在源码里的样子</td><td><b>看不见</b>——第 6 步以函数引用形式预售</td><td>你 grep 到的那处（显式写在代码里）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：为什么死亡通道能显式写，唤醒只能预售</div>
+<p>死亡通道的 return 值就攥在 <code>__step</code> 手里——<b>同步的可以直接写；唤醒必须等未来某个事件，异步的只能预售</b>。你 grep 到的那处其实是<b>特殊情况</b>，普遍情况（事件源兑现 Future）都以预售形式存在。</p>
+</div>
+
+<h3 id="b3-ch6-2">6.2 措辞精修三处 + 46 处</h3>
+<p>推理对了，但三处措辞拧一下会更准：</p>
+<ol>
+<li><b>"sleep 它也是一个 future"</b> → sleep 是协程，是"<b>造 Future 的人</b>"。被兑现的是它内部 <code>create_future()</code> 造出来的那个对象，sleep 自己从头到尾没当过 Future。</li>
+<li><b>时序反了</b> → 不是"sleep 结束了之后它去调 set_result"。set_result 发生时（第 11 步）sleep 协程从第 7 步起就冻结着，<b>冻结的协程干不了任何事</b>。正确因果链：定时器到点 → 循环执行<b>预订的</b> set_result → <b>这才导致</b> sleep 能醒来。<span class="hl">set_result 是因，醒来是果。</span></li>
+<li><b>"download 挂的 wakeup"</b> → 挂号的人是 <code>Task.__step</code>（第 8 步，在 download 冻住<b>之后</b>由驱动器收尾时挂的），挂在睡眠 Future 身上。download 自己什么都没挂——它冻结时连代码都没在跑。</li>
+</ol>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：真 asyncio 是同款套路（标准库源码）</div>
+<p><code>asyncio.sleep</code> 内部就是三步——和手写版<b>一字不差的预售</b>：</p>
+<pre><code class="language-python"># asyncio 标准库 sleep 的骨架（简化）
+future = loop.create_future()
+loop.call_later(delay, futures._set_result_unless_cancelled, future, result)
+#          ↑ 预售：set_result 系函数作为"值"提前卖进定时器堆
+return await future
+# 死亡通道在 tasks.py:241: super().set_result(exc.value)——就是你 grep 到的那处</code></pre>
+<p>整个 asyncio 包里 <code>set_result(</code> 出现 <b>46 处</b>，几乎全是各种事件源（socket、线程池、子进程、定时器）在兑现各自的 Future——"冻结的中间 + 开放的两端"，这 46 处就是"开放的两端"的实体。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch7">
+<h2>第 7 章 · yield 三层考证<span class="tag">P1 降维打击</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"所以说协程到底使用了 yield 吗"</p>
+</div>
+
+<h3 id="b3-ch7-1">7.1 协程到底用没用 yield：取决于你在哪一层看</h3>
+<p>一句话总答案：<b>源码层没用（你一个都没写），字节码层全是（await 编译出来就是 yield），运行层只有一个真正执行（Future.__await__ 里那条）。</b></p>
+<table>
+<tr><th>层</th><th>答案</th><th>实测证据（全部来自本机 3.10）</th></tr>
+<tr><td>源码层</td><td><b>没用</b></td><td><code>download</code> 里 grep <code>yield</code>：× 0；你写的每个关键字都是 <code>await</code></td></tr>
+<tr><td>字节码层</td><td><b>全是</b></td><td><code>await coro()</code> 和 <code>yield from coro()</code> 编译出的核心指令是<b>同一条 <code>YIELD_FROM</code></b>，唯一差别是前置安检门（<code>GET_AWAITABLE</code> vs <code>GET_YIELD_FROM_ITER</code>）</td></tr>
+<tr><td>运行层</td><td><b>只有一个</b></td><td>标准 <code>futures.py</code> 原文：<code>def __await__(self): yield self</code>——你代码里<b>每一个 await 沿隧道下钻的终点站都是它</b></td></tr>
+</table>
+<p>三层串成一根线：<code>yield self</code> 交出去的是 Future → <code>Task.__step</code> 的 <code>send()</code> 返回值正是它（第 7 步）→ 交出后挂号 <code>__wakeup</code>（第 8 步）→ 定时器兑现后叫醒（第 11-13 步）。<span class="hl">全系统唯一的真·yield 执行点，就是 19 步流程图上的第 7 步。</span></p>
+<pre><code class="language-python"># 标准 futures.py 的原文（运行层唯一的 yield）
+class Future:
+    def __await__(self):
+        if not self.done():
+            yield self          # ← 全系统唯一的暂停点：把 Future 交给驱动者
+        return self.result()   # ← 结果走 return 通道（第 3.2 节的三通道之一）</code></pre>
+
+<h3 id="b3-ch7-2">7.2 活化石与历史时间线</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：活化石</div>
+<p>用 3.4 时代的老写法 <code>@asyncio.coroutine</code> + <code>yield from</code> 写一个协程，它<b>今天照样跑在同一个事件循环上，还能和 async/await 版互相 await</b>——因为它们本来就是同一种东西，只是名牌不同。</p>
+</div>
+<table>
+<tr><th>版本 · 年份</th><th>里程碑</th><th>意义</th></tr>
+<tr><td>2.2 · 2001</td><td>PEP 255 <code>yield</code></td><td>生成器：暂停-恢复机器诞生</td></tr>
+<tr><td>3.3 · 2012</td><td>PEP 380 <code>yield from</code></td><td>暂停权可以穿透函数边界——协程的机器基础就绪</td></tr>
+<tr><td>3.4 · 2014</td><td><code>@asyncio.coroutine</code> + <code>yield from</code></td><td>协程真的在用 yield 写</td></tr>
+<tr><td>3.5 · 2015</td><td><code>async</code> / <code>await</code></td><td>糖衣：类型隔离（见下）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：糖衣的目的不是换机器，是类型隔离</div>
+<p>机器十年没换过，换的只是门禁：安检门从"是个迭代器就行"（GET_YIELD_FROM_ITER）收紧为"只放行 awaitable"（GET_AWAITABLE），防止把普通生成器误喂给 await 出诡异 bug。<b>async/await 是穿上了类型安检门的 yield from。</b></p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 面试作答："协程和生成器什么关系？"（最硬的答案）</div>
+<p><b>"协程是穿上了类型安检门的生成器——语法上是 await，字节码上是 YIELD_FROM，语义上全系统只有一个 yield 在执行，就是 Future.__await__ 里那条。"</b>再补一句活化石：3.4 时代的 <code>@coroutine + yield from</code> 协程今天照样运行在同一个循环上，还能和 async/await 互相 await。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-ch8">
+<h2>第 8 章 · 一钻到底：照片模型与 C 层化石<span class="tag">P1 底层</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"它字节码使用了 yield，所有的底层就没有用到 yield 和 send。那 await 和 async 应该也会有它们的底层，难道协程这套从底层到上层建筑，一点生成器都没有用到吗？那他们怎么处理等待和运行的？"</p>
+</div>
+
+<h3 id="b3-ch8-1">8.1 四层对照：你不写，机器在用</h3>
+<div class="box counter"><div class="boxTitle">⛔ 纠错：这句话前半对后半反了</div>
+<p>"底层没用 yield 和 send"恰好说反：<b>19 步流程里第 4 步和第 15 步各是一次 <code>coro.send(None)</code>，运行层满地都是 send</b>。唯一成立的版本是"源码层你不写它们"——你不写，但机器在用。</p>
+</div>
+
+<div class="figwrap">
+<div class="figTitle">四层对照：生成器机器以什么形态在场</div>
+<div class="figSub">越往下越接近机器真相——async/await 只是给生成器机器换的名牌和安检门</div>
+<svg viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="700" height="62" rx="8" fill="#161b22" stroke="#6e7681"/>
+  <text x="40" y="46" fill="#e6edf3" font-size="14" font-weight="bold">源码层：async def / await</text>
+  <text x="40" y="68" fill="#8b949e" font-size="12">不在场——全栈唯一一层（grep yield × 0）</text>
+  <text x="745" y="58" fill="#f85149" font-size="13" font-weight="bold">× 0</text>
+
+  <rect x="20" y="94" width="700" height="62" rx="8" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="40" y="120" fill="#e6edf3" font-size="14" font-weight="bold">字节码层：代码对象的指令</text>
+  <text x="40" y="142" fill="#8b949e" font-size="12">YIELD_FROM 指令，与 yield from 是同一条指令</text>
+  <text x="745" y="132" fill="#58a6ff" font-size="13" font-weight="bold">同名指令</text>
+
+  <rect x="20" y="168" width="700" height="62" rx="8" fill="#211a08" stroke="#d29922"/>
+  <text x="40" y="194" fill="#e6edf3" font-size="14" font-weight="bold">运行层：Task / Loop / Future</text>
+  <text x="40" y="216" fill="#8b949e" font-size="12">tasks.py:232 —— result = coro.send(None)（19 步的第 4/15 步）</text>
+  <text x="745" y="206" fill="#d29922" font-size="13" font-weight="bold">满地 send</text>
+
+  <rect x="20" y="242" width="700" height="62" rx="8" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="40" y="268" fill="#e6edf3" font-size="14" font-weight="bold">C 层：coroutine 类型</text>
+  <text x="40" y="290" fill="#8b949e" font-size="12">PyCoro_Type 住在 genobject.c，send/throw/close 复用 gen_send</text>
+  <text x="745" y="280" fill="#bc8cff" font-size="13" font-weight="bold">生成器本体</text>
+
+  <line x1="760" y1="330" x2="760" y2="30" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="790" y="180" fill="#6e7681" font-size="12" transform="rotate(-90 790 180)">越往下，生成器机器越在场</text>
+</svg>
+</div>
+
+<h3 id="b3-ch8-2">8.2 帧的照片模型：等待和运行怎么处理</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：协程不是在"等待"，它是被停成了一张照片</div>
+<p>实验实测：挂起中的协程，<code>cr_frame.f_lasti = 10</code>（指令指针冻结在 YIELD_FROM 那条指令上）、<code>f_back = None</code>（<b>不在任何调用栈上</b>）。合起来一句话：<b>帧从 C 调用栈上被摘下来，折进协程对象里随身携带，指令指针写在背面，局部变量原样活着，整个对象几百字节，想挂多久挂多久。</b>唤醒 = send 把照片压回栈、跳到 f_lasti 继续。</p>
+</div>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：事件循环 = 相册管理员</div>
+<p>事件循环干的活，本质是<b>相册管理员</b>：谁的 Future 兑现了，就 send 谁——把那张照片压回 C 栈继续放。</p>
+</div>
+<p><b>裸机版验证</b>（零行 asyncio）：用 <code>c.send(None)</code> 手动驱动一个协程——第一次 send 返回它交出的 Box、<code>f_lasti</code> 从 -1 变 10、再 send 抛 StopIteration；然后<b>两个协程 + 一个 while + send，就跑出了 alpha/beta 交替的并发</b>——你亲手当了一回事件循环，而引擎只有 send 一个。</p>
+<pre><code class="language-python"># 裸机版：两个协程 + while + send = 并发（零行 asyncio）
+async def alpha():
+    for i in range(3):
+        await switch()          # 交出控制权 → 帧被停成照片
+        print(f"alpha {i}")
+
+async def beta():
+    for i in range(3):
+        await switch()
+        print(f"beta {i}")
+
+# while 循环轮换 send 两个协程 → 输出 alpha/beta 交替
+# 引擎只有 send 一个：并发 = 在 await 点之间来回切换</code></pre>
+
+<h3 id="b3-ch8-3">8.3 C 层三块化石</h3>
+<p>钻到 C 层挖到的三块化石——协程的生成器族谱就刻在这些细节里：</p>
+<table>
+<tr><th>化石</th><th>是什么</th><th>说明了什么</th></tr>
+<tr><td><b>① close() 抛 GeneratorExit</b></td><td>关掉一个协程，抛进它体内的异常名叫"<b>生成器退出</b>"；现场版演示：stubborn 协程 close 时，体内 <code>except GeneratorExit</code> 真的接到了</td><td>族谱就写在异常名里</td></tr>
+<tr><td><b>② 词汇泄漏</b></td><td>协程 send 的文档说 "return next <b>iterated</b> value"——协程根本不"迭代"，这套措辞是从生成器文档抄的</td><td>同一套 send 机器的活化石</td></tr>
+<tr><td><b>③ 骨架尺寸 88 → 96</b></td><td>协程比生成器恰好多 8 字节，即多一个指针字段 <code>cr_origin</code>（记录出生地，专供 "never awaited" 警告使用；生成器没有 <code>gi_origin</code>）</td><td>同一个骨架，多塞了一张<b>出生证明</b></td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：tasks.py 的作者亲笔注释（标准库原文）</div>
+<pre><code class="language-python"># tasks.py:230-232 —— CPython asyncio 作者亲笔
+# We use the `send` method directly, because coroutines don't
+# have `__iter__` and `__next__` methods. —— 作者注释
+result = coro.send(None)   # 你在所有实验里写的 coro.send(None)，抄的都是这行原文</code></pre>
+</div>
+<div class="box counter"><div class="boxTitle">⛔ 一个诚实的更正（连 AI 的预期也会落空）</div>
+<p>预期协程 send 的文档字符串会写 "into generator"（老版本确实如此），实测这个 3.10 已改写成 coroutine——<b>预期落空，换实测说话</b>。教训：文档会被更新，化石（异常名、字段尺寸、指令名）才是不会说谎的族谱。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-appA">
+<h2>附录 A · 比喻词典<span class="tag">面试作答时可直接借用</span></h2>
+<table>
+<tr><th>术语</th><th>生活化比喻</th><th>一句话对应</th></tr>
+<tr><td>Future</td><td><b>合同 / 兑现凭证</b></td><td>协程躺下前拿到的凭证，谁完成了谁调 set_result 兑现</td></tr>
+<tr><td>Task</td><td><b>会驱动协程的合同</b></td><td>它自己也是 Future，协程的 return 值填进它自己</td></tr>
+<tr><td>Loop</td><td><b>相册管理员</b></td><td>谁的合同兑现了，就把谁的"照片"（协程）压回栈继续放</td></tr>
+<tr><td>挂起的协程</td><td><b>一张照片</b></td><td>帧从 C 栈摘下折进对象随身带，指令指针写在背面，局部变量原样活着</td></tr>
+<tr><td>yield from / await</td><td><b>隧道</b></td><td>暂停权借给里层，里层的暂停不经过我的代码直接弹到最外层驱动者手里</td></tr>
+<tr><td>预售</td><td><b>提前卖出的订单</b></td><td>set_result 以函数引用形式提前 0.05 秒卖进定时器堆，到点由循环核销</td></tr>
+<tr><td>__wakeup 的三个家</td><td><b>登记簿 → 调度队列 → 舞台</b></td><td>留电话（登记）→ 排队（搬运）→ 被叫上台（执行）</td></tr>
+<tr><td>"解耦"这个词</td><td><b>催问券</b></td><td>一说出口必然引来"解耦了什么？怎么解耦的？"</td></tr>
+<tr><td>async / await</td><td><b>糖衣 + 安检门</b></td><td>机器十年没换，换的只是门禁（只放行 awaitable）</td></tr>
+<tr><td>cr_origin 字段</td><td><b>出生证明</b></td><td>协程骨架比生成器多出的那 8 字节，记录出生地</td></tr>
+<tr><td>亲手跑过的代码</td><td><b>免死金牌</b></td><td>"我自己写过 80 行迷你事件循环"——没人能击穿你跑过的代码</td></tr>
+<tr><td>提取练习</td><td><b>合上书默写</b></td><td>读是"认"，写是"取"；读懂和说出之间隔的是产出这块肌肉</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-appB">
+<h2>附录 B · 面试速答卡<span class="tag">面试前十分钟过一遍</span></h2>
+
+<h3>必考一："说说 asyncio 的原理 / 骨架"</h3>
+<div class="box interview"><div class="boxTitle">🎭 30 秒版</div>
+<p>"我自己写过一个 80 行的迷你事件循环。<b>Loop</b> 是调度器，只跑就绪队列里的回调，没活干就睡在 IO 多路复用和定时器上，根本不认识协程；<b>Future</b> 是合同，协程 await 它就挂起，谁完成谁 set_result，它把等待者排回队列；<b>Task</b> 是会驱动协程的 Future，用 send 推进协程，return 值填进自己。所以加一种新等待方式，循环一行不用改——uvloop 提速数倍只换 Loop 和 IO 实现，Future/Task 一行不动，就是这句话的实证。"</p>
+</div>
+<details>
+<summary>展开版（2 分钟）：主线 + 六个追问的接法</summary>
+<div class="inner">
+<p>先说主线（上面 30 秒版），然后按追问接招：</p>
+<ul>
+<li>追问"<b>怎么挂起的</b>" → 帧的照片模型：帧从 C 栈摘下折进协程对象，f_lasti 冻结在 YIELD_FROM，f_back=None；唤醒 = send 把照片压回栈</li>
+<li>追问"<b>结果怎么传的</b>" → 三通道：yield self 只交出 Future；send(None) 只说继续跑；结果走 return 通道穿过隧道变成 await 表达式的值</li>
+<li>追问"<b>协程和生成器什么关系</b>" → 三层答案：源码层没用（grep ×0）、字节码层全是（await 编译出 YIELD_FROM）、运行层只有一个（Future.__await__ 里那条）</li>
+<li>追问"<b>cancel 怎么生效</b>" → 下个机会点 throw CancelledError，协程可捕获；纯计算死循环会卡死整个循环（投递口只有 await 点）</li>
+<li>追问"<b>跨线程怎么唤醒</b>" → self-pipe 写一个字节叫醒 epoll；容器单条不撕裂但读改写序列照样丢</li>
+<li>追问"<b>gather 顺序怎么保证</b>" → 槽位按参数位置预留，结束时按原始参数序收割写回自己的槽</li>
+</ul>
+</div>
+</details>
+
+<h3>必考二："协程到底用了 yield 吗"（一问定乾坤）</h3>
+<div class="box interview"><div class="boxTitle">🎭 硬答案</div>
+<p>"取决于在哪层看：源码层没用——我写的每个关键字都是 await；字节码层全是——await 和 yield from 编译出同一条 YIELD_FROM，差一个安检门；运行层只有一个真正执行——标准库 Future.__await__ 里的 yield self，全系统唯一的暂停点。所以协程就是穿上了类型安检门的生成器。3.4 时代的 @coroutine + yield from 协程今天照样能和 async/await 互相 await——本来就是同一种东西。"</p>
+</div>
+
+<h3>数字弹药（背下来，带实测数字的人会被记住）</h3>
+<table>
+<tr><th>对比</th><th>数字</th><th>用在哪</th></tr>
+<tr><td>进程池 vs 线程池（CPU 密集）</td><td>27s vs 39s</td><td>"CPU 密集为什么用进程池"</td></tr>
+<tr><td>协程 vs 线程（单个开销）</td><td>1.7KB vs 13.6KB</td><td>"协程为什么能开十万级"</td></tr>
+<tr><td>asyncio.Lock vs 线程锁</td><td>慢约 5 倍</td><td>"协程锁走调度队列，单线程少用锁"</td></tr>
+<tr><td>竞态窗口</td><td>一次函数调用丢 48%</td><td>"窗口小 ≠ 安全"</td></tr>
+<tr><td>asyncio 包行数分布</td><td>13129 行里 futures.py 仅 426 行</td><td>"骨架永远是薄的那层"</td></tr>
+<tr><td>asyncio 包 set_result( 出现处数</td><td>46 处，几乎全是事件源兑现</td><td>"开放的两端"的实体</td></tr>
+</table>
+
+<h3>兜底话术（被问到没读过的）</h3>
+<blockquote>"这个细节我没读过，但我自己写过 80 行的迷你事件循环，从实现者的角度我理解是……"</blockquote>
+</section>
+
+<!-- ================================================================ -->
+<section id="b3-appC">
+<h2>附录 C · 事实核查表<span class="tag">全部来自原会话实测，可复现</span></h2>
+<table>
+<tr><th>#</th><th>事实</th><th>实测方式 / 出处</th></tr>
+<tr><td>1</td><td>await 与 yield from 编译产物：核心指令同为 <code>YIELD_FROM</code>，前置检查器不同（GET_AWAITABLE vs GET_YIELD_FROM_ITER）</td><td>Python 3.10 字节码对照实测</td></tr>
+<tr><td>2</td><td>全系统唯一真·yield 执行点 = 标准库 futures.py 的 <code>Future.__await__</code> 里 <code>yield self</code>（= 19 步图第 7 步）</td><td>标准库源码 + 运行追踪</td></tr>
+<tr><td>3</td><td><code>tasks.py:232</code> 即 <code>result = coro.send(None)</code>；230 行有作者注释"coroutines don't have __iter__ and __next__ methods"</td><td>标准库源码</td></tr>
+<tr><td>4</td><td>整个 asyncio 包 <code>set_result(</code> 出现 46 处，几乎全是事件源（socket、线程池、子进程、定时器）兑现各自的 Future</td><td>grep 标准库</td></tr>
+<tr><td>5</td><td>挂起协程实测 <code>cr_frame.f_lasti = 10</code>（冻结在 YIELD_FROM 指令）、<code>f_back = None</code>（不在任何调用栈上）</td><td>traceback + 帧属性实测</td></tr>
+<tr><td>6</td><td>协程 <code>close()</code> 抛 <code>GeneratorExit</code>；协程 send 文档含"iterated value"措辞（3.10 文档主体已改写为 coroutine）</td><td>C 层文档字符串实测</td></tr>
+<tr><td>7</td><td>协程骨架比生成器恰好多 8 字节（88→96），多出 <code>cr_origin</code> 字段；生成器无 <code>gi_origin</code></td><td>对象尺寸实测</td></tr>
+<tr><td>8</td><td>死亡协程再 send：<code>RuntimeError: cannot reuse already awaited coroutine</code>——让出走 send 正常返回，死亡走抛 StopIteration</td><td>运行实测</td></tr>
+<tr><td>9</td><td>19 步流程三个数字：__step 4 个编号只 2 次调用；_run_once 转 4 圈；yield 全场 1 个。公式：__step 执行次数 = 1 + await 次数</td><td>19 步编号轨迹实测</td></tr>
+<tr><td>10</td><td>asyncio.sleep 官方实现 = create_future + call_later(_set_result_unless_cancelled) + return await future；死亡通道在 tasks.py:241 <code>super().set_result(exc.value)</code></td><td>标准库源码</td></tr>
+<tr><td>11</td><td>asyncio 包 13129 行；其中 futures.py 426 行、streams.py 726 行、locks.py 438 行——合同层最薄</td><td>行数统计</td></tr>
+<tr><td>12</td><td>实测数字：进程池 27s vs 线程池 39s；协程 1.7KB vs 线程 13.6KB；asyncio.Lock 慢约 5 倍；竞态窗口一次函数调用丢 48%</td><td>原会话压测</td></tr>
+<tr><td>13</td><td>uvloop 提速数倍只换"Loop + IO 墙"实现，Future/Task/回调/取消一行不动</td><td>uvloop 官方设计事实</td></tr>
+<tr><td>14</td><td>3.4 时代 <code>@asyncio.coroutine</code> + <code>yield from</code> 协程在 3.10 照样运行，且可与 async/await 互相 await</td><td>活化石实验实测</td></tr>
+<tr><td>15</td><td> StreamReader 的 <code>_wakeup_waiter</code> 用 <code>waiter.set_result(None)</code> 兑现等待者；<code>_wait_for_data</code> 文档自述"uses a future to link the protocol feed_data()"</td><td>streams.py 源码</td></tr>
+</table>
+<p class="small">注：本册涉及的 exp17～exp24 系列实验文件为原会话产物，不在本目录内；所有事实均可按"出处"列的方式自行复现。第 12 条压测数字与具体机器负载相关，引用时说明"自己实测的量级"即可。</p>
+</section>
+
+<p style="text-align:center;margin-top:30px"><a class="tocAnchorTop" href="#b3-top">↑ 返回顶部</a></p>
+
+</main>
+</div>
+
+<script src="anno.js"></script>
+</body>
+</html>

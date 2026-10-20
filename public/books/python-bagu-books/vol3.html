@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python 八股教程书 · 第三册：并发编程</title>
+<style>
+/* ============ 全局主题：深色 IDE 风（与第一、二册统一） ============ */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --alice:#3fb950; --bob:#58a6ff; --carol:#d29922; --agent:#bc8cff;
+  --danger:#f85149; --warn:#e3b341; --ok:#3fb950;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.8 system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--bob);text-decoration:none} a:hover{text-decoration:underline}
+code{font-family:var(--mono);background:#21262d;padding:1px 6px;border-radius:4px;font-size:13px;color:#79b8ff}
+pre{background:#0a0d12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;margin:12px 0}
+pre code{background:none;padding:0;color:#e6edf3;font-size:13px;line-height:1.7}
+.layout{display:flex;max-width:1420px;margin:0 auto;align-items:flex-start}
+nav.toc{position:sticky;top:0;width:280px;min-width:280px;height:100vh;overflow:auto;padding:28px 14px;border-right:1px solid var(--border);background:var(--panel)}
+nav.toc .tocTitle{font-size:15px;font-weight:700;margin-bottom:14px;padding:0 8px}
+nav.toc a{display:block;padding:4px 10px;font-size:13px;color:var(--muted);border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{color:var(--text);text-decoration:none;background:var(--panel2)}
+nav.toc a.lv2{padding-left:22px;font-size:12.5px}
+nav.toc .tocFoot{margin-top:18px;padding:10px;font-size:12px;color:var(--dim);border-top:1px dashed var(--border)}
+main{flex:1;min-width:0;padding:36px 44px 80px;max-width:1080px}
+h1{font-size:26px;margin-bottom:8px}
+h1 small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:6px}
+section{margin-bottom:56px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+h2{font-size:21px;margin:34px 0 6px;padding-left:12px;border-left:4px solid var(--bob)}
+h2 .tag{font-size:12px;color:var(--dim);font-weight:400;margin-left:10px}
+h3{font-size:17px;margin:24px 0 6px;color:#79c0ff}
+h4{font-size:15px;margin:18px 0 4px;color:var(--warn)}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+.box{border:1px solid var(--border);border-left:4px solid var(--dim);border-radius:8px;padding:12px 16px;margin:14px 0;background:var(--panel2)}
+.box .boxTitle{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.box.metaphor{border-left-color:var(--warn)} .box.metaphor .boxTitle{color:var(--warn)}
+.box.mechanism{border-left-color:var(--bob)} .box.mechanism .boxTitle{color:var(--bob)}
+.box.counter{border-left-color:var(--danger)} .box.counter .boxTitle{color:var(--danger)}
+.box.interview{border-left-color:var(--agent)} .box.interview .boxTitle{color:var(--agent)}
+.box.ask{border-left-color:var(--carol);background:#17131b} .box.ask .boxTitle{color:var(--carol)}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--text);font-weight:600;white-space:nowrap}
+td{color:var(--muted)} td b,td strong{color:var(--text)}
+tr:hover td{background:#161b2288}
+details{border:1px solid var(--border);border-radius:8px;margin:12px 0;background:var(--panel)}
+details summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--warn);font-weight:600;list-style:none}
+details summary::before{content:"▸ ";color:var(--warn)}
+details[open] summary::before{content:"▾ "}
+details .inner{padding:2px 18px 14px}
+.figwrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:16px;margin:16px 0}
+.figwrap .figTitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.figwrap .figSub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.figwrap svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tocAnchorTop{position:fixed;right:26px;bottom:26px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px}
+.hl{color:var(--warn);font-weight:600}
+.hlg{color:var(--ok);font-weight:600}
+.small{font-size:12.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){nav.toc{display:none}.layout{display:block}}
+ul,ol{margin:8px 0 8px 24px}
+li{margin:4px 0}
+kbd{font-family:var(--mono);background:#21262d;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:12px}
+blockquote{border-left:3px solid var(--agent);background:var(--panel2);padding:10px 16px;margin:12px 0;border-radius:0 8px 8px 0;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ================= 左侧目录 ================= -->
+<nav class="toc" id="toc">
+  <div class="tocTitle">🐍 Python 八股 · 第三册<br><span style="font-size:12px;color:var(--dim)">并发编程 · asyncio 深水区</span></div>
+  <a href="#pre">序章 · 一条从"说不清"到"钻到 C 层"的下钻线</a>
+  <a href="#ch1">第 1 章 · 骨架全景：五件套与第六面墙</a>
+  <a class="lv2" href="#ch1-1">1.1 IO 事件源机器：三级台阶</a>
+  <a class="lv2" href="#ch1-2">1.2 积木清单：知名 API 都是老零件</a>
+  <a class="lv2" href="#ch1-3">1.3 uvloop：冻结的中间层</a>
+  <a href="#ch2">第 2 章 · 面试主线：背这句，不是背"解耦"</a>
+  <a class="lv2" href="#ch2-1">2.1 "解耦"是催问券</a>
+  <a class="lv2" href="#ch2-2">2.2 追问一句答 + 实测数字</a>
+  <a href="#ch3">第 3 章 · 四个动词：生成器地基</a>
+  <a class="lv2" href="#ch3-1">3.1 动词翻译表 + 三个触发器</a>
+  <a class="lv2" href="#ch3-2">3.2 三条通道各司其职</a>
+  <a class="lv2" href="#ch3-3">3.3 12 行驱动者 = Task 的全部秘密</a>
+  <a href="#ch4">第 4 章 · 19 步一生：一个协程任务的一生</a>
+  <a class="lv2" href="#ch4-1">4.1 三件套方法归位 + 六阶段</a>
+  <a class="lv2" href="#ch4-2">4.2 三个数字 + 毕业作业</a>
+  <a href="#ch5">第 5 章 · 判卷五问：两个视角一个根</a>
+  <a class="lv2" href="#ch5-1">5.1 先订闹钟，再睡觉</a>
+  <a class="lv2" href="#ch5-2">5.2 关键修正：__step 没有在循环</a>
+  <a class="lv2" href="#ch5-3">5.3 __wakeup 的三段一生</a>
+  <a class="lv2" href="#ch5-4">5.4 跑完不是让出，是死亡</a>
+  <a href="#ch6">第 6 章 · 预售：grep 不到的那次 set_result</a>
+  <a class="lv2" href="#ch6-1">6.1 set_result 被当作"值"卖掉了</a>
+  <a class="lv2" href="#ch6-2">6.2 措辞精修三处 + 46 处</a>
+  <a href="#ch7">第 7 章 · yield 三层考证</a>
+  <a class="lv2" href="#ch7-1">7.1 协程到底用没用 yield</a>
+  <a class="lv2" href="#ch7-2">7.2 活化石与历史时间线</a>
+  <a href="#ch8">第 8 章 · 一钻到底：照片模型与 C 层化石</a>
+  <a class="lv2" href="#ch8-1">8.1 四层对照：你不写，机器在用</a>
+  <a class="lv2" href="#ch8-2">8.2 帧的照片模型</a>
+  <a class="lv2" href="#ch8-3">8.3 C 层三块化石</a>
+  <a href="#appA">附录 A · 比喻词典</a>
+  <a href="#appB">附录 B · 面试速答卡</a>
+  <a href="#appC">附录 C · 事实核查表</a>
+  <div class="tocFoot">来源：真实学习会话整理<br>2026-10 · 秋招面试准备</div>
+</nav>
+
+<!-- ================= 正文 ================= -->
+<main>
+
+<h1 id="top">Python 八股教程书 · 第三册<br><small>并发编程 · asyncio 深水区：从 19 步流程图到 C 层化石</small></h1>
+<p class="lead">本册源自一场"收官式"深挖：起点是「asyncio 的骨架是不是 loop、future、task、回调、取消，还有没有别的」；随后一路经过「面试只说"解耦"行不行」→「代码都是 AI 写的，我自己说还是混乱」→「看不懂别的 AI 给的 6 步流程」→「19 步一生」→「判卷五问」→「callback 什么时候挂上的」→「第 11 步的 set_result 哪来的」→「协程到底用没用 yield」→「底层怎么处理等待和运行」，终点钻到了 C 结构体。带 <span style="color:var(--carol)">🧑‍🎓 追问</span> 标记的框是当时的原话提问——它们就是面试官的追问剧本。</p>
+
+<!-- ================================================================ -->
+<section id="pre">
+<h2>序章 · 一条从"说不清"到"钻到 C 层"的下钻线<span class="tag">阅读指南</span></h2>
+<p>整册可以用一句话主线串起来：</p>
+<blockquote><b>asyncio 的全部秘密 = 生成器机器 + 三个约定。</b>生成器机器是 yield / send 那套老机器（第三册核心）；三个约定是 Loop 只认回调队列、Future 是合同、Task 是会驱动协程的 Future。</blockquote>
+<p>下钻路线共 8 站，每站解决一个真实追问：</p>
+<table>
+<tr><th>站</th><th>追问（原话）</th><th>答案落点</th><th>章</th></tr>
+<tr><td>1</td><td>"骨架是 loop、future、task、回调、取消？还有没有别的"</td><td>五件套只是调度核，还差第六面墙：IO 事件源机器</td><td>第 1 章</td></tr>
+<tr><td>2</td><td>"只理解成解耦，面试不露馅对吧"</td><td>恰恰相反——"解耦"是催问券；真正要背的是一句话主线</td><td>第 2 章</td></tr>
+<tr><td>3</td><td>"看不懂别的 AI 给的 6 步流程"</td><td>缺的不是 asyncio，是生成器地基：4 个动词 + 3 个触发器</td><td>第 3 章</td></tr>
+<tr><td>4</td><td>"把整个流程给我串一遍"</td><td>19 步编号轨迹：一个协程任务的一生</td><td>第 4 章</td></tr>
+<tr><td>5</td><td>"暂停之后怎么就到了 task_step？"</td><td>两个 ✗ 同一个根：混淆"协程内的事"和"驱动者看到的事"</td><td>第 5 章</td></tr>
+<tr><td>6</td><td>"第 11 步的 set_result 是哪里来的？"</td><td>预售——它不以"调用"的形状存在于代码里</td><td>第 6 章</td></tr>
+<tr><td>7</td><td>"协程到底使用了 yield 吗"</td><td>三层答案：源码层没用、字节码层全是、运行层只有一个</td><td>第 7 章</td></tr>
+<tr><td>8</td><td>"底层怎么处理等待和运行"</td><td>帧的照片模型 + C 层三块化石：协程就是生成器换了个名牌</td><td>第 8 章</td></tr>
+</table>
+<p><b>读法建议</b>：第 1、2 章是"面试输出层"，第 3～6 章是"机制理解层"（本册精华），第 7、8 章是"底层考证层"（降维打击层）。时间紧就读第 2 章 + 附录 B。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch1">
+<h2>第 1 章 · 骨架全景：五件套与第六面墙<span class="tag">P0 总览</span></h2>
+
+<h3 id="ch1-1">1.1 IO 事件源机器：三级台阶</h3>
+<p>开头这一问的结论：<b>loop、future、task、回调、取消这"五件套"是调度核，但骨架还剩最后一面承重墙没拆——IO 事件源机器（add_reader / Transport / Protocol）。除此之外，asyncio 里所有大名鼎鼎的东西没有一件是骨架，全是骨架零件的排列组合。</b></p>
+<p>这面墙从下往上分三级台阶（同一条链路的三个层级）：</p>
+<pre><code class="language-text">① IO 侧最底层一级:
+  ① add_reader: 回调拿到 b'hello-raw' → set_result → await 醒来
+
+②③ 中间层与顶层同台 (echo 服务器):
+  ③ 客户端: await reader.read() ← 内部 create_future, 睡在 data_received 上
+  ② Protocol.data_received: 回调拿到 b'hello-stream' → 原路写回
+  ③ read() 醒来: b'hello-stream'
+
+一条链: epoll事件 → 回调(字节) → 缓冲 → Future兑现 → await醒来</code></pre>
+<p>三级台阶的对应关系：台阶①是手写迷你循环里那一级——selector 事件进来，回调去读字节；台阶②的 <code>Protocol</code> 只是一份<b>事件回调清单</b>（<code>connection_made</code> / <code>data_received</code> / <code>connection_lost</code>），<code>data_received</code> 和①里的 <code>on_readable</code> 是同一物种；台阶③的 <code>StreamReader.read()</code> 内部就是 <code>create_future</code> + 睡在回调上。</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：StreamReader 也是 Future 机器（源码铁证）</div>
+<p>标准库 <code>streams.py</code> 的 <code>_wakeup_waiter</code> 亲手供认——<code>read()</code> 就是你手写过的 <code>wait</code> 的官方版：</p>
+<pre><code class="language-python">def _wakeup_waiter(self):
+    """Wakeup read*() functions waiting for data or EOF."""
+    waiter = self._waiter
+    if waiter is not None:
+        self._waiter = None
+        if not waiter.cancelled():
+            waiter.set_result(None)   # ← 和 Lock.release 兑现等待者是同一个动作</code></pre>
+<p><code>_wait_for_data</code> 的文档字符串更是自供状："StreamReader uses a future to link the protocol feed_data() method"。</p>
+</div>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：骨架永远是薄的那层</div>
+<p>看代码量的分布：整个 asyncio 包 13129 行，其中"合同"<code>futures.py</code> 只有 426 行，比"积木"<code>streams.py</code>（726 行）、<code>locks.py</code>（438 行）都薄——<b>骨架永远是薄的那层，厚的全是搭在骨架上的建筑</b>。就像一栋楼：承重墙就几面，房间里的大部分面积是后续装修出来的。</p>
+</div>
+
+<h3 id="ch1-2">1.2 积木清单：知名 API 都是老零件</h3>
+<p>把 asyncio 里叫得上名字的 API 逐个拆开，会发现它们没有一件引入了新机器——全是骨架零件的排列组合：</p>
+<table>
+<tr><th>知名 API</th><th>拆开是什么</th><th>对应骨架零件</th></tr>
+<tr><td><code>sleep</code></td><td>定时器回调 + Future</td><td>最基础的组合</td></tr>
+<tr><td><code>gather</code> / <code>wait_for</code></td><td>Task + 回调槽位 / wait_any + cancel</td><td>调度核零件</td></tr>
+<tr><td><code>Lock</code> <code>Event</code> <code>Semaphore</code> <code>Queue</code></td><td>Future + 等待者队列</td><td>Future 机器复用</td></tr>
+<tr><td><code>StreamReader.read</code></td><td>Protocol 回调 + 缓冲 + Future</td><td>第六面墙零件</td></tr>
+<tr><td><code>run_in_executor</code></td><td>线程 + <code>call_soon_threadsafe</code> + Future</td><td>跨线程唤醒零件</td></tr>
+<tr><td><code>TaskGroup</code>（3.11 旗舰新特性）</td><td>Task + cancel + Future，<b>零新机制</b></td><td>纯零件组合</td></tr>
+</table>
+<p>配件级（抽掉任何一件，骨架照样站立）：<code>contextvars</code>、异常兜底 handler、debug 模式（慢回调检测）、平台分支（Windows 的 proactor、Unix 的信号与子进程管理）。</p>
+
+<h3 id="ch1-3">1.3 uvloop：冻结的中间层的终极回报</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：中间冻结，两端随便换</div>
+<p><b>uvloop 能把整个 asyncio 提速数倍，靠的只是换掉"Loop + IO 墙"的实现——Future、Task、回调、取消、所有积木一行不动。</b>这就是"冻结的中间层"的终极回报：中间的合同（Future 机器）冻结不动，两端（上层的积木 API、下层的事件源实现）才能随便替换。类比后端熟悉的模式：中间件协议不变，上游业务和下游存储随便换。</p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 面试作答：asyncio 的骨架是什么？</div>
+<p><b>30 秒版</b>：Loop、Future、Task、回调、取消是调度核；再加一面 IO 事件源机器（add_reader / Transport / Protocol）才凑齐承重墙。其余知名 API——sleep、gather、Lock、Queue、TaskGroup——全是这些骨架零件的排列组合，零新机制。uvloop 提速数倍只换 Loop 和 IO 实现、Future/Task 一行不动，就是这句话的实证。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch2">
+<h2>第 2 章 · 面试主线：背这句，不是背"解耦"<span class="tag">P0 输出层</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"只能说还是有些混乱，或者我可以只理解这个代码，task、future 就大概知道是一个解耦吧。这样我面试的时候提到也不会露馅，对吧？"</p>
+</div>
+<h3 id="ch2-1">2.1 "解耦"是催问券</h3>
+<div class="box counter"><div class="boxTitle">⛔ 反例："大概知道是解耦"恰恰是最容易被戳穿的答案</div>
+<p>"解耦"是人人都会说的词，它是一张<b>催问券</b>：面试官听到这个词，下一句必然是"解耦了什么？怎么解耦的？"——答不上来，才是真正的露馅时刻。用关键词冒充答案，是面试最大的坑。</p>
+</div>
+<p>完整答案其实只有一句话，而离说出它只差把已经会的东西串起来：</p>
+<blockquote><b>一句话主线（背这个）</b>：协程 <code>await</code> 一个 Future 就挂起；任何事件源（定时器、IO、线程）完成后 <code>set_result</code> 兑现它；Future 把任务排回就绪队列；循环从头到尾只认回调队列。所以<b>"等什么"和"怎么醒"被分开了</b>——加一种新的等待方式，循环一行不用改。Task 就是"会驱动协程的 Future"，协程的 <code>return</code> 被填进它自己。</blockquote>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：免死金牌</div>
+<p>说这段话的最佳开场是：<b>"我自己写过一个 80 行的迷你事件循环……"</b>——面试官可以追问任何人的口头知识，但<b>没法击穿你自己跑过的代码</b>。亲手写过的循环里若还有 gather、异常隔离、return_exceptions 两种模式，那更是"混乱的人写不出的 asyncio 级语义"。</p>
+</div>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：读懂和说出之间隔的东西叫"提取练习"</div>
+<p>全部材料都读得懂、但说出来就乱——因为读的时候永远在<b>"认"（recognize）</b>，从来不在<b>"取"（recall）</b>。再读十遍也没用；合上材料自己产出（默写、口播）才是把"认"变成"取"的唯一路径。验收标准两条：① 默写关卡跑出"10 空全对"；② 不看任何材料把口播稿说完。</p>
+</div>
+<p><b>口播稿</b>（睡前出声说一遍，说不顺的地方就是还没懂的地方）：</p>
+<blockquote>asyncio 的核心三层。<b>Loop</b> 是调度器，只做一件事：跑就绪队列里的回调，没活干就睡在 IO 多路复用和定时器上——它根本不认识协程。<b>Future</b> 是合同：协程 await 它时就挂起，谁完成了谁调 set_result，它把等待者排回就绪队列。<b>Task</b> 是会驱动协程的 Future：用 coro.send 推进协程，协程 return 的值填进 Task 自己。所以定时器、socket、线程，任何东西完成时只要 set_result 一个 Future，协程就能在下个轮次被唤醒——加新的等待方式不用改循环，这就是解耦。这套我默写过，80 行。</blockquote>
+
+<h3 id="ch2-2">2.2 追问一句答 + 实测数字</h3>
+<p>高频追问的"一句话答案"弹药库：</p>
+<table>
+<tr><th>追问</th><th>一句话答案</th><th>靠什么说</th></tr>
+<tr><td>gather 顺序哪来的？</td><td>槽位按参数位置预留，结束时写回自己的槽</td><td>可自己实现过（按参数序收割，不按完成序）</td></tr>
+<tr><td>cancel 怎么生效？</td><td>下个机会点 throw CancelledError，协程可捕获</td><td>五幕剧验证过</td></tr>
+<tr><td>纯计算死循环会怎样？</td><td>卡死整个循环——投递口只有 await 点</td><td>无 await 的任务永不让出</td></tr>
+<tr><td>跨线程怎么唤醒协程？</td><td>self-pipe 写一个字节叫醒 epoll</td><td>手写跨线程唤醒验证过</td></tr>
+<tr><td>容器线程安全吗？</td><td>单条不撕裂，读改写序列照样丢数据</td><td>竞态实验验证过</td></tr>
+</table>
+<p><b>带实测数字的人会被记住</b>（数字弹药库）：</p>
+<table>
+<tr><th>对比项</th><th>实测数字</th><th>说明什么</th></tr>
+<tr><td>CPU 密集任务</td><td>进程池 27s vs 线程池 39s</td><td>CPU 密集场景进程池胜（绕开 GIL）</td></tr>
+<tr><td>单个执行体开销</td><td>协程 1.7KB vs 线程 13.6KB</td><td>协程比线程轻 8 倍——高并发 IO 密集的底气</td></tr>
+<tr><td>asyncio.Lock vs 线程 Lock</td><td>慢约 5 倍</td><td>协程锁走调度队列，单线程本可少用锁</td></tr>
+<tr><td>竞态窗口</td><td>一次函数调用内丢 48%</td><td>"窗口小就安全"是错觉，照样丢近半</td></tr>
+</table>
+<div class="box interview"><div class="boxTitle">🎭 面试作答：被问到没读过的东西怎么办</div>
+<p>被问到 uvloop 内部、aiohttp 内部、Windows proactor 这类没读过的细节，<b>不要装懂</b>，用这句兜底：<b>"这个细节我没读过，但我自己写过 80 行的迷你事件循环，从实现者的角度我理解是……"</b>——诚实 + 展示已验证的底座，比硬撑体面得多。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch3">
+<h2>第 3 章 · 四个动词：生成器地基<span class="tag">P0 精华</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>（贴了别的 AI 给的 6 步流程后）"概念不理解：搞不懂 await 和 wakeup 是什么，对 yield 和 yield from 也还不太懂。调用流程不清晰：看不懂每一步是什么、在什么情况下进入下一步。运行机制不明确：我知道 send 是启动，其他的我就不知道了。"</p>
+</div>
+<p>三个"不懂"其实是同一个洞：<b>asyncio 的一切都站在生成器机制上</b>。这轮零 asyncio 概念，只讲 4 个动词。</p>
+
+<h3 id="ch3-1">3.1 动词翻译表 + 三个触发器</h3>
+<table>
+<tr><th>动词</th><th>一句话</th><th>备注</th></tr>
+<tr><td><code>yield</code></td><td><b>暂停</b>。右边的东西<b>交出去</b>给驱动者；恢复时，send 塞进来的东西落在它身上</td><td>全场唯一的暂停点在 <code>Future.__await__</code> 里的 <code>yield self</code></td></tr>
+<tr><td><code>send(x)</code></td><td><b>"继续跑"</b>，顺便把 x 送入。第一次 send 叫"启动"，之后每次都叫"恢复"——所以它不只是启动</td><td>asyncio 里 send 的永远是 None，只是"继续跑"的信号</td></tr>
+<tr><td><code>yield from</code> / <code>await</code></td><td><b>隧道</b>。把自己的暂停权借给里层，里层的暂停<b>不经过我的代码</b>直接弹到最外层驱动者手里</td><td>字节码层两者编译出同一条 YIELD_FROM</td></tr>
+<tr><td><code>__wakeup</code></td><td>一个<b>普通回调函数</b>，Task 预先挂在 Future 上的，名字就叫"该醒了"。工作只有一件：<b>再 send 一次</b></td><td>不是关键字，是方法名</td></tr>
+</table>
+<p>"什么时候进入下一步"的答案——归根结底只有 <b>3 个触发器</b>，没有第四种：</p>
+<ol>
+<li><b>函数自己跑到 yield</b> → 暂停，交出东西（整台 asyncio 里这一幕只发生在一个地方：<code>Future.__await__</code> 里的 <code>yield self</code>）</li>
+<li><b>驱动者调 send</b> → 恢复，从上次暂停的那一行继续</li>
+<li><b>函数跑完</b> → 抛 <code>StopIteration</code>，return 值藏在异常里被驱动者取出</li>
+</ol>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：字节码铁证——await 就是换了名字的 yield from</div>
+<p>实测对照（Python 3.10）：<code>yield from inner()</code> 和 <code>await inner()</code> 编译出的核心指令是<b>同一条 <code>YIELD_FROM</code></b>，唯一差别是前置安检门——<code>GET_YIELD_FROM_ITER</code>（是迭代器就行）vs <code>GET_AWAITABLE</code>（只放行 awaitable）。这是字面意义上的"换名字"。</p>
+</div>
+
+<h3 id="ch3-2">3.2 三条通道各司其职</h3>
+<p>几乎所有人卡住的地方：<b>结果不走 yield 这条路</b>。三条通道从不混用：</p>
+<table>
+<tr><th>通道</th><th>负责什么</th><th>不负责什么</th></tr>
+<tr><td><code>yield self</code>（第 7 步）</td><td>只负责交出 Future——"请在完成时叫醒我"这个信号</td><td>不传结果</td></tr>
+<tr><td><code>send(None)</code>（第 15 步）</td><td>只负责说"继续跑"</td><td>送来的是 None，不是结果！</td></tr>
+<tr><td><b>return 通道</b>（第 16 步）</td><td><code>__await__</code> 被唤醒后执行 <code>return self._result</code>，return 值穿过隧道变成 await 表达式的值</td><td>——</td></tr>
+</table>
+<pre><code class="language-text"># 运行实测输出，注意第 2 行的括号
+[Fut]       __await__: yield self     ← 全系统唯一的暂停点
+[Fut]       被 send(None) 叫醒(注意: 送来的是 None 不是结果!)
+[download] ③ 醒来, await 表达式的值 = '0.2秒后的世界'   ← 结果走 return 通道</code></pre>
+<p>这就是为什么别的 AI 给的 6 步流程第⑥步说"send(None)"却拿到了结果——<b>送进来的是 None，结果是协程自己从 Future 里取出来 return 的</b>。</p>
+
+<h3 id="ch3-3">3.3 12 行驱动者 = Task 的全部秘密</h3>
+<p>没有 Task 类、没有 Loop 类——赤手空拳当驱动者，12 行就能跑完一个协程的一生：</p>
+<pre><code class="language-python">def driver(coro):
+    """赤手空拳当驱动者：Task.__step 做的事和这里一模一样，
+    只是多包了一层'收到 Future 后挂号'的壳。"""
+    try:
+        # 第一次 send(None) = 启动：协程第一次真正跑起来
+        yielded = coro.send(None)
+        # send 的返回值 = 协程在 yield 处交出的东西（这里是 Future）
+        print(f"收到请求: 我在等一个 {yielded} 秒的定时器")
+        import time; time.sleep(0.2)      # 驱动者闲下来去等（真循环里 = epoll/定时器堆）
+        coro.send(None)                   # 第二次 send = 恢复：把协程从冻结点叫醒
+    except StopIteration as e:
+        # 协程跑完抛 StopIteration，return 值藏在 e.value 里
+        print(f"函数死了, return 值从异常里取出: {e.value}")
+
+driver(download())</code></pre>
+<pre><code class="language-text"># 实测输出：这段输出就是 Task 的全部秘密
+[download] ① 出发
+[驱动者]   ② 收到请求 '我在等一个 0.2 秒的定时器' → 去睡 0.2 秒
+[download] ③ 被叫醒, 驱动者塞进来的东西是 None
+[驱动者]   ④ 函数死了, return 值从异常里取出: '下载完成'</code></pre>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：yield 是双向窗口</div>
+<p>普通函数是<b>单程票</b>：进去、干完、出来，一次性。生成器/协程是<b>服务窗口</b>：可以暂停（yield = "下一位，先等我叫你"）、可以恢复（send = "到你 了，继续"）。yield 既是出口（把值递出去）也是入口（把 send 的值接进来）。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch4">
+<h2>第 4 章 · 19 步一生：一个协程任务的一生<span class="tag">P0 核心图</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"把所有方法提取出来，放在对应的类下面。然后设置一个协程任务，创建协程并放进 Loop 中去执行。给我一个基于代码函数的流程图，第一步到哪，下一步到哪，直接画条线连过去。"</p>
+</div>
+
+<h3 id="ch4-1">4.1 三件套方法归位 + 六阶段</h3>
+<p>先把三件套的<b>全部方法</b>归位，每个方法一句话职责：</p>
+<table>
+<tr><th>类</th><th>方法</th><th>一句话职责</th></tr>
+<tr><td><code>Loop</code></td><td><code>__init__ / call_soon / call_later / create_future / create_task / run_until_complete / _run_once</code></td><td>调度器：只认就绪队列和定时器堆，<b>不认识协程</b></td></tr>
+<tr><td><code>Future</code></td><td><code>__init__ / done / result / add_done_callback / set_result / __await__</code></td><td>合同：存结果，完成时把挂号者排回队列</td></tr>
+<tr><td><code>Task(Future)</code></td><td><code>__init__ / __step / __wakeup</code>（其余全继承自 Future）</td><td>驱动器：send 推进协程，协程的 return 填进自己</td></tr>
+<tr><td>积木</td><td><code>sleep(loop, d)</code></td><td>定时器事件源，asyncio.sleep 的骨架</td></tr>
+</table>
+
+<div class="figwrap">
+<div class="figTitle">一个协程任务的一生：19 步六阶段全景</div>
+<div class="figSub">一个 <code>download</code> 协程从 create_task 到 task.done() 的完整编号轨迹——编号与真实运行时打印一致</div>
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- 阶段 A -->
+  <rect x="20" y="30" width="290" height="130" rx="10" fill="#0d2117" stroke="#3fb950"/>
+  <text x="34" y="56" fill="#3fb950" font-size="14" font-weight="bold">A · 装弹（1-2）</text>
+  <text x="34" y="80" fill="#e6edf3" font-size="12">create_task(download) 造出 Task</text>
+  <text x="34" y="100" fill="#8b949e" font-size="12">出生即排队：__step 进就绪队列</text>
+  <text x="34" y="120" fill="#8b949e" font-size="12">run_until_complete 发动机开始转</text>
+  <text x="34" y="142" fill="#6e7681" font-size="11">while not task.done(): _run_once()</text>
+  <!-- 阶段 B -->
+  <rect x="355" y="30" width="290" height="130" rx="10" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="369" y="56" fill="#58a6ff" font-size="14" font-weight="bold">B · 协程开跑（3-8）</text>
+  <text x="369" y="80" fill="#e6edf3" font-size="12">__step → coro.send(None) 推进</text>
+  <text x="369" y="100" fill="#8b949e" font-size="12">sleep: create_future + call_later 订闹钟</text>
+  <text x="369" y="120" fill="#e3b341" font-size="12">await → yield self ← 全场唯一暂停点(7)</text>
+  <text x="369" y="142" fill="#8b949e" font-size="11">挂号：fut.add_done_callback(__wakeup)(8)</text>
+  <!-- 阶段 C -->
+  <rect x="690" y="30" width="290" height="130" rx="10" fill="#161b22" stroke="#6e7681"/>
+  <text x="704" y="56" fill="#8b949e" font-size="14" font-weight="bold">C · 睡觉（9）</text>
+  <text x="704" y="80" fill="#e6edf3" font-size="12">就绪队列空了</text>
+  <text x="704" y="100" fill="#8b949e" font-size="12">循环睡在定时器堆上</text>
+  <text x="704" y="122" fill="#6e7681" font-size="11">单任务时是真睡；多任务时</text>
+  <text x="704" y="140" fill="#6e7681" font-size="11">"别的任务趁机跑"就发生在这里</text>
+  <!-- 箭头 A→B →C -->
+  <line x1="310" y1="95" x2="353" y2="95" stroke="#8b949e" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="645" y1="95" x2="688" y2="95" stroke="#8b949e" stroke-width="2" marker-end="url(#ar)"/>
+  <!-- 箭头 C↓D -->
+  <line x1="835" y1="160" x2="835" y2="203" stroke="#8b949e" stroke-width="2" marker-end="url(#ar)"/>
+  <!-- 阶段 D -->
+  <rect x="690" y="207" width="290" height="130" rx="10" fill="#211a08" stroke="#d29922"/>
+  <text x="704" y="233" fill="#d29922" font-size="14" font-weight="bold">D · 兑现（10-12）</text>
+  <text x="704" y="257" fill="#e6edf3" font-size="12">0.05s 到点，定时器回调搬进队列(10)</text>
+  <text x="704" y="277" fill="#8b949e" font-size="12">循环执行预订的 set_result(11)</text>
+  <text x="704" y="297" fill="#8b949e" font-size="12">call_soon(__wakeup) 排队(12)</text>
+  <text x="704" y="319" fill="#6e7681" font-size="11">不直接调——否则嵌套执行，顺序保证就没了</text>
+  <!-- 阶段 E -->
+  <rect x="355" y="207" width="290" height="130" rx="10" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="369" y="233" fill="#bc8cff" font-size="14" font-weight="bold">E · 复活到死亡（13-18）</text>
+  <text x="369" y="257" fill="#e6edf3" font-size="12">弹出 __wakeup(13-14) → __step(15)</text>
+  <text x="369" y="277" fill="#8b949e" font-size="12">send(None) 解冻；return 通道取结果(16)</text>
+  <text x="369" y="297" fill="#8b949e" font-size="12">download 跑完(17) → StopIteration</text>
+  <text x="369" y="319" fill="#6e7681" font-size="11">return 值填进 Task(18)——协程死亡 = Task 被兑现</text>
+  <!-- 阶段 F -->
+  <rect x="20" y="207" width="290" height="130" rx="10" fill="#2e0d0d" stroke="#f85149"/>
+  <text x="34" y="233" fill="#f85149" font-size="14" font-weight="bold">F · 收官（19）</text>
+  <text x="34" y="257" fill="#e6edf3" font-size="12">while 发现 task.done() 为真</text>
+  <text x="34" y="277" fill="#8b949e" font-size="12">退出循环</text>
+  <text x="34" y="297" fill="#8b949e" font-size="12">return task.result()</text>
+  <text x="34" y="319" fill="#6e7681" font-size="11">——就是第 18 步存进去的那个值</text>
+  <!-- 箭头 D→E→F -->
+  <line x1="688" y1="272" x2="647" y2="272" stroke="#8b949e" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="353" y1="272" x2="312" y2="272" stroke="#8b949e" stroke-width="2" marker-end="url(#ar)"/>
+  <!-- 底部注释 -->
+  <text x="500" y="372" fill="#6e7681" font-size="12" text-anchor="middle">最反直觉：第 5、6、7 步全部发生在第 4 步那个 send() 的内部——第 4 步和第 8 步是同一次 __step 调用</text>
+  <text x="500" y="392" fill="#6e7681" font-size="12" text-anchor="middle">蛇形读法：上排 A→B→C，下排 D→E→F（C 执行完往下进入 D）</text>
+</svg>
+</div>
+
+<p>逐阶段讲解：</p>
+<ul>
+<li><b>阶段 A（1-2）装弹</b>：<code>create_task(download(loop))</code> 造出 Task，Task 干的第一件事就是把自己推进就绪队列——<b>出生即排队</b>。</li>
+<li><b>阶段 B（3-8）协程开跑</b>：第 3 步循环弹出 <code>__step</code> 执行；第 4 步 <code>__step</code> 调 <code>coro.send(None)</code>，协程这才第一次跑起来。<span class="hl">最反直觉的一点：第 5、6、7 步全部发生在第 4 步那个 send() 的内部</span>——download 跑到 <code>await sleep</code>，sleep 创建 Future、挂定时器（第 6 步），然后 <code>await fut</code> 走进 <code>Future.__await__</code>，执行 <code>yield self</code>（第 7 步，全场唯一的暂停点），函数在这里冻结，<code>send()</code> 这才返回，把冻住的 Future 交回 <code>__step</code>——于是第 8 步挂号：<code>fut.add_done_callback(__wakeup)</code>，"你完成时叫我"。<b>第 4 步和第 8 步是同一次 __step 调用，中间夹着协程跑了半程</b>。</li>
+<li><b>阶段 C（9）睡觉</b>：就绪队列空了，循环睡在定时器上。单线程并发里"别的任务趁机跑"就发生在这——本演示只有一个任务，所以是真睡。</li>
+<li><b>阶段 D（10-12）兑现</b>：0.05 秒到点，定时器回调被搬进队列（10），循环执行 <code>fut.set_result(None)</code>（11-12）。注意第 12 步：存结果，然后 <code>call_soon(__wakeup)</code> <b>排队——不直接叫醒</b>。为什么不直接调？直接调就会在 set_result 里嵌套执行协程，队列的顺序保证就没了。</li>
+<li><b>阶段 E（13-18）复活到死亡</b>：下一圈循环执行排队的 <code>__wakeup</code>（13-14），它只干一件事：再 <code>__step</code> 一次（15），<code>send(None)</code> 把协程从第 7 步冻住的那行解冻。<span class="hl">第 16 步是关键：醒来后 __await__ 执行 return self._result——结果不是 send 送进来的（送的是 None），是协程自己从 Future 里取出来 return 的</span>。download 拿到值继续跑完（17），函数结束抛 <code>StopIteration</code>，<code>__step</code> 捕获它，把 return 值填进 Task 自己（18）——<b>协程死亡 = Task 这个 Future 被兑现</b>。</li>
+<li><b>阶段 F（19）收官</b>：<code>while</code> 发现 <code>task.done()</code> 为真，退出循环，<code>return task.result()</code>——就是第 18 步存进去的那个值。</li>
+</ul>
+
+<h3 id="ch4-2">4.2 三个数字 + 毕业作业</h3>
+<table>
+<tr><th>数字</th><th>含义</th><th>为什么</th></tr>
+<tr><td><b>4 个编号，2 次调用</b></td><td><code>__step</code> 在 19 步里出现 4 个编号，但只被调用 2 次</td><td>4/8 是一次（开头那半程），15/18 是一次（结尾那半程）</td></tr>
+<tr><td><b>_run_once 转 4 圈</b></td><td>循环转了 4 圈</td><td>跑任务、睡觉、搬定时器、跑唤醒——各一圈</td></tr>
+<tr><td><b>yield 全场 1 个</b></td><td>真正执行的 yield 只有一个</td><td>第 7 步 <code>Future.__await__</code> 里那条 <code>yield self</code>（第 7 章展开）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：__step 执行次数公式</div>
+<p><b>__step 执行次数 = 1 + await 次数</b>（第一次是出生排队被循环执行，之后每次 await 被唤醒都由 <code>__wakeup</code> 叫它）。19 步流程里 download 只有一次 await，所以 __step 恰好 2 次。</p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 毕业作业（预测对了就是真懂）</div>
+<p>给 19 步流程里的 <code>download</code> 加<b>第二个 await</b>，先在纸上预测两个数——<b>__step 会执行几次</b>（按公式算）、<b>编号会涨到第几步</b>——再实际运行对答案。预测全对的那天，这台机器就是你亲手拆装过的了。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch5">
+<h2>第 5 章 · 判卷五问：两个视角一个根<span class="tag">P0 纠错</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话（五连问）</div>
+<p>"先去 A 的 callback 调了 call_later（set_result）吗？然后才去 await 这个 sleep 的 future？暂停之后怎么就到了 task_step？是因为它暂停了就不跑了，然后就到了 task_step，因为 step 一直在循环？第 13 步的 wakeup 是怎么来的，是就绪队列有 wakeup 的 callback 对吧？第 17 步跑完了协程，也会自动让出是吧？"</p>
+</div>
+<p>五问判卷：对三对半，两个 ✗ 是<b>同一个根</b>——把"协程内发生的事"和"驱动者看到的事"混在一个视角里看了。</p>
+<table>
+<tr><th>说法</th><th>判定</th></tr>
+<tr><td>① 先 <code>call_later</code> 再 <code>await</code></td><td>✓ 对，而且顺序<b>不能反</b></td></tr>
+<tr><td>② "因为 step 一直在循环"</td><td>✗ 前半对，后半错（5.2 拆解）</td></tr>
+<tr><td>③ set_result 之后排队叫醒</td><td>✓ 对，措辞拧一下：叫醒的是 Task，不是 future</td></tr>
+<tr><td>④ 第 13 步来自就绪队列里的 wakeup</td><td>✓ 完全正确</td></tr>
+<tr><td>⑤ "跑完也会自动让出"</td><td>✗ 不是让出，是死亡——通道不同（5.4 拆解）</td></tr>
+</table>
+
+<h3 id="ch5-1">5.1 先订闹钟，再睡觉</h3>
+<p><code>sleep</code> 里三行的顺序是铁律：<code>create_future</code> → <code>call_later</code> → <code>await fut</code>。为什么不能反过来？因为 <b>await 一执行人就冻住了</b>——冻住之后排在后面的代码一句都不会跑，闹钟永远订不上，这个任务就死锁在暂停里。所以必须先安排好"谁来兑现我"（定时器回调就是未来的 set_result），再躺下。</p>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制："yield self 相当于返回那个 future"——精确，但返回给谁？</div>
+<p>它返回给的<b>不是 sleep 的调用者</b>，是<b>驱动者</b>：<code>yield self</code> 的效果 = <code>send()</code> 的返回值变成这个 Future。普通 return 只能给调用者，yield 的值是递到驱动者手上的——这就是为什么 <code>__step</code> 能拿到它。</p>
+</div>
+
+<h3 id="ch5-2">5.2 关键修正：__step 没有在循环</h3>
+<p>"它暂停了就不跑了，然后就到了 task_step"——这半句<b>完全正确</b>。"因为 step 一直在循环"——这半句错了，<code>__step</code> 里没有任何循环。真相更简单也更漂亮：</p>
+<blockquote><b>coro.send(None) 是一个普通函数调用，而 yield 那一行就是它的返回点。</b>暂停和返回是同一瞬间的两个视角——协程看是"冻结"，__step 看是"send 调用返回了"。</blockquote>
+<p>看第 7 步冻结瞬间的真实调用栈：</p>
+<pre><code class="language-text">run_until_complete          ← 唯一的循环在这里(第2步的 while)
+ └─ _run_once #1                    (第3步)
+     └─ Task.__step                 (第4步)
+         └─ coro.send(None)   ┐
+             └─ download      │ 第5步
+                 └─ sleep     │ 第6步   这些帧此刻
+                     └─ __await__ │ 第7步   全在栈上
+                        └─ yield self ┘ ← 冻结点 = send 的返回点
+         ←─ send 在这行返回，返回值 = 那个 Future
+     ←─ __step 接着跑第8步(挂号)，然后自己 return
+ ←─ _run_once return，while 转下一圈 → 第9步</code></pre>
+<p>栈像普通函数返回一样<b>逐层自然退回</b>，没有任何人在"等它让出"。实测铁证（用 traceback 打印）：冻结瞬间栈是 <code>step → download → __await__</code>（协程的帧全在栈上）；send 返回后栈只剩 <code>step</code>——<b>协程的帧被收进协程对象里随身保存，醒来再放回来</b>。</p>
+<div class="box counter"><div class="boxTitle">⛔ 纠错：__step 是"被反复叫"，不是"自己在转"</div>
+<p><code>__step</code> 确实被调用了两次——但第一次是<b>出生时排队被循环执行</b>，第二次是 <code>__wakeup</code> 叫它。公式：<b>__step 执行次数 = 1 + await 次数</b>。唯一的循环在 <code>run_until_complete</code> 的 while 里。</p>
+</div>
+
+<h3 id="ch5-3">5.3 __wakeup 的三段一生</h3>
+<p>把整条链补全，<code>__wakeup</code> 一生经过三个状态：</p>
+
+<div class="figwrap">
+<div class="figTitle">__wakeup 的三个家：从登记簿到调度队列到栈上</div>
+<div class="figSub">"等到用的时候直接就用了"的错觉，来自漏看了第 12 步那次搬家——set_result 是唯一的搬运工</div>
+<svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- 家1 登记簿 -->
+  <rect x="20" y="30" width="290" height="170" rx="10" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="34" y="56" fill="#58a6ff" font-size="14" font-weight="bold">① 登记（第 8 步）</text>
+  <text x="34" y="82" fill="#e6edf3" font-size="12">住在：fut._callbacks</text>
+  <text x="34" y="104" fill="#8b949e" font-size="12">Future 身上的登记簿——只是一条记录</text>
+  <text x="34" y="126" fill="#8b949e" font-size="12">不在任何队列里</text>
+  <text x="34" y="150" fill="#6e7681" font-size="11">此刻没有任何代码会执行它</text>
+  <text x="34" y="172" fill="#6e7681" font-size="11">推动者：__step 收到 Future 后立刻挂号</text>
+  <!-- 家2 调度队列 -->
+  <rect x="355" y="30" width="290" height="170" rx="10" fill="#211a08" stroke="#d29922"/>
+  <text x="369" y="56" fill="#d29922" font-size="14" font-weight="bold">② 排队（第 12 步）</text>
+  <text x="369" y="82" fill="#e6edf3" font-size="12">住在：loop._ready</text>
+  <text x="369" y="104" fill="#8b949e" font-size="12">Loop 手里的调度队列</text>
+  <text x="369" y="126" fill="#8b949e" font-size="12">这才进了"待执行"状态</text>
+  <text x="369" y="150" fill="#6e7681" font-size="11">推动者：set_result 遍历登记簿，</text>
+  <text x="369" y="168" fill="#6e7681" font-size="11">call_soon 搬运，搬完 clear() 清空</text>
+  <!-- 家3 栈上 -->
+  <rect x="690" y="30" width="290" height="170" rx="10" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="704" y="56" fill="#bc8cff" font-size="14" font-weight="bold">③ 执行（第 13 步）</text>
+  <text x="704" y="82" fill="#e6edf3" font-size="12">住在：栈上</text>
+  <text x="704" y="104" fill="#8b949e" font-size="12">真正被调用：cb(*args)</text>
+  <text x="704" y="126" fill="#8b949e" font-size="12">→ 调 __step → send(None)</text>
+  <text x="704" y="150" fill="#6e7681" font-size="11">推动者：循环从队列弹出执行</text>
+  <text x="704" y="172" fill="#6e7681" font-size="11">跑完即弃——一次性用品</text>
+  <!-- 箭头 -->
+  <line x1="310" y1="115" x2="353" y2="115" stroke="#8b949e" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="645" y1="115" x2="688" y2="115" stroke="#8b949e" stroke-width="2" marker-end="url(#ar2)"/>
+  <!-- 底部注释 -->
+  <rect x="20" y="225" width="960" height="60" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="40" y="250" fill="#e3b341" font-size="12.5">关键事实：__wakeup 是一次性用品——第 13 步跑完即弃。协程下次 await 到新 Future 时，挂的是一个新的 __wakeup。</text>
+  <text x="40" y="272" fill="#8b949e" font-size="12.5">所以"挂号"这个动作每个 await 都会发生一次，不是一劳永逸。future 是扳机，Task 是睡着的那个。</text>
+</svg>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：set_result 是唯一的搬运工</div>
+<p>第 12 步被<b>兑现</b>的是 future 本身（合同完成，<code>_done=True</code>）；被<b>排队叫醒</b>的是 Task（通过挂号在 future 上的 <code>__wakeup</code>）。<b>set_result 遍历登记簿，把 __wakeup 从 Future 的登记簿搬进 Loop 的就绪队列</b>——不经过这一步，第 13 步的队列里根本没有东西可弹。</p>
+</div>
+
+<h3 id="ch5-4">5.4 跑完不是让出，是死亡</h3>
+<p>让出和死亡确实都是"控制权回到 __step"，但走的是<b>两条不同的通道</b>：</p>
+<table>
+<tr><th>结局</th><th>走的通道</th><th>后果</th></tr>
+<tr><td>让出（await 挂起）</td><td>send <b>正常返回</b></td><td>还能再 send 醒来（第 15 步）</td></tr>
+<tr><td>死亡（函数跑完）</td><td>send <b>抛 StopIteration</b>，return 值藏在 <code>e.value</code></td><td><b>永不再醒</b>——再 send 直接报错</td></tr>
+</table>
+<pre><code class="language-python"># 实测：对跑完的协程再 send
+coro.send(None)   # RuntimeError: cannot reuse already awaited coroutine
+# —— 死掉的协程是一次性用品，和 Future 一样不能复用</code></pre>
+<p>第 17 步 download 的 <code>return '任务A的数据'</code> 变成 <code>StopIteration.value</code>，被 <code>__step</code> 的 <code>except</code> 接住，填进 Task 自己（第 18 步）。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch6">
+<h2>第 6 章 · 预售：grep 不到的那次 set_result<span class="tag">P1 进阶</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"11 步的 set_result 是哪里来的？看代码里面只有在 StopIteration 那里会有调用 set_result，但是我们的 download 应该没有结束吧？难道说是 download 里面的 sleep 结束了？"</p>
+</div>
+
+<h3 id="ch6-1">6.1 set_result 被当作"值"卖掉了</h3>
+<p>推理链<b>完全正确</b>——是 sleep 造的那个 Future 被定时器兑现了。但"为什么在代码里找不到这次调用"这个困惑值得钉死，因为答案藏着一个机制：<b>预售</b>。回看 sleep 的第 6 步：</p>
+<pre><code class="language-python">loop.call_later(0.05, fut.set_result, None)
+# ↑ 注意：这一行里 set_result 没有被调用（没有括号执行）！
+# 它是被当作一个"值"（函数引用），连同参数 (None,) 一起塞进了定时器堆。
+# 0.05 秒后到点，_run_once 执行 cb(*args) —— 那才是调用，
+# 调用者是循环，不是任何协程代码。</code></pre>
+<pre><code class="language-text"># 实验第一幕：把定时器堆掏出来看
+cb   = &lt;bound method Future.set_result of &lt;__main__.Future object at 0x...&gt;&gt;
+args = (None,)
+# 定时器堆里躺着的就是 set_result 本身——预售的订单</code></pre>
+<p>所以 grep 源码里的 <code>set_result(</code> 只能找到 StopIteration 那一处：这次调用在代码里长得像"传值"，不像"调用"。</p>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：预售</div>
+<p>就像预售的演唱会门票：<b>钱现在不结，票提前订好，到点自动核销</b>。set_result 提前 0.05 秒被"卖"进定时器堆，到点由循环执行。这也解释了 5.1 的"先订闹钟再睡觉"——<b>冻结的协程什么都干不了</b>，"醒来后谁来兑现我"必须在躺下之前就安排好。</p>
+</div>
+<p>两次 set_result 的完整对照（实验第二幕实测）：</p>
+<table>
+<tr><th></th><th>第 11 步</th><th>第 18 步</th></tr>
+<tr><td>被兑现的对象</td><td>睡眠 Future（sleep 内部造的）</td><td>Task 自己（Task 也是 Future）</td></tr>
+<tr><td>谁调的 set_result</td><td><code>_run_once</code>（执行定时器回调）</td><td><code>Task.__step</code>（except StopIteration 里）</td></tr>
+<tr><td>语义</td><td>事件源兑现合同 → 唤醒等待者</td><td>协程死亡 → Task 兑现自己</td></tr>
+<tr><td>在源码里的样子</td><td><b>看不见</b>——第 6 步以函数引用形式预售</td><td>你 grep 到的那处（显式写在代码里）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：为什么死亡通道能显式写，唤醒只能预售</div>
+<p>死亡通道的 return 值就攥在 <code>__step</code> 手里——<b>同步的可以直接写；唤醒必须等未来某个事件，异步的只能预售</b>。你 grep 到的那处其实是<b>特殊情况</b>，普遍情况（事件源兑现 Future）都以预售形式存在。</p>
+</div>
+
+<h3 id="ch6-2">6.2 措辞精修三处 + 46 处</h3>
+<p>推理对了，但三处措辞拧一下会更准：</p>
+<ol>
+<li><b>"sleep 它也是一个 future"</b> → sleep 是协程，是"<b>造 Future 的人</b>"。被兑现的是它内部 <code>create_future()</code> 造出来的那个对象，sleep 自己从头到尾没当过 Future。</li>
+<li><b>时序反了</b> → 不是"sleep 结束了之后它去调 set_result"。set_result 发生时（第 11 步）sleep 协程从第 7 步起就冻结着，<b>冻结的协程干不了任何事</b>。正确因果链：定时器到点 → 循环执行<b>预订的</b> set_result → <b>这才导致</b> sleep 能醒来。<span class="hl">set_result 是因，醒来是果。</span></li>
+<li><b>"download 挂的 wakeup"</b> → 挂号的人是 <code>Task.__step</code>（第 8 步，在 download 冻住<b>之后</b>由驱动器收尾时挂的），挂在睡眠 Future 身上。download 自己什么都没挂——它冻结时连代码都没在跑。</li>
+</ol>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：真 asyncio 是同款套路（标准库源码）</div>
+<p><code>asyncio.sleep</code> 内部就是三步——和手写版<b>一字不差的预售</b>：</p>
+<pre><code class="language-python"># asyncio 标准库 sleep 的骨架（简化）
+future = loop.create_future()
+loop.call_later(delay, futures._set_result_unless_cancelled, future, result)
+#          ↑ 预售：set_result 系函数作为"值"提前卖进定时器堆
+return await future
+# 死亡通道在 tasks.py:241: super().set_result(exc.value)——就是你 grep 到的那处</code></pre>
+<p>整个 asyncio 包里 <code>set_result(</code> 出现 <b>46 处</b>，几乎全是各种事件源（socket、线程池、子进程、定时器）在兑现各自的 Future——"冻结的中间 + 开放的两端"，这 46 处就是"开放的两端"的实体。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch7">
+<h2>第 7 章 · yield 三层考证<span class="tag">P1 降维打击</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"所以说协程到底使用了 yield 吗"</p>
+</div>
+
+<h3 id="ch7-1">7.1 协程到底用没用 yield：取决于你在哪一层看</h3>
+<p>一句话总答案：<b>源码层没用（你一个都没写），字节码层全是（await 编译出来就是 yield），运行层只有一个真正执行（Future.__await__ 里那条）。</b></p>
+<table>
+<tr><th>层</th><th>答案</th><th>实测证据（全部来自本机 3.10）</th></tr>
+<tr><td>源码层</td><td><b>没用</b></td><td><code>download</code> 里 grep <code>yield</code>：× 0；你写的每个关键字都是 <code>await</code></td></tr>
+<tr><td>字节码层</td><td><b>全是</b></td><td><code>await coro()</code> 和 <code>yield from coro()</code> 编译出的核心指令是<b>同一条 <code>YIELD_FROM</code></b>，唯一差别是前置安检门（<code>GET_AWAITABLE</code> vs <code>GET_YIELD_FROM_ITER</code>）</td></tr>
+<tr><td>运行层</td><td><b>只有一个</b></td><td>标准 <code>futures.py</code> 原文：<code>def __await__(self): yield self</code>——你代码里<b>每一个 await 沿隧道下钻的终点站都是它</b></td></tr>
+</table>
+<p>三层串成一根线：<code>yield self</code> 交出去的是 Future → <code>Task.__step</code> 的 <code>send()</code> 返回值正是它（第 7 步）→ 交出后挂号 <code>__wakeup</code>（第 8 步）→ 定时器兑现后叫醒（第 11-13 步）。<span class="hl">全系统唯一的真·yield 执行点，就是 19 步流程图上的第 7 步。</span></p>
+<pre><code class="language-python"># 标准 futures.py 的原文（运行层唯一的 yield）
+class Future:
+    def __await__(self):
+        if not self.done():
+            yield self          # ← 全系统唯一的暂停点：把 Future 交给驱动者
+        return self.result()   # ← 结果走 return 通道（第 3.2 节的三通道之一）</code></pre>
+
+<h3 id="ch7-2">7.2 活化石与历史时间线</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：活化石</div>
+<p>用 3.4 时代的老写法 <code>@asyncio.coroutine</code> + <code>yield from</code> 写一个协程，它<b>今天照样跑在同一个事件循环上，还能和 async/await 版互相 await</b>——因为它们本来就是同一种东西，只是名牌不同。</p>
+</div>
+<table>
+<tr><th>版本 · 年份</th><th>里程碑</th><th>意义</th></tr>
+<tr><td>2.2 · 2001</td><td>PEP 255 <code>yield</code></td><td>生成器：暂停-恢复机器诞生</td></tr>
+<tr><td>3.3 · 2012</td><td>PEP 380 <code>yield from</code></td><td>暂停权可以穿透函数边界——协程的机器基础就绪</td></tr>
+<tr><td>3.4 · 2014</td><td><code>@asyncio.coroutine</code> + <code>yield from</code></td><td>协程真的在用 yield 写</td></tr>
+<tr><td>3.5 · 2015</td><td><code>async</code> / <code>await</code></td><td>糖衣：类型隔离（见下）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：糖衣的目的不是换机器，是类型隔离</div>
+<p>机器十年没换过，换的只是门禁：安检门从"是个迭代器就行"（GET_YIELD_FROM_ITER）收紧为"只放行 awaitable"（GET_AWAITABLE），防止把普通生成器误喂给 await 出诡异 bug。<b>async/await 是穿上了类型安检门的 yield from。</b></p>
+</div>
+<div class="box interview"><div class="boxTitle">🎭 面试作答："协程和生成器什么关系？"（最硬的答案）</div>
+<p><b>"协程是穿上了类型安检门的生成器——语法上是 await，字节码上是 YIELD_FROM，语义上全系统只有一个 yield 在执行，就是 Future.__await__ 里那条。"</b>再补一句活化石：3.4 时代的 <code>@coroutine + yield from</code> 协程今天照样运行在同一个循环上，还能和 async/await 互相 await。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch8">
+<h2>第 8 章 · 一钻到底：照片模型与 C 层化石<span class="tag">P1 底层</span></h2>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问原话</div>
+<p>"它字节码使用了 yield，所有的底层就没有用到 yield 和 send。那 await 和 async 应该也会有它们的底层，难道协程这套从底层到上层建筑，一点生成器都没有用到吗？那他们怎么处理等待和运行的？"</p>
+</div>
+
+<h3 id="ch8-1">8.1 四层对照：你不写，机器在用</h3>
+<div class="box counter"><div class="boxTitle">⛔ 纠错：这句话前半对后半反了</div>
+<p>"底层没用 yield 和 send"恰好说反：<b>19 步流程里第 4 步和第 15 步各是一次 <code>coro.send(None)</code>，运行层满地都是 send</b>。唯一成立的版本是"源码层你不写它们"——你不写，但机器在用。</p>
+</div>
+
+<div class="figwrap">
+<div class="figTitle">四层对照：生成器机器以什么形态在场</div>
+<div class="figSub">越往下越接近机器真相——async/await 只是给生成器机器换的名牌和安检门</div>
+<svg viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="700" height="62" rx="8" fill="#161b22" stroke="#6e7681"/>
+  <text x="40" y="46" fill="#e6edf3" font-size="14" font-weight="bold">源码层：async def / await</text>
+  <text x="40" y="68" fill="#8b949e" font-size="12">不在场——全栈唯一一层（grep yield × 0）</text>
+  <text x="745" y="58" fill="#f85149" font-size="13" font-weight="bold">× 0</text>
+
+  <rect x="20" y="94" width="700" height="62" rx="8" fill="#0a1a2e" stroke="#58a6ff"/>
+  <text x="40" y="120" fill="#e6edf3" font-size="14" font-weight="bold">字节码层：代码对象的指令</text>
+  <text x="40" y="142" fill="#8b949e" font-size="12">YIELD_FROM 指令，与 yield from 是同一条指令</text>
+  <text x="745" y="132" fill="#58a6ff" font-size="13" font-weight="bold">同名指令</text>
+
+  <rect x="20" y="168" width="700" height="62" rx="8" fill="#211a08" stroke="#d29922"/>
+  <text x="40" y="194" fill="#e6edf3" font-size="14" font-weight="bold">运行层：Task / Loop / Future</text>
+  <text x="40" y="216" fill="#8b949e" font-size="12">tasks.py:232 —— result = coro.send(None)（19 步的第 4/15 步）</text>
+  <text x="745" y="206" fill="#d29922" font-size="13" font-weight="bold">满地 send</text>
+
+  <rect x="20" y="242" width="700" height="62" rx="8" fill="#1a0f26" stroke="#bc8cff"/>
+  <text x="40" y="268" fill="#e6edf3" font-size="14" font-weight="bold">C 层：coroutine 类型</text>
+  <text x="40" y="290" fill="#8b949e" font-size="12">PyCoro_Type 住在 genobject.c，send/throw/close 复用 gen_send</text>
+  <text x="745" y="280" fill="#bc8cff" font-size="13" font-weight="bold">生成器本体</text>
+
+  <line x1="760" y1="330" x2="760" y2="30" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="790" y="180" fill="#6e7681" font-size="12" transform="rotate(-90 790 180)">越往下，生成器机器越在场</text>
+</svg>
+</div>
+
+<h3 id="ch8-2">8.2 帧的照片模型：等待和运行怎么处理</h3>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：协程不是在"等待"，它是被停成了一张照片</div>
+<p>实验实测：挂起中的协程，<code>cr_frame.f_lasti = 10</code>（指令指针冻结在 YIELD_FROM 那条指令上）、<code>f_back = None</code>（<b>不在任何调用栈上</b>）。合起来一句话：<b>帧从 C 调用栈上被摘下来，折进协程对象里随身携带，指令指针写在背面，局部变量原样活着，整个对象几百字节，想挂多久挂多久。</b>唤醒 = send 把照片压回栈、跳到 f_lasti 继续。</p>
+</div>
+<div class="box metaphor"><div class="boxTitle">💡 比喻：事件循环 = 相册管理员</div>
+<p>事件循环干的活，本质是<b>相册管理员</b>：谁的 Future 兑现了，就 send 谁——把那张照片压回 C 栈继续放。</p>
+</div>
+<p><b>裸机版验证</b>（零行 asyncio）：用 <code>c.send(None)</code> 手动驱动一个协程——第一次 send 返回它交出的 Box、<code>f_lasti</code> 从 -1 变 10、再 send 抛 StopIteration；然后<b>两个协程 + 一个 while + send，就跑出了 alpha/beta 交替的并发</b>——你亲手当了一回事件循环，而引擎只有 send 一个。</p>
+<pre><code class="language-python"># 裸机版：两个协程 + while + send = 并发（零行 asyncio）
+async def alpha():
+    for i in range(3):
+        await switch()          # 交出控制权 → 帧被停成照片
+        print(f"alpha {i}")
+
+async def beta():
+    for i in range(3):
+        await switch()
+        print(f"beta {i}")
+
+# while 循环轮换 send 两个协程 → 输出 alpha/beta 交替
+# 引擎只有 send 一个：并发 = 在 await 点之间来回切换</code></pre>
+
+<h3 id="ch8-3">8.3 C 层三块化石</h3>
+<p>钻到 C 层挖到的三块化石——协程的生成器族谱就刻在这些细节里：</p>
+<table>
+<tr><th>化石</th><th>是什么</th><th>说明了什么</th></tr>
+<tr><td><b>① close() 抛 GeneratorExit</b></td><td>关掉一个协程，抛进它体内的异常名叫"<b>生成器退出</b>"；现场版演示：stubborn 协程 close 时，体内 <code>except GeneratorExit</code> 真的接到了</td><td>族谱就写在异常名里</td></tr>
+<tr><td><b>② 词汇泄漏</b></td><td>协程 send 的文档说 "return next <b>iterated</b> value"——协程根本不"迭代"，这套措辞是从生成器文档抄的</td><td>同一套 send 机器的活化石</td></tr>
+<tr><td><b>③ 骨架尺寸 88 → 96</b></td><td>协程比生成器恰好多 8 字节，即多一个指针字段 <code>cr_origin</code>（记录出生地，专供 "never awaited" 警告使用；生成器没有 <code>gi_origin</code>）</td><td>同一个骨架，多塞了一张<b>出生证明</b></td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">⚙️ 机制：tasks.py 的作者亲笔注释（标准库原文）</div>
+<pre><code class="language-python"># tasks.py:230-232 —— CPython asyncio 作者亲笔
+# We use the `send` method directly, because coroutines don't
+# have `__iter__` and `__next__` methods. —— 作者注释
+result = coro.send(None)   # 你在所有实验里写的 coro.send(None)，抄的都是这行原文</code></pre>
+</div>
+<div class="box counter"><div class="boxTitle">⛔ 一个诚实的更正（连 AI 的预期也会落空）</div>
+<p>预期协程 send 的文档字符串会写 "into generator"（老版本确实如此），实测这个 3.10 已改写成 coroutine——<b>预期落空，换实测说话</b>。教训：文档会被更新，化石（异常名、字段尺寸、指令名）才是不会说谎的族谱。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="appA">
+<h2>附录 A · 比喻词典<span class="tag">面试作答时可直接借用</span></h2>
+<table>
+<tr><th>术语</th><th>生活化比喻</th><th>一句话对应</th></tr>
+<tr><td>Future</td><td><b>合同 / 兑现凭证</b></td><td>协程躺下前拿到的凭证，谁完成了谁调 set_result 兑现</td></tr>
+<tr><td>Task</td><td><b>会驱动协程的合同</b></td><td>它自己也是 Future，协程的 return 值填进它自己</td></tr>
+<tr><td>Loop</td><td><b>相册管理员</b></td><td>谁的合同兑现了，就把谁的"照片"（协程）压回栈继续放</td></tr>
+<tr><td>挂起的协程</td><td><b>一张照片</b></td><td>帧从 C 栈摘下折进对象随身带，指令指针写在背面，局部变量原样活着</td></tr>
+<tr><td>yield from / await</td><td><b>隧道</b></td><td>暂停权借给里层，里层的暂停不经过我的代码直接弹到最外层驱动者手里</td></tr>
+<tr><td>预售</td><td><b>提前卖出的订单</b></td><td>set_result 以函数引用形式提前 0.05 秒卖进定时器堆，到点由循环核销</td></tr>
+<tr><td>__wakeup 的三个家</td><td><b>登记簿 → 调度队列 → 舞台</b></td><td>留电话（登记）→ 排队（搬运）→ 被叫上台（执行）</td></tr>
+<tr><td>"解耦"这个词</td><td><b>催问券</b></td><td>一说出口必然引来"解耦了什么？怎么解耦的？"</td></tr>
+<tr><td>async / await</td><td><b>糖衣 + 安检门</b></td><td>机器十年没换，换的只是门禁（只放行 awaitable）</td></tr>
+<tr><td>cr_origin 字段</td><td><b>出生证明</b></td><td>协程骨架比生成器多出的那 8 字节，记录出生地</td></tr>
+<tr><td>亲手跑过的代码</td><td><b>免死金牌</b></td><td>"我自己写过 80 行迷你事件循环"——没人能击穿你跑过的代码</td></tr>
+<tr><td>提取练习</td><td><b>合上书默写</b></td><td>读是"认"，写是"取"；读懂和说出之间隔的是产出这块肌肉</td></tr>
+</table>
+</section>
+
+<!-- ================================================================ -->
+<section id="appB">
+<h2>附录 B · 面试速答卡<span class="tag">面试前十分钟过一遍</span></h2>
+
+<h3>必考一："说说 asyncio 的原理 / 骨架"</h3>
+<div class="box interview"><div class="boxTitle">🎭 30 秒版</div>
+<p>"我自己写过一个 80 行的迷你事件循环。<b>Loop</b> 是调度器，只跑就绪队列里的回调，没活干就睡在 IO 多路复用和定时器上，根本不认识协程；<b>Future</b> 是合同，协程 await 它就挂起，谁完成谁 set_result，它把等待者排回队列；<b>Task</b> 是会驱动协程的 Future，用 send 推进协程，return 值填进自己。所以加一种新等待方式，循环一行不用改——uvloop 提速数倍只换 Loop 和 IO 实现，Future/Task 一行不动，就是这句话的实证。"</p>
+</div>
+<details>
+<summary>展开版（2 分钟）：主线 + 六个追问的接法</summary>
+<div class="inner">
+<p>先说主线（上面 30 秒版），然后按追问接招：</p>
+<ul>
+<li>追问"<b>怎么挂起的</b>" → 帧的照片模型：帧从 C 栈摘下折进协程对象，f_lasti 冻结在 YIELD_FROM，f_back=None；唤醒 = send 把照片压回栈</li>
+<li>追问"<b>结果怎么传的</b>" → 三通道：yield self 只交出 Future；send(None) 只说继续跑；结果走 return 通道穿过隧道变成 await 表达式的值</li>
+<li>追问"<b>协程和生成器什么关系</b>" → 三层答案：源码层没用（grep ×0）、字节码层全是（await 编译出 YIELD_FROM）、运行层只有一个（Future.__await__ 里那条）</li>
+<li>追问"<b>cancel 怎么生效</b>" → 下个机会点 throw CancelledError，协程可捕获；纯计算死循环会卡死整个循环（投递口只有 await 点）</li>
+<li>追问"<b>跨线程怎么唤醒</b>" → self-pipe 写一个字节叫醒 epoll；容器单条不撕裂但读改写序列照样丢</li>
+<li>追问"<b>gather 顺序怎么保证</b>" → 槽位按参数位置预留，结束时按原始参数序收割写回自己的槽</li>
+</ul>
+</div>
+</details>
+
+<h3>必考二："协程到底用了 yield 吗"（一问定乾坤）</h3>
+<div class="box interview"><div class="boxTitle">🎭 硬答案</div>
+<p>"取决于在哪层看：源码层没用——我写的每个关键字都是 await；字节码层全是——await 和 yield from 编译出同一条 YIELD_FROM，差一个安检门；运行层只有一个真正执行——标准库 Future.__await__ 里的 yield self，全系统唯一的暂停点。所以协程就是穿上了类型安检门的生成器。3.4 时代的 @coroutine + yield from 协程今天照样能和 async/await 互相 await——本来就是同一种东西。"</p>
+</div>
+
+<h3>数字弹药（背下来，带实测数字的人会被记住）</h3>
+<table>
+<tr><th>对比</th><th>数字</th><th>用在哪</th></tr>
+<tr><td>进程池 vs 线程池（CPU 密集）</td><td>27s vs 39s</td><td>"CPU 密集为什么用进程池"</td></tr>
+<tr><td>协程 vs 线程（单个开销）</td><td>1.7KB vs 13.6KB</td><td>"协程为什么能开十万级"</td></tr>
+<tr><td>asyncio.Lock vs 线程锁</td><td>慢约 5 倍</td><td>"协程锁走调度队列，单线程少用锁"</td></tr>
+<tr><td>竞态窗口</td><td>一次函数调用丢 48%</td><td>"窗口小 ≠ 安全"</td></tr>
+<tr><td>asyncio 包行数分布</td><td>13129 行里 futures.py 仅 426 行</td><td>"骨架永远是薄的那层"</td></tr>
+<tr><td>asyncio 包 set_result( 出现处数</td><td>46 处，几乎全是事件源兑现</td><td>"开放的两端"的实体</td></tr>
+</table>
+
+<h3>兜底话术（被问到没读过的）</h3>
+<blockquote>"这个细节我没读过，但我自己写过 80 行的迷你事件循环，从实现者的角度我理解是……"</blockquote>
+</section>
+
+<!-- ================================================================ -->
+<section id="appC">
+<h2>附录 C · 事实核查表<span class="tag">全部来自原会话实测，可复现</span></h2>
+<table>
+<tr><th>#</th><th>事实</th><th>实测方式 / 出处</th></tr>
+<tr><td>1</td><td>await 与 yield from 编译产物：核心指令同为 <code>YIELD_FROM</code>，前置检查器不同（GET_AWAITABLE vs GET_YIELD_FROM_ITER）</td><td>Python 3.10 字节码对照实测</td></tr>
+<tr><td>2</td><td>全系统唯一真·yield 执行点 = 标准库 futures.py 的 <code>Future.__await__</code> 里 <code>yield self</code>（= 19 步图第 7 步）</td><td>标准库源码 + 运行追踪</td></tr>
+<tr><td>3</td><td><code>tasks.py:232</code> 即 <code>result = coro.send(None)</code>；230 行有作者注释"coroutines don't have __iter__ and __next__ methods"</td><td>标准库源码</td></tr>
+<tr><td>4</td><td>整个 asyncio 包 <code>set_result(</code> 出现 46 处，几乎全是事件源（socket、线程池、子进程、定时器）兑现各自的 Future</td><td>grep 标准库</td></tr>
+<tr><td>5</td><td>挂起协程实测 <code>cr_frame.f_lasti = 10</code>（冻结在 YIELD_FROM 指令）、<code>f_back = None</code>（不在任何调用栈上）</td><td>traceback + 帧属性实测</td></tr>
+<tr><td>6</td><td>协程 <code>close()</code> 抛 <code>GeneratorExit</code>；协程 send 文档含"iterated value"措辞（3.10 文档主体已改写为 coroutine）</td><td>C 层文档字符串实测</td></tr>
+<tr><td>7</td><td>协程骨架比生成器恰好多 8 字节（88→96），多出 <code>cr_origin</code> 字段；生成器无 <code>gi_origin</code></td><td>对象尺寸实测</td></tr>
+<tr><td>8</td><td>死亡协程再 send：<code>RuntimeError: cannot reuse already awaited coroutine</code>——让出走 send 正常返回，死亡走抛 StopIteration</td><td>运行实测</td></tr>
+<tr><td>9</td><td>19 步流程三个数字：__step 4 个编号只 2 次调用；_run_once 转 4 圈；yield 全场 1 个。公式：__step 执行次数 = 1 + await 次数</td><td>19 步编号轨迹实测</td></tr>
+<tr><td>10</td><td>asyncio.sleep 官方实现 = create_future + call_later(_set_result_unless_cancelled) + return await future；死亡通道在 tasks.py:241 <code>super().set_result(exc.value)</code></td><td>标准库源码</td></tr>
+<tr><td>11</td><td>asyncio 包 13129 行；其中 futures.py 426 行、streams.py 726 行、locks.py 438 行——合同层最薄</td><td>行数统计</td></tr>
+<tr><td>12</td><td>实测数字：进程池 27s vs 线程池 39s；协程 1.7KB vs 线程 13.6KB；asyncio.Lock 慢约 5 倍；竞态窗口一次函数调用丢 48%</td><td>原会话压测</td></tr>
+<tr><td>13</td><td>uvloop 提速数倍只换"Loop + IO 墙"实现，Future/Task/回调/取消一行不动</td><td>uvloop 官方设计事实</td></tr>
+<tr><td>14</td><td>3.4 时代 <code>@asyncio.coroutine</code> + <code>yield from</code> 协程在 3.10 照样运行，且可与 async/await 互相 await</td><td>活化石实验实测</td></tr>
+<tr><td>15</td><td> StreamReader 的 <code>_wakeup_waiter</code> 用 <code>waiter.set_result(None)</code> 兑现等待者；<code>_wait_for_data</code> 文档自述"uses a future to link the protocol feed_data()"</td><td>streams.py 源码</td></tr>
+</table>
+<p class="small">注：本册涉及的 exp17～exp24 系列实验文件为原会话产物，不在本目录内；所有事实均可按"出处"列的方式自行复现。第 12 条压测数字与具体机器负载相关，引用时说明"自己实测的量级"即可。</p>
+</section>
+
+<p style="text-align:center;margin-top:30px"><a class="tocAnchorTop" href="#top">↑ 返回顶部</a></p>
+</main>
+</div>
+
+<script src="anno.js"></script>
+</body>
+</html>

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>协作系统演进教程书：从锁到 OT、CRDT、同步引擎与 AI 并发编辑</title>
+<style>
+/* ============ 全局主题：深色 IDE 风（与 demo 实验台统一） ============ */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --alice:#3fb950; --bob:#58a6ff; --carol:#d29922; --agent:#bc8cff;
+  --danger:#f85149; --warn:#e3b341; --ok:#3fb950;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.8 system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--bob);text-decoration:none} a:hover{text-decoration:underline}
+code{font-family:var(--mono);background:#21262d;padding:1px 6px;border-radius:4px;font-size:13px;color:#79b8ff}
+pre{background:#0a0d12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;margin:12px 0}
+pre code{background:none;padding:0;color:#e6edf3;font-size:13px;line-height:1.7}
+/* ============ 布局：左侧目录 + 右侧正文 ============ */
+.layout{display:flex;max-width:1420px;margin:0 auto;align-items:flex-start}
+nav.toc{position:sticky;top:0;width:270px;min-width:270px;height:100vh;overflow:auto;padding:28px 14px;border-right:1px solid var(--border);background:var(--panel)}
+nav.toc .tocTitle{font-size:15px;font-weight:700;margin-bottom:14px;padding:0 8px}
+nav.toc a{display:block;padding:4px 10px;font-size:13px;color:var(--muted);border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{color:var(--text);text-decoration:none;background:var(--panel2)}
+nav.toc a.lv2{padding-left:22px;font-size:12.5px}
+nav.toc .tocFoot{margin-top:18px;padding:10px;font-size:12px;color:var(--dim);border-top:1px dashed var(--border)}
+main{flex:1;min-width:0;padding:36px 44px 80px;max-width:1080px}
+h1{font-size:26px;margin-bottom:8px}
+h1 small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:6px}
+section{margin-bottom:56px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+h2{font-size:21px;margin:34px 0 6px;padding-left:12px;border-left:4px solid var(--bob)}
+h2 .tag{font-size:12px;color:var(--dim);font-weight:400;margin-left:10px}
+h3{font-size:17px;margin:24px 0 6px;color:#79c0ff}
+h4{font-size:15px;margin:18px 0 4px;color:var(--warn)}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+/* ============ 语义框：比喻 / 机制 / 反例 / 文献 / 面试 ============ */
+.box{border:1px solid var(--border);border-left:4px solid var(--dim);border-radius:8px;padding:12px 16px;margin:14px 0;background:var(--panel2)}
+.box .boxTitle{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.box.metaphor{border-left-color:var(--warn)} .box.metaphor .boxTitle{color:var(--warn)}
+.box.mechanism{border-left-color:var(--bob)} .box.mechanism .boxTitle{color:var(--bob)}
+.box.counter{border-left-color:var(--danger)} .box.counter .boxTitle{color:var(--danger)}
+.box.paper{border-left-color:var(--carol)} .box.paper .boxTitle{color:var(--carol)}
+.box.interview{border-left-color:var(--agent)} .box.interview .boxTitle{color:var(--agent)}
+.box.warnbox{border-left-color:#d29922;background:#16130a} .box.warnbox .boxTitle{color:var(--warn)}
+/* ============ 表格 ============ */
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--text);font-weight:600;white-space:nowrap}
+td{color:var(--muted)} td b,td strong{color:var(--text)}
+tr:hover td{background:#161b2288}
+/* ============ 折叠推演 ============ */
+details{border:1px solid var(--border);border-radius:8px;margin:12px 0;background:var(--panel)}
+details summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--warn);font-weight:600;list-style:none}
+details summary::before{content:"▸ ";color:var(--warn)}
+details[open] summary::before{content:"▾ "}
+details .inner{padding:2px 18px 14px}
+/* ============ 图表容器 ============ */
+.figwrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:16px;margin:16px 0}
+.figwrap .figTitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.figwrap .figSub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.figwrap svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* ============ 杂项 ============ */
+.tocAnchorTop{position:fixed;right:26px;bottom:26px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px}
+.hl{color:var(--warn);font-weight:600}
+.hlg{color:var(--ok);font-weight:600}
+.small{font-size:12.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:1000px){.grid2,.grid3{grid-template-columns:1fr}}
+@media(max-width:900px){nav.toc{display:none}.layout{display:block}}
+.step{color:var(--alice)}
+ul,ol{margin:8px 0 8px 24px}
+li{margin:4px 0}
+kbd{font-family:var(--mono);background:#21262d;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ================= 左侧目录 ================= -->
+<nav class="toc" id="toc">
+  <div class="tocTitle">📘 协作系统演进教程书</div>
+  <a href="#pre">序章 · 怎么读这本书</a>
+  <a href="#act0">第 0 幕 · 锁为什么答非所问</a>
+  <a href="#act1">第 1 幕 · OT 诞生与 TP1/TP2 死穴</a>
+  <a class="lv2" href="#act1-1">1.1 变换菱形：TP1</a>
+  <a class="lv2" href="#act1-2">1.2 两个可手工复算的 TP1 反例</a>
+  <a class="lv2" href="#act1-3">1.3 TP2：三方插队与裁决尺子</a>
+  <a class="lv2" href="#act1-4">1.4 不可满足定理与两条出路</a>
+  <a href="#act2">第 2 幕 · Jupiter：用服务器定序绕死穴</a>
+  <a class="lv2" href="#act2-1">2.1 星型拓扑与影子副本</a>
+  <a class="lv2" href="#act2-2">2.2 二维状态空间格子图</a>
+  <a class="lv2" href="#act2-3">2.3 三客户端完整推演</a>
+  <a class="lv2" href="#act2-4">2.4 "绕开 TP2"的准确含义</a>
+  <a href="#act3">第 3 幕 · Wave：XML 树、单批在途与联邦</a>
+  <a class="lv2" href="#act3-1">3.1 XML item 模型：统一坐标系</a>
+  <a class="lv2" href="#act3-2">3.2 单批在途：不需要锁的状态机</a>
+  <a class="lv2" href="#act3-3">3.3 联邦 ≠ 多权威</a>
+  <a class="lv2" href="#act3-4">3.4 ShareDB：沉船上的发动机</a>
+  <a href="#act4">第 4 幕 · OT 四死穴与 400 万次变换</a>
+  <a class="lv2" href="#act4-1">4.1 四死穴总表</a>
+  <a class="lv2" href="#act4-2">4.2 插队比喻：逐格穿越 vs COT vs CRDT</a>
+  <a class="lv2" href="#act4-3">4.3 COT 的代价</a>
+  <a href="#act5">第 5 幕 · CRDT：从发座位号到认人</a>
+  <a class="lv2" href="#act5-1">5.1 裁判 vs 邮差</a>
+  <a class="lv2" href="#act5-2">5.2 不变 ID 三件套 + Lamport 时钟</a>
+  <a class="lv2" href="#act5-3">5.3 版本向量：因果的三本账</a>
+  <a class="lv2" href="#act5-4">5.4 三条主线、七版演化</a>
+  <a class="lv2" href="#act5-5">5.5 WOOT 集成算法 / Logoot 膨胀</a>
+  <a class="lv2" href="#act5-6">5.6 RGA 保序 vs Logoot 交错（原理）</a>
+  <a class="lv2" href="#act5-7">5.7 元数据四代瘦身：Yjs→Fugue→Eg-walker</a>
+  <a class="lv2" href="#act5-8">5.8 mark-sweep GC：墓碑什么时候能扫</a>
+  <a href="#act6">第 6 幕 · 同步引擎：第三条路线</a>
+  <a href="#act7">第 7 幕 · AI 并发编辑四实践</a>
+  <a href="#act8">第 8 幕 · 2025 前沿与展望</a>
+  <a href="#appA">附录 A · 大白话比喻词典</a>
+  <a href="#appB">附录 B · 事实核查表</a>
+  <a href="#appC">附录 C · 面试作答模板</a>
+  <a href="#appD">附录 D · 参考与互链</a>
+  <div class="tocFoot">配套交互实验台：<br><a href="./collab_evolution_demo.html">collab_evolution_demo.html</a><br>四个可动手的实验复刻历史失败现场</div>
+</nav>
+
+<!-- ================= 正文 ================= -->
+<main>
+
+<h1 id="top">协作系统演进教程书 <small>从锁 → OT → CRDT → 同步引擎 → AI 并发编辑：一条被面试官点名"去了解 OT 和 CRDT"之后才补完的路</small></h1>
+<p class="lead">本书记录一次完整的知识攻坚：从"只知道乐观锁悲观锁"出发，经五轮追问逐层砸实每个概念。全部讲解采用"大白话比喻 + 机制拆解 + 可复算例子"三层结构——比喻负责入门，机制负责准确，例子负责验证你真的懂了。</p>
+
+<!-- ================= 序章 ================= -->
+<section id="pre">
+<h2>序章 · 怎么读这本书</h2>
+<p>这是一次真实面试引发的补课：面试官问"协作系统有哪些解决方案"，我当时只答了乐观锁/悲观锁，被建议去了解 OT 和 CRDT。看完了科普视频之后，我做了三件事：<b>① 逐条核实视频事实（附录 B）；② 对每个概念追问到底层的机制与反例（正文各幕）；③ 把所有抽象概念翻译成一套统一的比喻体系（附录 A）</b>。</p>
+<h3>两个高频笔误的澄清（先扫清障碍）</h3>
+<table>
+<tr><th>误写</th><th>正确</th><th>是什么</th></tr>
+<tr><td>"XMR 文档"</td><td><b>XML 文档</b></td><td>Wave 的文档模型是受限 XML 树，不是纯字符串</td></tr>
+<tr><td>"Jupyter"</td><td><b>Jupiter</b></td><td>Xerox PARC 1995 协作系统，Wave/Google Docs 的 OT 蓝本；与 Jupyter 笔记本无关</td></tr>
+</table>
+<h3>全书的统一比喻体系（先记住这六个，后面全用得上）</h3>
+<div class="box metaphor"><div class="boxTitle">🎪 核心比喻：文档 = 一条插队队伍</div>
+<p><b>文档 = 演唱会入场的一条队伍；每个编辑操作 = 一个人来插队；操作的位置 = "我前面有几个人"。</b>后面你会看到：OT 是"挨个问前面的人"、COT 是"查对照表"、CRDT 是"直接认人不报数字"、TP2 是"三个人同时插队时裁决尺子不稳定"。全部协作问题都是这条队伍的事。</p></div>
+<h3>阅读路线建议</h3>
+<ul>
+<li><b>面试冲刺</b>：序章 → 第 0/1/2/5 幕 → 附录 C（作答模板）→ 附录 A（比喻词典，口头表达时比术语好用）</li>
+<li><b>系统理解</b>：顺序读完 0-8 幕，配合 <a href="./collab_evolution_demo.html">交互实验台</a> 动手复现每个失败现场</li>
+<li><b>查证引用</b>：附录 B 事实核查表，每条论断标注了出处与可信度</li>
+</ul>
+</section>
+
+<!-- ================= 第 0 幕 ================= -->
+<section id="act0">
+<h2>第 0 幕 · 锁为什么答非所问 <span class="tag">悲观锁 / 乐观锁 / LWW</span></h2>
+<p class="lead">协作编辑的本质是<b>多副本持续合并</b>，而锁解决的是<b>互斥访问</b>——两者根本不在一个岗位上。但要讲清"哪里不像"，得先把四个容易混淆的东西放到一张表里。</p>
+<table>
+<tr><th></th><th>岗位</th><th>冲突时干什么</th><th>输家的下场</th><th>适合</th></tr>
+<tr><td><b>悲观锁</b></td><td>门卫（管准入）</td><td>不让你进</td><td>根本改不了</td><td>短临界区、强一致事务</td></tr>
+<tr><td><b>乐观锁</b></td><td>门卫（管准入）</td><td>提交时查版本号，拒绝</td><td>重试，全部重来</td><td>业务事务（转账/下单），修改不能丢</td></tr>
+<tr><td><b>OT</b></td><td>合并员（管内容）</td><td>挪位置，你的字我的字都保留</td><td><b>没有输家</b></td><td>文本/结构化文档协同</td></tr>
+<tr><td><b>LWW</b></td><td>合并员（管内容）</td><td>时间戳新的覆盖旧的</td><td><b>无声丢尸</b>——改动直接蒸发</td><td>"输家无所谓"的字段：头像、在线状态、属性色</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">🔧 机制要点：乐观锁和 LWW 长得像，收场完全相反</div>
+<p>相似点：都"不提前拦人，事后处理"。但乐观锁<b>发现撞车后输家必须重做</b>（业务修改绝不能丢）；LWW <b>发现撞车后直接扔掉输家</b>。而 OT 和 LWW 是"合并哲学"的两个极端：OT 是"人人有座位"（意图保持），LWW 是"赢家通吃"（整字段覆盖）。实验台实验 1 的三个按钮分别演示了悲观锁断网悬死、乐观锁 409 丢字、LWW 整段蒸发。</p></div>
+<div class="box metaphor"><div class="boxTitle">🎪 LWW 真正的家：CRDT 工具箱里的一件工具</div>
+<p>LWW 不是 OT 的兄弟，它是 <b>CRDT 工具箱里管"不占位置的标量字段"的工具</b>。Wave 的设计里"位置类操作用平移规则、属性类操作用 LWW"；Figma 公开方案是"单元格内容细粒度合并、单元格属性（颜色字体）属性级 LWW"。为什么属性用 LWW 就行？两个人都把背景色改成不同颜色，本来也只能留一个——LWW 是对这种场景的诚实投降。这正是"参数级差异"的架构思路：<b>按数据的性质（占不占位置）配不同的合并策略</b>，而不是一套策略包打天下。</p></div>
+</section>
+
+<!-- ================= 第 1 幕 ================= -->
+<section id="act1">
+<h2>第 1 幕 · OT 诞生与 TP1/TP2 死穴 <span class="tag">GROVE 1989 / 变换函数 / 不可满足定理</span></h2>
+<p class="lead">OT 的原始想法（Ellis &amp; Gibbs 1989，GROVE 系统）：不改别人的编辑，只改"别人编辑落到我这边时的执行方式"。执行修改由<b>变换函数 T(op, concurrentOp)</b>完成——把一个操作翻译成"包含对方效果之后的版本"。<b>TP = Transformation Property（变换性质）</b>，是文献对变换函数提出的正确性公理（早期论文称 Condition C1/C2）。</p>
+
+<h3 id="act1-1">1.1 变换菱形：TP1（两方并发）</h3>
+<p>设 o1、o2 是两个并发操作（基于同一文档状态 S 生成），TP1 要求：</p>
+<pre><code>apply( apply(S, o1), T(o2, o1) )  ==  apply( apply(S, o2), T(o1, o2) )
+//   先走 o1 再走"翻译过的 o2"   ==   先走 o2 再走"翻译过的 o1"
+//   菱形的两条路必须到达同一个文档（收敛）</code></pre>
+<div class="figwrap">
+<div class="figTitle">TP1 变换菱形（格子图视角）</div>
+<div class="figSub">横轴 = Alice 本地操作数，纵轴 = 已收到的服务器广播数；斜走一格 = 做一次变换 T()；两条路终点必须一致</div>
+<svg viewBox="0 0 640 240">
+  <rect x="100" y="140" width="170" height="70" rx="10" fill="#1c2129" stroke="#30363d"/>
+  <text x="185" y="167" font-size="11" fill="#8b949e" text-anchor="middle">(0,0) 初始 "Hello"</text>
+  <rect x="310" y="140" width="170" height="70" rx="10" fill="#1c2129" stroke="#30363d"/>
+  <text x="395" y="167" font-size="11" fill="#8b949e" text-anchor="middle">(1,0) Alice 打 " World"</text>
+  <text x="395" y="190" font-size="13" fill="#e6edf3" text-anchor="middle" font-family="monospace">Hello World</text>
+  <rect x="100" y="40" width="170" height="70" rx="10" fill="#1c2129" stroke="#30363d"/>
+  <text x="185" y="67" font-size="11" fill="#8b949e" text-anchor="middle">(0,1) 先收到 Bob 的 "!"</text>
+  <text x="185" y="90" font-size="13" fill="#e6edf3" text-anchor="middle" font-family="monospace">Hello!</text>
+  <rect x="310" y="40" width="170" height="70" rx="10" fill="#0f2d18" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="395" y="67" font-size="11" fill="#3fb950" text-anchor="middle">(1,1) 殊途同归 = TP1 ✓</text>
+  <text x="395" y="90" font-size="13" fill="#e6edf3" text-anchor="middle" font-family="monospace">Hello World!</text>
+  <path d="M 270 175 L 310 175" stroke="#3fb950" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 395 140 L 395 112" stroke="#3fb950" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="6 4"/>
+  <text x="490" y="128" font-size="11" fill="#3fb950">T("!", World)</text>
+  <path d="M 185 140 L 185 112" stroke="#58a6ff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 270 75 L 310 75" stroke="#58a6ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="6 4"/>
+  <text x="490" y="70" font-size="11" fill="#58a6ff">T(World, "!")</text>
+  <path d="M 320 110 L 278 138" stroke="#30363d" stroke-width="1.2" stroke-dasharray="4 4"/>
+</svg>
+<div class="legend"><span><i style="background:#3fb950"></i>路径① 先本地后广播</span><span><i style="background:#58a6ff"></i>路径② 先广播后本地</span><span><i style="background:#3fb95033;border:1px solid #3fb950"></i>终点一致=菱形闭合</span></div>
+</div>
+
+<h3 id="act1-2">1.2 两个可手工复算的 TP1 反例</h3>
+<h4>反例 A：平局规则不对称（Ellis &amp; Gibbs 原始函数的真实坑）</h4>
+<p>插入撞插入（同位置）时，原始函数的平局规则是"<b>函数第一个参数排左边</b>"——问题在于 <code>T(y, x)</code> 和 <code>T(x, y)</code> 里"谁是第一个参数"不同，规则就不同了：</p>
+<details><summary>手工复算：文档 "ab"，Alice 插 x、Bob 并发插 y，都在位置 1（a|b 之间）</summary><div class="inner"><pre><code># Alice 端：先应用自己的 x → "axb"
+#   收到 y，调用 T(y, x) —— y 是第一个参数 → y 排左 → Ins(1,"y")
+#   结果 "ayxb"    ← y 跑到了 x 左边
+# Bob 端：先应用自己的 y → "ayb"
+#   收到 x，调用 T(x, y) —— x 是第一个参数 → x 排左 → Ins(1,"x")
+#   结果 "axyb"    ← x 跑到了 y 左边
+# "ayxb" ≠ "axyb"  → TP1 违反，两副本永不收敛</code></pre>
+<p>修复：平局规则必须换成"<b>与调用参数顺序无关的全序</b>"，比如 clientID 大者排右——双方在任何一台机器上算出同一结果。实验台实验 2 用的正是 clientID 平局。</p></div></details>
+<h4>反例 B：Ins/Del 边界 off-by-one</h4>
+<p>删除与插入互穿时，边界条件写错一个等号就是灾难。Imine 等人 2003 年干的事就是把学术界已发表的 <b>10 个变换函数</b>丢进模型检查器自动穷举——大半都能找到这类反例。不是某个函数写得差，而是"手写平局/边界规则"这个做法本身极度脆弱。</p>
+<details><summary>手工复算：BUG 版边界（p1 &gt; p2 才后移，正确应为 p1 &gt;= p2）</summary><div class="inner"><pre><code>T_del_vs_ins(Del(p1), Ins(p2)):     # 删除操作要"路过"一个插入
+    if p1 &gt;= p2: return Del(p1 + 1)  # 正确边界
+    else:      return Del(p1)
+# BUG 版写成 p1 &gt; p2，则 p1 == p2 时不后移：
+
+# 文档 "ab"：Alice 插 X 在位置1（a|b 间），Bob 并发 Del(1)（删 b）
+# Alice 端：Ins 生效 → "aXb"；收到 Del(1)，BUG 版不后移 → 删位置1 = 刚插的 X！
+#   结果 "ab"（X 没了，b 还活着）
+# Bob 端：Del 生效 → "ab"；收到 Ins(1,"X") 相对删除的变换 → "aXb"
+# "ab" ≠ "aXb"：Bob 想删 b，Alice 端却把刚插的 X 删了 → TP1 违反</code></pre></div></details>
+
+<h3 id="act1-3">1.3 TP2：三方插队与裁决尺子（大白话版）</h3>
+<p>TP1 只管<b>两方</b>。当<b>三个并发操作 o1、o2、o3</b> 基于同一状态、且<b>没有中央服务器定序</b>时，o3 要"穿过" o1 和 o2 落地，TP2 要求（数学形式）：</p>
+<pre><code>T( T(o3, o1), T(o2, o1) )  ==  T( T(o3, o2), T(o1, o2) )
+// 先穿 o1 再穿"被 o1 影响过的 o2"  ==  先穿 o2 再穿"被 o2 影响过的 o1"</code></pre>
+<div class="box metaphor"><div class="boxTitle">🎪 大白话：三条队伍同时有人插队，你问路的顺序不能改变你的站位</div>
+<p>你、A、B 三人同时拿着同一张旧照片插队。你要确定站哪，得"路过" A 和 B 修正位置。<b>难点不是"要问两个人"，而是 A 和 B 的答复会互相改变</b>——A 的位置因 B 而变，B 的位置也因 A 而变，你问的是"流动的答案"。TP2 的要求：先问 A 后问 B，和先问 B 后问 A，最终站位必须一模一样。</p></div>
+<div class="box counter"><div class="boxTitle">💥 翻车现场：裁决尺子量的东西在两条问法里不一样</div>
+<p>队伍 v0 有 7 人。A 插"第 1 人后"、B 插"第 2 人后"、<b>你也插"第 2 人后"</b>（和 B 同点，平局！）：</p>
+<pre><code>问法一（先问 A，再问"被 A 修正后的 B"）：
+  ① 路过 A：A 在你前面(1&lt;2) → 你变"第 3 后"
+  ② B 也被 A 修正：A 插在 B 前面 → B 变"第 3 后"
+  ③ 平局裁决发生在"第 3 后 vs 第 3 后"之间  ← 尺子量的是 3 和 3
+
+问法二（先问 B，再问"被 B 修正后的 A"）：
+  ① 路过 B：你俩同报"第 2 后" → 平局裁决发生在"2 vs 2"  ← 尺子量的是 2 和 2
+  ② 裁决完你变"第 3 后"，再路过 A（A 不受 B 影响）+1 → "第 4 后"</code></pre>
+<p>两种问法里<b>裁决发生的时机不同、量到的数字也不同</b>。历史上真实发表的函数里，平局规则有"按位置数字定""按到达先后定"——只要裁决规则跟"量到的数字"沾边，两种问法就可能给出<b>相反裁决</b>：一种里你排 B 前，另一种里你排 B 后。两台服务器各用一种问法 → 同一份操作合并出两个队伍 → <b>永不收敛</b>。</p></div>
+
+<h3 id="act1-4">1.4 不可满足定理与两条出路</h3>
+<div class="box paper"><div class="boxTitle">📄 文献硬结论（"TP2 是死穴"的准确出处）</div>
+<ul>
+<li>纯插入操作集 + 一致全序平局（如 clientID）→ 存在同时满足 TP1+TP2 的函数（可手工推演验证两条路径同结果）。</li>
+<li><b>一旦加入删除</b>：Randolph / Boucheneb / Imine（2013，控制器合成穷举）证明——在 <code>Ins(pos,str)/Del(pos)</code> 经典签名下，<b>不存在</b>同时满足 TP1 和 TP2 的变换函数。要满足 TP2 必须给操作加额外参数（如 adOPTed 的时间戳方案）。</li>
+<li>所以"死穴"不是"没人找到"，而是"<b>被证明了不存在</b>"。</li>
+</ul></div>
+<table>
+<tr><th>出路</th><th>代表</th><th>做法</th></tr>
+<tr><td><b>架构绕开（业界全部选它）</b></td><td>Jupiter 1995 → Wave → Google Docs</td><td>中央服务器定序，TP2 场景<b>根本不出现</b>，只需满足 TP1（第 2 幕）</td></tr>
+<tr><td>加参数硬解</td><td>adOPTed、TTF</td><td>操作带时间戳/全序化信息满足 TP2，但实现复杂、代价高，未成为主流</td></tr>
+</table>
+</section>
+
+<!-- ================= 第 2 幕 ================= -->
+<section id="act2">
+<h2>第 2 幕 · Jupiter：用服务器定序绕开死穴 <span class="tag">Xerox PARC 1995</span></h2>
+
+<h3 id="act2-1">2.1 星型拓扑与影子副本</h3>
+<pre><code>        Alice ───┐
+        Bob ────┼──→ 服务器 S（唯一权威副本 + 全局总序）
+        Carol ──┘</code></pre>
+<p>关键架构事实：<b>服务器与每个客户端之间跑一条独立的"两方协议"</b>。n 个客户端 = n 条互不知晓的链路，每条链路各维护一个"影子副本"（doppelganger）。服务器存的是（全局操作序列 + 每个客户端的进度指针）。</p>
+
+<h3 id="act2-2">2.2 二维状态空间格子图</h3>
+<p>对每条链路定义坐标系：<b>横轴 = 该客户端本地已发生的操作数，纵轴 = 已收到的服务器广播数</b>。每个格子 (i,j) = 一种文档状态；"斜走一格" = 做一次变换。完整格子图见第 1 幕的菱形图——那就是 Jupiter 链路的坐标系。</p>
+
+<h3 id="act2-3">2.3 三客户端完整推演（可逐行复算）</h3>
+<details open><summary>初始：S、Alice、Bob、Carol 都持有 "Hello"</summary><div class="inner"><pre><code>1. Alice 打 " World" → o_a = Ins(5, " World")
+   Alice 本地立即生效 → "Hello World"，同时发给 S
+
+2. Bob 并发打 "!" → o_b = Ins(5, "!")        # Bob 还没收到 o_a 的广播
+   Bob 本地 → "Hello!"
+
+3. S 收到 o_a：S 当前是 "Hello"（还没见过 o_b）→ 无需变换直接应用
+   → "Hello World"，o_a 进全局序列第 1 位
+
+4. S 收到 o_b：S 当前已含 o_a，而 o_b 基于 "Hello" 生成
+   → S 亲自计算 T(o_b, o_a) = Ins(11, "!")    # 位置 5 跳过 " World" 的 6 字符
+   → 应用得 "Hello World!"，变换版 o_b 进全局序列第 2 位
+
+5. S 按每条链路定制广播：
+   → Alice 收 T(o_b, o_a)=Ins(11,"!")，本地已是 "Hello World"，直接应用 ✓
+   → Bob  收 S 替他算好的 T(o_a, o_b)=Ins(11," World")，应用于 "Hello!" ✓
+   → Carol 收 [Ins(5," World"), Ins(11,"!")] 依序应用 ✓
+
+四方全部收敛于 "Hello World!"。
+服务器对每条链路独立计算"该客户端能听懂的版本"——这就是实验台实验 2 的引擎。</code></pre></div></details>
+
+<h3 id="act2-4">2.4 "绕开 TP2"的准确含义</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 不是"满足"，而是"不适用"</div>
+<p>TP2 出现的前提是"没有中央定序、三个并发操作被不同副本以不同顺序两两互穿"。Jupiter 星型架构下：① 所有并发操作<b>必经服务器</b>钉进唯一全局序列；② 任何操作相对其他并发操作的"变换路径"<b>被服务器的定序唯一固定</b>——不存在"先穿 o1 还是先穿 o2"的选择；③ 每条链路只剩两方菱形，<b>TP1 就够了</b>。所以 Google Docs、Wave、ShareDB、ot.js 全部采用中央服务器——不是不知道 TP2，而是知道被证明不可满足之后，全部选择绕路。</p></div>
+</section>
+
+<!-- ================= 第 3 幕 ================= -->
+<section id="act3">
+<h2>第 3 幕 · Wave：XML 树、单批在途与联邦 <span class="tag">Google 2009-2010 / Apache Wave</span></h2>
+
+<h3 id="act3-1">3.1 XML item 模型：统一坐标系</h3>
+<p>Wave 白皮书（wave-protocol 开源仓 whitepapers/operational-transform）的文档模型：<b>每个字符、每个开始标签、每个结束标签都是 item（项），item 之间的间隙是 position</b>：</p>
+<pre><code>"Hello &lt;b&gt;W&lt;/b&gt;orld" 看成 item 序列：
+[ H ][ e ][ l ][ l ][ o ][ &lt;b&gt; ][ W ][ &lt;/b&gt; ][ o ][ r ][ l ][ d ]
+
+操作词汇（十来个小操作通吃全部富文本）：
+Retain(n) / InsertCharacters(s) / InsertElement(tag) / DeleteItem /
+SetAttributes / annotations 更新（给字符区间贴属性：加粗、颜色、链接）</code></pre>
+<div class="box mechanism"><div class="boxTitle">🔧 统一之后不是"解析不同结构写变换函数"，恰恰相反——几乎不用分叉了</div>
+<p>所有"占位置的东西"都是 item：插入一个 <code>&lt;b&gt;</code> 和插入一个字符 'x' 对变换函数是同一个操作 <code>Ins(pos, item)</code>，一套位置平移规则通吃。真正分叉的只有操作<b>类型</b>这一维：① 位置类（Ins/Del item）→ 平移规则；② 属性类（setAttributes/annotations 的 map 更新）→ 不占位置，用 LWW 或按 key 合并。两套规则正交、互不干扰。<b>设计精髓：把"无限种内容结构"压平成"一种位置坐标系 + 一种属性 map"，变换函数只需覆盖两个正交的小类型系统。</b>相对纯文本的三大加持：结构化文档（回复树/gadget/图片）、回放（文档=操作历史的折叠，可逐步重演）、机器人以同一操作协议对等参与编辑。</p></div>
+
+<h3 id="act3-2">3.2 单批在途：不需要锁的状态机</h3>
+<div class="figwrap">
+<div class="figTitle">单批在途（one outstanding request）状态机</div>
+<div class="figSub">客户端同一时刻只有一批未确认操作在路上；后续本地操作在 pending 队列排队（本地视图零延迟）</div>
+<svg viewBox="0 0 640 200">
+  <rect x="30" y="70" width="150" height="60" rx="10" fill="#1c2129" stroke="#30363d"/>
+  <text x="105" y="95" font-size="12" fill="#e6edf3" text-anchor="middle">本地生成 op</text>
+  <text x="105" y="115" font-size="11" fill="#8b949e" text-anchor="middle">立即应用到本地影子</text>
+  <rect x="250" y="20" width="150" height="56" rx="10" fill="#12281a" stroke="#3fb950"/>
+  <text x="325" y="43" font-size="12" fill="#3fb950" text-anchor="middle">无在途批次</text>
+  <text x="325" y="62" font-size="11" fill="#8b949e" text-anchor="middle">→ 立即发送，置 inflight</text>
+  <rect x="250" y="110" width="150" height="56" rx="10" fill="#0d1117" stroke="#58a6ff"/>
+  <text x="325" y="133" font-size="12" fill="#58a6ff" text-anchor="middle">已有在途批次</text>
+  <text x="325" y="152" font-size="11" fill="#8b949e" text-anchor="middle">→ 追加 pending 队列</text>
+  <rect x="470" y="65" width="150" height="60" rx="10" fill="#1c2129" stroke="#d29922"/>
+  <text x="545" y="90" font-size="12" fill="#d29922" text-anchor="middle">收到服务器 ack</text>
+  <text x="545" y="110" font-size="11" fill="#8b949e" text-anchor="middle">pending 非空→发下一批；空→清 inflight</text>
+  <path d="M 180 88 L 248 50" stroke="#3fb950" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 180 108 L 248 132" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 400 140 L 468 110" stroke="#d29922" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 3"/>
+  <path d="M 400 50 L 468 80" stroke="#d29922" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 3"/>
+</svg>
+<div class="legend"><span><i style="background:#3fb950"></i>首批直发</span><span><i style="background:#58a6ff"></i>后续排队</span><span><i style="background:#d29922"></i>ack 推动下一批</span></div>
+</div>
+<div class="box mechanism"><div class="boxTitle">🔧 为什么不需要锁：run-to-completion 语义</div>
+<p>判断"是否在途 + 设置标志 + 入队"发生在<b>同一个事件处理步</b>里——单线程事件循环（JS 天然单线程；服务器端 actor 模型串行化）保证这段逻辑中间不会被另一个本地编辑穿插。这就是 <b>TCP 停等协议（stop-and-wait，窗口=1）</b>的思路：靠协议状态机保证"只有一条在途"，而不是靠互斥锁。</p>
+<p><b>两个坑</b>：① 单线程 ≠ 永远安全——事件处理步里若有 <code>await</code>，"检查标志"和"设置标志"之间会让出线程，竞态回来；规则：<b>状态变更必须在不含 await 的同步代码段内完成</b>。② 多线程后端（Java/Go）要么加锁/CAS，要么把所有请求序列化进一个 actor 的 mailbox——后者本质是"用消息队列人造一条逻辑单线程"，与事件循环同源。<b>防竞态的不是"标志"本身，而是"标志的读-改-写不可分割"</b>；单线程事件循环、actor mailbox、锁是达成它的三种手段。</p></div>
+<p class="small">代价：高延迟链路每批一个 RTT，吞吐低 → 实现用批量聚合（一次 ack 确认一整批）摊薄，但"未确认批次 ≤ 1"的协议性质不变。</p>
+
+<h3 id="act3-3">3.3 联邦 ≠ 多权威</h3>
+<p><b>联邦协议</b>：不同管理域的服务器互相连通交换数据的协议（类比 email：Gmail 用户能给 QQ 邮箱发信靠 SMTP 联邦）。Wave 联邦基于 XMPP 扩展（Google Wave Federation Protocol，2010），解决"组织间互通"，<b>不解决正确性问题</b>。</p>
+<div class="box mechanism"><div class="boxTitle">🔧 关键区分：持副本 ≠ 持权威</div>
+<pre><code>权威服务器 (authoritative)   ← 只有一台（通常是创建该 wavelet 的域）
+  · 持有定序权：所有操作必须路由到这里定序；可写，产出官方操作历史
+
+订阅服务器 (其他联邦域)      ← 可以有很多台
+  · 持有副本 = 缓存（本域低延迟访问）+ 只读中继
+  · 无定序权 → 不产生"第二种顺序" → TP2 场景不出现
+
+类比 git：一个仓库可以有无数 mirror，但 upstream 只有一个，镜像只拉不改。
+"唯一权威"是对每个 wavelet 说的——联邦的价值 = 权威可因文档而异地分布，
+但任一时刻任一文档仍只有一个。</code></pre>
+<p><b>权威挂了怎么办？</b>该 wavelet 变只读，直到权威恢复或迁移——没有"接管定序"的降级路径。这就是 OT 死穴之一<b>中心化依赖</b>的现场。</p></div>
+<div class="box counter"><div class="boxTitle">💥 三个概念拆干净（常见混淆）</div>
+<p><b>① 传输乱序</b>= 网络问题，ack/序号/重传去重就能解决（TCP 层面的事），与 TP2 无关；<b>② TP2</b> = 变换函数的数学性质问题，在"有中央服务器定序"的架构下根本不出现；<b>③ Wave 联邦的正确性</b> = 每个 wavelet 有唯一权威服务器定序，联邦只是跨域传播操作历史，星型定序架构一点没变——每条链路依旧两方协议，只需 TP1（TP1 可满足）。</p></div>
+<div class="box paper"><div class="boxTitle">📄 "Wave 没有理论问题吧？"——边界要划准</div>
+<table><tr><th>层面</th><th>状态</th></tr>
+<tr><td>理论架构</td><td>干净：单权威定序 + 链路式两方同步，只需 TP1，TP1 可满足</td></tr>
+<tr><td>工程实现</td><td>加固过：海量随机/模糊测试轰炸变换函数，全开源供检验（wave-protocol 仓库是生产级 OT 最详细的公开参考）</td></tr>
+<tr><td>数学兜底</td><td><b>没有</b>：模糊测试通过 ≠ 数学证明。对比：CRDT 的收敛性有定理（操作合并满足交换律/结合律/幂等 → 半格收敛）。这正是 2015 后学界全面转向 CRDT 的原因</td></tr></table>
+<p class="small">Wave 产品 2012 年关停（产品失败，与正确性无关）；技术遗产活下来：wave-protocol 开源码 + ShareDB。</p></div>
+
+<h3 id="act3-4">3.4 ShareDB：沉船上的发动机</h3>
+<div class="box metaphor"><div class="boxTitle">🎪 一句话定位</div>
+<p>Wave 是一艘沉船，<b>ShareDB 是从船上拆下来的发动机</b>。作者 Joseph Gentle 是前 Wave 团队成员：拿走 Wave 的引擎（OT 服务器 + 客户端订阅协议），扔掉产品包袱（blip/gadget/机器人/联邦），做成通用 Node.js 实时协作后端框架。</p></div>
+<pre><code>工作方式：
+  客户端编辑 → 操作发到 ShareDB 服务器
+  → 服务器定序、变换、持久化（可接 MongoDB）
+  → 广播给所有订阅该文档的客户端
+数据模型升级：不只文本，整个 JSON 文档树都支持 OT（对象/数组/富文本）。
+它是 Jupiter 架构最流行的开源活体实现，无数协作产品后端的原型。</code></pre>
+</section>
+
+<!-- ================= 第 4 幕 ================= -->
+<section id="act4">
+<h2>第 4 幕 · OT 四死穴与 400 万次变换 <span class="tag">平方代价的准确含义</span></h2>
+
+<h3 id="act4-1">4.1 四死穴总表</h3>
+<table>
+<tr><th>死穴</th><th>表现</th><th>大白话</th></tr>
+<tr><td><b>① 中心化依赖</b></td><td>权威服务器挂了系统只读（第 3 幕）</td><td>队伍的登记处关门，谁也别想进人</td></tr>
+<tr><td><b>② 实现脆弱</b></td><td>10 个已发表变换函数大半被模型检查揪出反例（第 1 幕）</td><td>手写平局规则=手工雕花，雕花必有毛刺</td></tr>
+<tr><td><b>③ 离线合并平方代价</b></td><td>2000×2000 = 400 万次变换调用（本幕）</td><td>每个人都要挨个问每个人</td></tr>
+<tr><td><b>④ 有状态服务器</b></td><td>服务器要维护每客户端进度指针 + 全局序列</td><td>登记处要记住每个人问到第几条了</td></tr>
+</table>
+
+<h3 id="act4-2">4.2 插队比喻：逐格穿越 vs COT vs CRDT</h3>
+<div class="box metaphor"><div class="boxTitle">🎪 场景设定</div>
+<p>文档 = 队伍，位置 = "前面有几个人"。官方照片 v0（7 人）。Alice 让 2000 个朋友插进自己那条队伍，每个朋友的指示是"从前面数插在第 K 人后面"（数字位置，基于照片 v0）。Bob 的朋友"你"也是这么说的。现在两条队伍要合成一条——<b>Bob 朋友的指示全部失效</b>，"第 5"已经不是原来那个第 5 了。</p></div>
+<h4>为什么必须挨个问 2000 人（乘法的来源）</h4>
+<pre><code>你想一步算完："我前面一共多了 K 个人，5+K 完事" —— 不行！
+因为 Alice 的 2000 个朋友插的位置各不相同：
+  插在你前面的 → 才影响你（+1）   插在你后面的 → 与你无关（+0）
+  （删除则 -1）
+"到底几个在前几个在后"没有汇总公式，只能逐个判断
+"你在前面吗？→ 影响我；你在后面吗？→ 不影响"
+
+Bob 每个朋友把 Alice 的 2000 人挨个问一遍
+→ 2000 个朋友 × 2000 次询问 = 400 万次问答 = O(N×M)
+
+注意：路径是确定的（从队头问到队尾）——不是因为"路径未知"，
+而是"判断影不影响我"没有批量公式。传统 OT 的操作只带位置，
+不带"出生地"，收到的人只能逐个比对逐个变换。</code></pre>
+<div class="grid3">
+<div class="box metaphor" style="margin:0"><div class="boxTitle">🎪 传统 OT：挨个问</div>
+<p><b>逐格穿越 → O(N×M)</b><br>每个 Bob 朋友逐个问 Alice 的 2000 人"你在前面吗"→ "第 5" 变 "第 7"。谁在前谁在后只能逐人判断——这就是 400 万。</p></div>
+<div class="box metaphor" style="margin:0"><div class="boxTitle">🎪 COT：查对照表</div>
+<p><b>上下文向量 → 一步跳</b><br>报名时多带一句"我看的是 v0 照片"（出生地标签）。负责人掏出对照表：v0 第 5 位 ⇄ v3 第 7 位，一步到位。</p></div>
+<div class="box metaphor" style="margin:0"><div class="boxTitle">🎪 CRDT：根本不报数字</div>
+<p><b>锚定 id → 无需换算</b><br>"我站王二麻子后面"——队伍怎么变都找得到位置。没有位置可换算，"变换"这个步骤整个消失，合并退化为认人+排序。</p></div>
+</div>
+<div class="figwrap">
+<div class="figTitle">三种方案解决同一个问题："基于旧照片说的数字，怎么在当前队伍里兑现"</div>
+<div class="figSub">挨个问（400万次）→ 查表（一步，但表很贵）→ 不用数字（无问可问）。CRDT 赢在换了问题，而不是赢了换算。</div>
+<svg viewBox="0 0 640 170">
+  <rect x="10" y="18" width="200" height="132" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="110" y="40" font-size="12" fill="#e6edf3" text-anchor="middle" font-weight="bold">传统 OT 挨个问</text>
+  <g font-size="10.5">
+    <rect x="24" y="54" width="150" height="17" rx="9" fill="#0f2d18" stroke="#3fb950"/><text x="32" y="66" fill="#3fb950">p1 在我前面吗？→ 是 → +1</text>
+    <rect x="24" y="76" width="150" height="17" rx="9" fill="#0f2d18" stroke="#3fb950"/><text x="32" y="88" fill="#3fb950">p2 在我前面吗？→ 是 → +1</text>
+    <rect x="24" y="98" width="150" height="17" rx="9" fill="#161b22" stroke="#30363d"/><text x="32" y="110" fill="#8b949e">p3 在我前面吗？→ 否 → +0</text>
+  </g>
+  <text x="110" y="140" font-size="10" fill="#6e7681" text-anchor="middle">Alice 2000 人 × Bob 2000 人</text>
+  <rect x="220" y="18" width="200" height="132" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="320" y="40" font-size="12" fill="#e6edf3" text-anchor="middle" font-weight="bold">COT 查对照表</text>
+  <rect x="238" y="54" width="164" height="30" rx="8" fill="#161b22" stroke="#58a6ff"/>
+  <text x="320" y="72" font-size="10.5" fill="#58a6ff" text-anchor="middle">登记卡："第5位"+"我看的是v0"</text>
+  <rect x="238" y="92" width="164" height="34" rx="8" fill="#0f2d18" stroke="#3fb950"/>
+  <text x="320" y="112" font-size="10.5" fill="#3fb950" text-anchor="middle">对照表：v0第5位 ⇄ v3第7位</text>
+  <text x="320" y="140" font-size="10" fill="#6e7681" text-anchor="middle">前提：所有中间版本都存着</text>
+  <rect x="430" y="18" width="200" height="132" rx="10" fill="#161b22" stroke="#30363d"/>
+  <text x="530" y="40" font-size="12" fill="#e6edf3" text-anchor="middle" font-weight="bold">CRDT 认人不报数</text>
+  <g>
+    <circle cx="470" cy="80" r="7" fill="#1c2129" stroke="#8b949e"/><circle cx="492" cy="80" r="7" fill="#1c2129" stroke="#8b949e"/><circle cx="514" cy="80" r="7" fill="#1c2129" stroke="#8b949e"/>
+  </g>
+  <text x="514" y="104" font-size="10" fill="#8b949e" text-anchor="middle">王二麻子(id#33)</text>
+  <circle cx="536" cy="80" r="7" fill="#0f2d18" stroke="#3fb950"/>
+  <path d="M 521 80 L 529 80" stroke="#3fb950" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="530" y="128" font-size="10" fill="#3fb950" text-anchor="middle">"我站#33后面"</text>
+</svg>
+</div>
+
+<h3 id="act4-3">4.3 COT 的代价（为什么它停留在学术界）</h3>
+<table>
+<tr><th>代价</th><th>说明</th></tr>
+<tr><td>空间 ①</td><td>每个操作携带 O(客户端数) 的上下文向量，操作包变大</td></tr>
+<tr><td>空间 ②</td><td>服务器要维护"所有中间状态的操作列表"（状态空间格）才能造对照表</td></tr>
+<tr><td>复杂度</td><td>实现/调试上台阶，而 Jupiter 星型已经"够好"</td></tr>
+</table>
+<p>生产系统的实际选择：在线实时 → Jupiter 式单线够用；离线合并 → 与其上 COT，不如直接换 CRDT。<b>CRDT 本质是把 COT 思路推到极限：操作自带全部因果信息（origin id + Lamport），连"变换"都不要了，合并退化为按 ID 排序。</b>另有 COT/LBT 用上下文向量把 O(N×M) 降到近线性（状态空间跳跃），同属"跳步"思路。</p>
+</section>
+
+<!-- ================= 第 5 幕 ================= -->
+<section id="act5">
+<h2>第 5 幕 · CRDT：从"发座位号"到"认人" <span class="tag">WOOT 2006 → Loro 1.0</span></h2>
+
+<h3 id="act5-1">5.1 裁判 vs 邮差（"没有中央服务器"的准确含义）</h3>
+<table>
+<tr><th></th><th>OT 的服务器</th><th>CRDT 的服务器</th></tr>
+<tr><td>角色</td><td><b>裁判</b>：定序、裁决平局、亲自做变换</td><td><b>邮差</b>：转发、持久化、离线补发</td></tr>
+<tr><td>正确性依赖</td><td><b>是</b>（没有定序就没有收敛保证）</td><td><b>否</b>（任何投递顺序都能收敛）</td></tr>
+<tr><td>可替换性</td><td>不可替换</td><td>可换任何中继、甚至 P2P</td></tr>
+</table>
+<p>"CRDT 没有中央服务器"的准确含义是<b>没有中央权威</b>，不是没有后端基础设施——生产系统当然有后端，但它只干物流，不参与正确性计算。实验台实验 3 里那个"投递队列洗牌机"就是邮差的全部戏份。</p>
+
+<h3 id="act5-2">5.2 不变 ID 三件套 + Lamport 时钟</h3>
+<pre><code>ID 唯一性由本地三件套保证，不需要任何服务器参与：
+1. clientID：会话启动时本地随机生成（Yjs 32bit 随机；Automerge 用更大随机空间）
+2. seq：本地单调递增计数器（每敲一个字符 +1）
+3. (clientID, seq) 全局唯一 —— 每个客户端的每个 seq 只被自己使用
+   碰撞概率：32bit≈42.9亿，100 万客户端按生日悖论约 1 次碰撞
+   → Yjs 实际带冲突检测（发现重复就重新随机）
+
+辅助结构：
+- Lamport 时钟：counter = max(自己的, 见过的所有 counter) + 1
+  → 保证因果先于 ⇒ 时钟更小（保因果序），给 RGA 提供"全序比较键"
+- 版本向量：每副本记 [从每个 client 见过多少 op]（见 5.3）</code></pre>
+<div class="box metaphor"><div class="boxTitle">🎪 为什么不能"直接按 seq 排序"：bob 的接龙</div>
+<p>时间线：alice 打了 10 个字（seq 0..9）→ bob 加入，<b>看见了 alice 的全部字符</b>，接着她的末尾继续打。bob 的字 seq 从 0 重新计数——按 (clientID, seq) 排序，bob 的 (bob,0) 与 alice 的 (alice,0..9) 没有可比性，只能靠 clientID 平局 → <b>bob 明明接在后面，排出来却可能整块跳到前面</b>——因果错乱。</p>
+<p>Lamport 时钟修的就是这个：bob 打第一个字前见过 alice counter=9 → bob 的 counter = max(0,9)+1 = 10 → bob 的字必然排在 alice 全部字符后面。✓</p>
+<p><b>一句话：seq 只在一个客户端内部有意义；Lamport counter 把"我见过的全部历史"压缩成一个整数，使跨客户端的"谁更晚"可比较。</b>定理：因果先于 ⇒ 时钟更小（反向不成立——时钟小的两个可能只是真并发，真并发时随便定序+clientID 平局，照样一致）。</p>
+<p>注意：<b>CRDT 里删除不参与排序竞争</b>——删除只是给某个 id 打墓碑标记，作用在具体 id 上，不占位置。Lamport 时钟只服务并发插入的排序。CRDT 里根本不存在 OT 那种 IT(Ins,Del) 变换——这正是它砍掉变换函数的原因。</p></div>
+
+<h3 id="act5-3">5.3 版本向量：因果的三本账</h3>
+<div class="box metaphor"><div class="boxTitle">🎪 Lamport 时钟是"把历史压成一个数"，版本向量是"把历史完整记账"</div>
+<pre><code>副本 Alice 的账本：{alice: 12, bob: 8, carol: 5}
+意思："我见过 alice 的 12 个操作、bob 的 8 个、carol 的 5 个"
+
+用途① 差距计算（离线重连）：
+  对方发来账本 {alice:12, bob:10, carol:5} 一对比
+  → "我缺 bob 的 2 个操作" → 精确补发，不用全量对账
+用途② 并发判定：
+  两个操作互相不在对方账本里 → 真并发（排序/墓碑回收的判据）
+用途③ 墓碑回收：
+  所有副本的账本都 ≥ 删除操作 D 的账本快照
+  → 世上不存在"没见过 D 的副本" → D 删的字符可以物理剪掉（5.8）</code></pre></div>
+
+<h3 id="act5-4">5.4 三条主线、七版演化</h3>
+<div class="figwrap">
+<div class="figTitle">CRDT 演化全景：不是七个并列方案，是三条路线的接力</div>
+<svg viewBox="0 0 640 230">
+  <text x="14" y="24" font-size="12" fill="#e3b341" font-weight="bold">主线 A · 位置型：给字符发"永不冲突的座位号"</text>
+  <rect x="20" y="36" width="130" height="34" rx="8" fill="#161b22" stroke="#e3b341"/><text x="85" y="50" font-size="11" fill="#e6edf3" text-anchor="middle">WOOT 2006</text><text x="85" y="64" font-size="9.5" fill="#8b949e" text-anchor="middle">左右双邻坐标</text>
+  <rect x="170" y="36" width="130" height="34" rx="8" fill="#161b22" stroke="#e3b341"/><text x="235" y="50" font-size="11" fill="#e6edf3" text-anchor="middle">Treedoc 2009</text><text x="235" y="64" font-size="9.5" fill="#8b949e" text-anchor="middle">二叉树路径字典序</text>
+  <rect x="320" y="36" width="130" height="34" rx="8" fill="#161b22" stroke="#e3b341"/><text x="385" y="50" font-size="11" fill="#e6edf3" text-anchor="middle">Logoot 2009</text><text x="385" y="64" font-size="9.5" fill="#8b949e" text-anchor="middle">稀疏分数座位号</text>
+  <rect x="470" y="36" width="130" height="34" rx="8" fill="#161b22" stroke="#e3b341"/><text x="535" y="50" font-size="11" fill="#e6edf3" text-anchor="middle">LSEQ</text><text x="535" y="64" font-size="9.5" fill="#8b949e" text-anchor="middle">发号策略优化</text>
+  <path d="M 150 53 L 170 53" stroke="#e3b341" stroke-width="2"/><path d="M 300 53 L 320 53" stroke="#e3b341" stroke-width="2"/><path d="M 450 53 L 470 53" stroke="#e3b341" stroke-width="2"/>
+  <text x="620" y="57" font-size="10" fill="#f85149">噩梦：膨胀+交错</text>
+  <text x="14" y="118" font-size="12" fill="#3fb950" font-weight="bold">主线 B · 引用型：不发座位号，发"关系"（锚定前一个字符的 id）</text>
+  <rect x="20" y="130" width="150" height="34" rx="8" fill="#161b22" stroke="#3fb950"/><text x="95" y="144" font-size="11" fill="#e6edf3" text-anchor="middle">RGA 2010</text><text x="95" y="158" font-size="9.5" fill="#8b949e" text-anchor="middle">锚链+Lamport 兄弟链</text>
+  <rect x="210" y="130" width="150" height="34" rx="8" fill="#161b22" stroke="#3fb950"/><text x="285" y="144" font-size="11" fill="#e6edf3" text-anchor="middle">YATA/Yjs 2016</text><text x="285" y="158" font-size="9.5" fill="#8b949e" text-anchor="middle">双锚+分块+列式编码</text>
+  <rect x="400" y="130" width="150" height="34" rx="8" fill="#161b22" stroke="#3fb950"/><text x="475" y="144" font-size="11" fill="#e6edf3" text-anchor="middle">Fugue 2022</text><text x="475" y="158" font-size="9.5" fill="#8b949e" text-anchor="middle">平时单锚·并发才双锚</text>
+  <path d="M 170 147 L 210 147" stroke="#3fb950" stroke-width="2"/><path d="M 360 147 L 400 147" stroke="#3fb950" stroke-width="2"/>
+  <text x="620" y="151" font-size="10" fill="#3fb950">赢在保序+元数据界</text>
+  <text x="14" y="200" font-size="12" fill="#58a6ff" font-weight="bold">主线 C · 存储层革命：不养结构，只记流水账</text>
+  <rect x="20" y="180" width="180" height="30" rx="8" fill="#161b22" stroke="#58a6ff"/><text x="110" y="199" font-size="11" fill="#e6edf3" text-anchor="middle">Eg-walker (EuroSys 2025)</text>
+  <text x="220" y="199" font-size="10" fill="#8b949e">内存降一个数量级 · 加载快几个数量级</text>
+</svg>
+<div class="legend"><span><i style="background:#e3b341"></i>位置型谱系</span><span><i style="background:#3fb950"></i>引用型谱系</span><span><i style="background:#58a6ff"></i>存储层革命（Loro 1.0 = Fugue 语义 + Eg-walker 存储）</span></div>
+</div>
+
+<h3 id="act5-5">5.5 WOOT 的"集成算法" / Logoot 膨胀机理</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 术语翻译：集成算法 = "收快递上架"的逻辑</div>
+<p>集成算法（integration algorithm）＝<b>"一个乱序到达的字符块，如何找到它在本地文档列表中的正确位置"</b>。各版本 CRDT 的差异大半就在这个"上架逻辑"上：</p>
+<pre><code>WOOT 的集成：字符 w 随身带"左邻 id + 右邻 id"双锚。
+  上架时必须先确认左右邻居都已到货（没到就缓存等待、递归确保），
+  然后扫"左邻和右邻之间"找位插入。
+  → 递归依赖 + 缓存重试，又慢又难写 —— 这就是"WOOT 集成复杂"的确切含义。
+Logoot 的集成：按座位号字典序二分查找，O(log n)，简单。
+RGA 的集成：找到锚点 → 向右跳过"所有锚定在同一位置的、ID 比我小的并发兄弟"
+  → 插在它们后面（实验台实验 4 的 integrate() 就是它的简化版）。</code></pre></div>
+<h4>Logoot 的座位号与膨胀死穴</h4>
+<div class="box mechanism"><div class="boxTitle">🔧 [10] &lt; [10,3] &lt; [11] 可以理解成分数 10 &lt; 10.3 &lt; 11（字典序 = 无限精度小数）</div>
+<p>常见误解："顺序打字就是 10、11、12 一直往上涨"。不成立——座位号必须<b>无限可分</b>：任意两个座位号之间要永远能再发一个。[10] 和 [11] 之间只有 [10,x]，没有整数可用了。于是顺序打字的死穴真实机理是<b>元组深度增长</b>：</p>
+<pre><code>打第1个字 → 座位号 [10]
+打第2个（接着打）→ [10] 与 [11] 之间 → 只能发 [10, 5]     ← 元组深度 +1
+打第3个 → [10,5] 与 [11] 之间 → 只能发 [10,5,7]          ← 又 +1
+顺序打 100 个字 → 最深座位号约 100 层 → 元数据随文本长度线性膨胀
+→ 讽刺的是：越普通的场景（顺着打字）越惩罚位置型；
+  并发插入反而不膨胀（[10,11) 开区间里 [10,x] 有无穷多个可发）。
+LSEQ 的贡献 = 优化发号策略（分层选中点/边界），把深度压到对数级。
+Treedoc 同源问题：座位号 = 从根到叶的 0/1 路径，树单边倾斜 → 路径变长。</code></pre>
+<div class="box metaphor" style="margin-top:10px"><div class="boxTitle">🎪 位置型的共同宿命</div>
+<p>WOOT 发相对坐标、Treedoc 发树路径、Logoot 发分数座位号、LSEQ 优化发号策略——四个都在"发号"这个思路里打转，而发号思路天然被"连续打字"惩罚。引用型干脆换思路：<b>不发号，发关系</b>（锚定前一个字符的 id），词内顺序被链结构物理锁定，交错和膨胀一起消失——这就是 RGA→Yjs→Fugue 赢下主流的原因。</p></div></div>
+
+<h3 id="act5-6">5.6 RGA 保序 vs Logoot 交错（原理图解）</h3>
+<p>场景：空文档，Alice 与 Bob 并发在同一个锚点，各打一个词：Alice 打 "hello"，Bob 打 "world"。</p>
+<div class="figwrap">
+<div class="figTitle">同一场景两种结局：位置型穿插 vs 引用型整链连续</div>
+<div class="figSub">Logoot：每个字符独立生成座位号 → 两串数字天然穿插 → 字符跟着穿插（交错异常）；RGA：字符手拉手成链 → 链内顺序被结构锁定 → 链间 ID 一次裁决</div>
+<svg viewBox="0 0 640 220">
+  <text x="20" y="26" font-size="13" fill="#e3b341" font-weight="bold">Logoot（位置型）→ hewolrllod</text>
+  <g font-size="12" font-family="monospace">
+    <text x="30" y="62" fill="#3fb950">h(10.1)</text>
+    <text x="170" y="62" fill="#58a6ff">w(10.15)</text>
+    <text x="30" y="86" fill="#3fb950">e(10.2)</text>
+    <text x="170" y="86" fill="#58a6ff">o(10.25)</text>
+    <text x="30" y="110" fill="#3fb950">l(10.4)</text>
+    <text x="170" y="110" fill="#58a6ff">r(10.5)</text>
+  </g>
+  <text x="30" y="138" font-size="11" fill="#8b949e">合并 = 全部按座位号排序：</text>
+  <text x="30" y="158" font-size="14" font-family="monospace" fill="#e6edf3">h w e o l l r l o d</text>
+  <text x="350" y="62" font-size="11" fill="#6e7681">Alice 的座位号与 Bob 的座位号</text>
+  <text x="350" y="80" font-size="11" fill="#6e7681">各自独立采样，数字天然互相穿插，</text>
+  <text x="350" y="98" font-size="11" fill="#6e7681">没有任何结构强制 "hello 连在一起"。</text>
+  <line x1="20" y1="172" x2="620" y2="172" stroke="#30363d" stroke-dasharray="4 4"/>
+  <text x="20" y="196" font-size="13" fill="#3fb950" font-weight="bold">RGA（引用型）→ helloworld（或 worldhello）</text>
+  <g>
+    <rect x="30" y="204" width="26" height="0" fill="none"/>
+  </g>
+  <g>
+    <rect x="24" y="204" width="0" height="0"/>
+  </g>
+  <g font-size="12" font-family="monospace">
+    <rect x="24" y="202" width="24" height="20" rx="5" fill="#0f2d18" stroke="#3fb950"/><text x="36" y="216" fill="#e6edf3" text-anchor="middle">h</text>
+    <rect x="54" y="202" width="24" height="20" rx="5" fill="#0f2d18" stroke="#3fb950"/><text x="66" y="216" fill="#e6edf3" text-anchor="middle">e</text>
+    <rect x="84" y="202" width="24" height="20" rx="5" fill="#0f2d18" stroke="#3fb950"/><text x="96" y="216" fill="#e6edf3" text-anchor="middle">l</text>
+    <rect x="114" y="202" width="24" height="20" rx="5" fill="#0f2d18" stroke="#3fb950"/><text x="126" y="216" fill="#e6edf3" text-anchor="middle">l</text>
+    <rect x="144" y="202" width="24" height="20" rx="5" fill="#0f2d18" stroke="#3fb950"/><text x="156" y="216" fill="#e6edf3" text-anchor="middle">o</text>
+    <path d="M 48 212 L 54 212" stroke="#3fb950" stroke-width="2"/><path d="M 78 212 L 84 212" stroke="#3fb950" stroke-width="2"/><path d="M 108 212 L 114 212" stroke="#3fb950" stroke-width="2"/><path d="M 138 212 L 144 212" stroke="#3fb950" stroke-width="2"/>
+    <rect x="200" y="202" width="24" height="20" rx="5" fill="#161b22" stroke="#58a6ff"/><text x="212" y="216" fill="#e6edf3" text-anchor="middle">w</text>
+    <rect x="230" y="202" width="24" height="20" rx="5" fill="#161b22" stroke="#58a6ff"/><text x="222" y="216" fill="#e6edf3" text-anchor="middle"></text><text x="242" y="216" fill="#e6edf3" text-anchor="middle">o</text>
+    <rect x="260" y="202" width="24" height="20" rx="5" fill="#161b22" stroke="#58a6ff"/><text x="272" y="216" fill="#e6edf3" text-anchor="middle">r</text>
+    <rect x="290" y="202" width="24" height="20" rx="5" fill="#161b22" stroke="#58a6ff"/><text x="302" y="216" fill="#e6edf3" text-anchor="middle">l</text>
+    <rect x="320" y="202" width="24" height="20" rx="5" fill="#161b22" stroke="#58a6ff"/><text x="332" y="216" fill="#e6edf3" text-anchor="middle">d</text>
+    <path d="M 224 212 L 230 212" stroke="#58a6ff" stroke-width="2"/><path d="M 254 212 L 260 212" stroke="#58a6ff" stroke-width="2"/><path d="M 284 212 L 290 212" stroke="#58a6ff" stroke-width="2"/><path d="M 314 212 L 320 212" stroke="#58a6ff" stroke-width="2"/>
+  </g>
+  <text x="360" y="216" font-size="11" fill="#8b949e">并发链之间只在"链头"比较一次 (Lamport, clientID)：整链赢 → 整链在前</text>
+</svg>
+<div class="legend"><span><i style="background:#3fb950"></i>Alice 的链：每字锚定前一字 id</span><span><i style="background:#58a6ff"></i>Bob 的链：独立成链</span><span>Yjs 的 origin/originRight 双锚是 RGA 单锚的扩展（锚点被删也不歧义）；Fugue 把"何时需要双锚"缩到最小</span></div>
+</div>
+
+<h3 id="act5-7">5.7 元数据四代瘦身：Yjs → Fugue → Eg-walker</h3>
+<h4>起点：RGA 的账单（为什么要瘦身）</h4>
+<pre><code>RGA 每个字符一个独立对象：{id, 锚点id, 字符, 墓碑标记, ...}
+JavaScript 里一个对象的固定开销约 50~100 字节
+→ 存一个 'h'，元数据比正文大几十倍
+→ 一本书 100 万字符 = 内存几百 MB（"元数据是文本的 3~16 倍"的来源）</code></pre>
+<h4>第一、二刀：Yjs —— 把零售改成批发，再把批发打包</h4>
+<div class="box metaphor"><div class="boxTitle">🎪 分块（block）+ 列式编码</div>
+<p><b>分块</b>：你连续敲 50 个字不是 50 个独立决定，而是一个连续动作。Yjs 把"同一客户端连续敲的字"合成一个块：原来 50 份 {id,锚点,字符}，现在一个块 {起始id, 锚点id, "整段 50 字"}——50 个字共享 1 份元数据，顺序打字时压缩比极高。<b>列式二进制编码</b>：序列化时把所有块的"ID 列、锚点列、内容列"分开打包，ID 用增量差分 → 传输大小压到文本的 3~5 倍（同数据库列式存储原理：同列数据相似，压缩率高）。生产最广的 CRDT。</p></div>
+<h4>第三刀：Fugue —— 平时只绑一根绳</h4>
+<div class="box metaphor"><div class="boxTitle">🎪 Yjs 人人左右双保险，Fugue 平时单手抓杆</div>
+<p>YATA/Yjs 每块带左右双锚（origin/originRight）——相当于每个人随身绑两根绳到左右邻居，锚点被删光也不歧义，但 99% 的时间右绳白带。Fugue 的洞察：<b>只有"并发抢位置"那一刻才需要第二根绳</b>。平时顺着前一节点继续写 → 只记左锚；检测到并发分叉 → 才补记另一侧。元数据压到理论下限（论文证明），且不产生交错异常。Loro 1.0 用的就是 Fugue 语义。</p></div>
+<h4>第四刀：Eg-walker —— 掀桌子，不维护文件夹了</h4>
+<div class="box metaphor"><div class="boxTitle">🎪 老方案把剧本排成家谱挂满墙，Eg-walker 把剧本按时间摞成一摞</div>
+<p>前面所有版本都在优化"内存里那棵树怎么组织才又对又省"。但无论怎么优化，打开文档都要把整棵树在内存里建出来。Eg-walker 的洞察：<b>你要的从来不是"树"，你要的是"当前的文本"，树只是算出文本的手段</b>。做法：一切还原成按时间堆叠的<b>事件流水账</b>（append-only，列式存储："谁、在哪个位点、插/删了什么"，按 (clientID, seq) 编址），内存里只维护轻量索引（各客户端连续段位置表）。要看文本 → 按索引翻流水账算出来，不建树。</p>
+<p><b>收益</b>：内存低一个数量级（≈文本 1~2 倍）、加载快几个数量级（根本不用"挂墙"）。墓碑顺带受益：流水账里"全体副本确认过的删除段"可整段折叠。<b>代价</b>：渲染文本要付一次带索引的 walk。</p></div>
+<div class="box mechanism"><div class="boxTitle">🔧 Eg-walker 精确心智模型（给后端的类比）</div>
+<p>常见误解修正：不是"把权威数据放库里"（CRDT 没有权威，是<b>每个副本</b>都这样存）；也不是"每步修改都去历史翻"（写和读是两条路）。它就是 <b>Event Sourcing + CQRS</b>：</p>
+<pre><code>传统 CRDT ≈ CRUD：内存里维护"当前状态"（那棵树），改状态
+Eg-walker  ≈ 事件溯源：不存状态，存事件日志
+            写 = append 事件（O(1)，跟写日志一样便宜）
+            读 = 需要"当前文本"这个视图时，临时 walk 账本算出来（投影）
+            连续段索引 = 物化视图/快照，防止每次全量重放
+            版本向量 = 快速判断"见过什么"
+真要走长路的只有罕见情况：离线三天的副本回来往文档中间塞远古插入。
+日常 99% 的事件落在序列尾部附近，走快路径。</code></pre></div>
+
+<h3 id="act5-8">5.8 mark-sweep GC：墓碑什么时候能扫</h3>
+<pre><code>为什么墓碑必须留：被删的字符可能正是别人插入的锚点。
+  你删 'l'，离线副本上有人正基于这个 'l' 插了 "!"——物理删掉 'l'，
+  迟到的 "!" 锚点悬空，无法定位。（实验台实验 3 勾"显示墓碑"可见依赖）
+
+回收条件（mark-sweep 式）：
+  1. mark  ：每个副本定期广播自己的版本向量
+  2. 求交 ：算出"所有副本都已收编的公共因果前缀"（安全下界）
+  3. sweep：删除操作若落在安全下界内 → 它删的字符的墓碑可物理剪枝
+     理由：世上已不存在"还没见过这条删除"的副本，
+           未来的插入必然锚定在活字符上，不会再引用这块墓碑
+
+风险：永久离线的副本会把安全下界卡死，阻塞全体回收
+     （需要 epoch/超时机制宣告弃号）。
+实现现状：Yjs 基本不自动 GC（内存换简单）；Automerge 有
+         版本向量 + bloom filter 的回收；Loro 支持 GC。
+视频说的 mark-sweep 是学术方案/部分实现的做法，非所有库默认开。</code></pre>
+</section>
+
+<!-- ================= 第 6 幕 ================= -->
+<section id="act6">
+<h2>第 6 幕 · 同步引擎：第三条路线 <span class="tag">Figma / 本地优先 / Replicache 家族</span></h2>
+<p class="lead">OT 和 CRDT 之外还有一条务实路线：不追求文本级"意图保持"，而是用"属性粒度 + 服务器定序 + 简单合并规则"把工程复杂度压到最低——Figma 是代表；再加上 Ink &amp; Switch 提出的"本地优先软件"理想，构成 2020 年代的第三极。</p>
+<h3>Figma：属性级 LWW + 服务器定序</h3>
+<p>Figma 公开博客的方案（与 CRDT 划清界限）：对象树 + <b>属性级 LWW</b>（每个属性一个小格子，谁新听谁的）+ 服务器定序。并发改同一个属性本来就只能留一个 → LWW 是诚实投降；并发改不同属性互不影响 → 天然合并。工程上比文本 CRDT 简单一个量级，代价是放弃了文本级意图保持（Figma 场景里不存在"两人同时改一个文本段落"的高频需求）。</p>
+<h3>本地优先（Local-first）七条理想</h3>
+<p>Ink &amp; Switch 宣言：数据在本地、快如本地应用；离线可用；多端同步；协作；长久可用（不随厂商死）；隐私与默认安全；用户拥有最终控制权。技术组合 = <b>本地 DB + 服务器日志 + 回滚重放</b>：客户端把操作写成日志，服务器只做日志的中继与持久化，冲突由客户端数据模型（CRDT 或简单合并）解决。</p>
+<h3>同步引擎家族现状</h3>
+<table>
+<tr><th>产品/引擎</th><th>路线要点</th></tr>
+<tr><td><b>Replicache</b></td><td>客户端本地 KV + 服务器只暴露 get/put 版本化读写（"猜"的乐观同步 + push/pull 双端协议），冲突由客户端代码决定</td></tr>
+<tr><td><b>Zero</b></td><td>把同步做成数据库本身：SQL 查询结果订阅推送，增量同步由引擎自动处理</td></tr>
+<tr><td><b>ElectricSQL</b></td><td>Postgres ↔ 本地 SQLite 的部分复制，读路径自动同步、写路径通过服务器</td></tr>
+<tr><td><b>Notion 离线模式</b></td><td>2025 官方博客确认采用 CRDT 数据模型做离线编辑（此前仅在线协同）</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">🔧 三条路线的选型逻辑（一句话版）</div>
+<p><b>OT</b>＝要文本级意图保持且能接受中心化（Google Docs）；<b>CRDT</b>＝要离线/P2P/多主且能接受元数据成本（Notion 离线、Yjs 生态）；<b>同步引擎</b>＝数据是"属性为主的结构化数据"而非"连续文本"，工程简单性优先（Figma、Replicache 家族）。真实系统常混用：表格类产品单元格内容细粒度合并 + 结构变更服务器定序 + 属性 LWW（见附录 B 飞书条目的参考架构）。</p></div>
+</section>
+
+<!-- ================= 第 7 幕 ================= -->
+<section id="act7">
+<h2>第 7 幕 · AI 并发编辑四实践 <span class="tag">从 apply patch failed 到流式可打断</span></h2>
+<p class="lead">痛点一句话：AI 写东西和你改东西同时发生。传统方案让 AI 对着几分钟前的旧快照生成整段补丁，写完回来发现你已经改了那个区域 → <code>apply patch failed</code>。更深一层：即使技术上收敛了，还有"意图漂移"——AI 和你各自对文档的理解漂向不同方向（实验台实验 4 复现了 "The ecat sleeps."）。四个实践是四种解法：</p>
+<div class="grid2">
+<div class="box metaphor"><div class="boxTitle">🎪 ① Yjs Agent：给 AI 发工牌</div>
+<p>不是让 AI 当"绕过所有人直接改文件的后台进程"，而是给 AI 发一个工牌：<b>文档里的一个虚拟协作者账号</b>，每个字都通过 CRDT 协议正常进文档。你打你的、AI 打 AI 的，天然并发安全——AI 写到一半你在同一屏改字，谁也不覆盖谁。解决"并发安全"；"想法打架"靠下面两个。</p></div>
+<div class="box metaphor"><div class="boxTitle">🎪 ② 主管 + 写手：包工头分地盘</div>
+<p>多个 AI 全文乱写会互相覆盖、风格漂移。解法：一个 AI 当包工头，只干一件事——拆任务分地盘："你写第 1 节，你写第 2 节，谁也别越界。"写手各占地盘 → 空间上根本不并发 → 冲突在分地盘那一刻消失。这不是高深算法，是<b>用工作流设计回避并发问题</b>——与悲观思路同源：与其让十个线程抢一把锁，不如一开始就别让它们碰同一份资源。</p></div>
+<div class="box metaphor"><div class="boxTitle">🎪 ③ 分块编辑：别憋大招，小批交作业</div>
+<p>反面模式：AI 闷头写 3 分钟甩一整篇——方向全错则 3 分钟白等。分块模式：Agent 循环里每写几十/几百字 apply 一次：你看到"打字机效果"；你随时喊停 → 已交作业生效、未写的取消。工程上就是把"末尾一次大 patch"拆成"循环里的连续小 delta"。（与 Wave 单批在途同源：<b>小批化让打断成为可能</b>）</p></div>
+<div class="box metaphor"><div class="boxTitle">🎪 ④ Zed Delta：带座位号的事件流</div>
+<p>传统模式：AI 输出 diff/patch——"把第 10~20 行换成……"是对旧快照说的数字位置，你一改就打不上。Zed 2025 的做法：文档本身是字符级 CRDT，AI 每步编辑直接生成为文档 delta——一串<b>带座位号（锚定 id）的编辑事件</b>流进文档。流式（边生成边应用）、可打断（打断是原生能力：收到信号，后续 delta 不再应用，已应用的自然保留）、不冲突（座位号认人不认数字位置）。DeltaDB＝这些 delta 流的可查询数据库。<b>以前给的是"第 3 排左边全换红砖"的施工图（队伍一动就找不着第 3 排），现在给的是"跟在王二麻子后面盖红砖"的指令条。</b></p></div>
+</div>
+</section>
+
+<!-- ================= 第 8 幕 ================= -->
+<section id="act8">
+<h2>第 8 幕 · 2025 前沿与展望 <span class="tag">存储革命 / 分支合并 / 去中心化 / 语义合并</span></h2>
+<table>
+<tr><th>方向</th><th>是什么</th><th>解决什么</th></tr>
+<tr><td><b>Automerge 3.0</b>（2025.7）</td><td>存储层列式重构 + 增量加载</td><td>内存占用约降 10 倍，大文档秒开</td></tr>
+<tr><td><b>Eg-walker</b>（EuroSys 2025）</td><td>事件图替代内存树（第 5 幕 5.7）</td><td>内存低一个数量级、加载快几个数量级</td></tr>
+<tr><td><b>Loro 1.0</b></td><td>Fugue 语义 + Eg-walker 式存储</td><td>生产级 CRDT 库同时拿到"正确性最优"和"存储最优"</td></tr>
+<tr><td><b>Zed Delta / DeltaDB</b></td><td>字符级 CRDT 的 delta 流作为编辑协议与可查询数据库</td><td>AI 流式编辑 + 可打断 + 跨端同步的原生基础（第 7 幕）</td></tr>
+<tr><td><b>Patchwork</b></td><td>文档的分支/合并模型（类 git 的协作分支）</td><td>让"长期离线大改"不再被实时协同绑架，合并时机交还给人</td></tr>
+<tr><td><b>Keyhive</b></td><td>去中心化权限 + 加密的协作层</td><td>存储与信任分离：不同人持不同密级的分区副本</td></tr>
+<tr><td><b>形式化证明</b></td><td>用定理证明器验证 CRDT 实现</td><td>把"测试通过"升级为"数学证明"（对比 OT 的模糊测试困境）</td></tr>
+<tr><td><b>语义合并</b></td><td>按代码/文本的意义而非字符位置合并</td><td>终极目标：合并"意图"而不是"字符"——AI 时代的 diff 理解力</td></tr>
+</table>
+</section>
+
+<!-- ================= 附录 A ================= -->
+<section id="appA">
+<h2>附录 A · 大白话比喻词典 <span class="tag">口头表达比术语好用</span></h2>
+<p class="lead">全书统一比喻体系的完整索引。面试口头作答时，先给比喻再补术语，效果远好于直接堆名词。</p>
+<table>
+<tr><th>术语</th><th>大白话</th><th>一句话机制</th></tr>
+<tr><td>文档 / 操作 / 位置</td><td>演唱会入场的一条队伍 / 来插队的人 / "我前面有几个人"</td><td>位置是相对量，队伍一动数字就失效——一切问题的根源</td></tr>
+<tr><td>OT（变换）</td><td><b>挨个问</b>：把 Alice 的每个人挨个问"你在前面吗"修自己的数字</td><td>逐格穿越，O(N×M) 乘法的来源</td></tr>
+<tr><td>TP1</td><td>两人互插队，让位规则对称就能收敛</td><td>菱形两条路终点一致；平局必须用与参数无关的全序（clientID）</td></tr>
+<tr><td>TP2</td><td>三人同时插队，先问谁后问谁不能改变站位</td><td>裁决尺子在两条问法里量到不同数字 → 被证明无法造出稳定尺子</td></tr>
+<tr><td>Jupiter 服务器</td><td>登记处装一只唯一喇叭：所有插队指令先经喇叭排唯一顺序</td><td>星型定序让"两种问法"根本不存在 → TP2 不适用，只需 TP1</td></tr>
+<tr><td>单批在途</td><td>寄快递：上一单签收了才发下一单</td><td>TCP 停等协议；状态机保证而非锁；run-to-completion 防竞态</td></tr>
+<tr><td>联邦</td><td>不同小区物业互联（email 的 SMTP 联邦）</td><td>权威 vs 订阅服务器：持副本 ≠ 持定序权；权威挂了文档只读</td></tr>
+<tr><td>COT（上下文向量）</td><td><b>查对照表</b>：报名多带一句"我看的是 v0 照片"</td><td>出生地标签 + 状态空间格一步跳；代价是要养全部中间版本</td></tr>
+<tr><td>CRDT</td><td><b>认人不报数</b>："我站王二麻子后面"</td><td>锚定 id + 全序键；没有位置可换算，"变换"整个消失</td></tr>
+<tr><td>裁判 vs 邮差</td><td>OT 的服务器是裁判，CRDT 的服务器是邮差</td><td>正确性是否依赖服务器 = 两种架构的分水岭</td></tr>
+<tr><td>Lamport 时钟</td><td>bob 的接龙：把"我见过的全部历史"压成一个数</td><td>因果先于 ⇒ 时钟更小；跨客户端可比</td></tr>
+<tr><td>版本向量</td><td>因果的三本账：差距计算 / 并发判定 / 墓碑回收</td><td>每副本记"从每个 client 见过多少 op"</td></tr>
+<tr><td>WOOT 集成算法</td><td>收快递上架：左右邻居到货了才能放我</td><td>递归依赖 + 缓存等待，繁琐 → 被淘汰的主因</td></tr>
+<tr><td>Logoot 座位号</td><td>无限精度小数：[10]&lt;[10,3]&lt;[11] = 10&lt;10.3&lt;11</td><td>顺序打字被迫逐层加元组深度 → 膨胀</td></tr>
+<tr><td>交错异常</td><td>两人各自报的座位号数字天然穿插 → "hewolrllod"</td><td>位置独立采样，无结构成串约束</td></tr>
+<tr><td>RGA 锚链</td><td>字符手拉手：每字锚定前一字，整链与整链比大小</td><td>链内顺序被结构物理锁定 → 永不逐字穿插</td></tr>
+<tr><td>Yjs 分块</td><td>零售改批发：连续敲的字打包成一块，一份元数据管一串字</td><td>元数据缩到几十分之一 + 列式编码 3~5 倍</td></tr>
+<tr><td>Fugue</td><td>平时单手抓杆，看到有人抢位才腾另一只手扶</td><td>顺序插入单锚、并发分叉才双锚 → 元数据理论下限</td></tr>
+<tr><td>Eg-walker</td><td>剧本按时间摞成一摞贴好页签，不把家谱挂满墙</td><td>Event Sourcing：写=append，读=带索引的投影</td></tr>
+<tr><td>mark-sweep GC</td><td>所有副本都见过这条删除了，墓碑才能扫</td><td>版本向量求交出"安全下界"再剪枝；离线副本会卡住下界</td></tr>
+<tr><td>LWW</td><td>赢家通吃：时间戳新的整字段覆盖旧的，输家无声丢尸</td><td>CRDT 工具箱里管"不占位置的标量字段"的工具</td></tr>
+<tr><td>AI 意图漂移</td><td>技术上都收敛了，但人的字漂走了（"The ecat sleeps."）</td><td>并发安全 ≠ 想法一致；解法靠工牌/分地盘/小批交作业/座位号事件流</td></tr>
+</table>
+</section>
+
+<!-- ================= 附录 B ================= -->
+<section id="appB">
+<h2>附录 B · 事实核查表 <span class="tag">每条论断的出处与可信度</span></h2>
+<table>
+<tr><th>论断</th><th>出处</th><th>可信度</th></tr>
+<tr><td>TP1/TP2 是收敛的充要条件；insert/delete 经典签名下不存在同时满足两者的变换函数</td><td>Randolph, Boucheneb, Imine《On Consistency of Operational Transformation Approach》(arXiv:1302.3292, 2013)；IEEE TC 2015《On Synthesizing a Consistent Operational Transformation Approach》（控制器合成证明）</td><td>★★★ 学术定理</td></tr>
+<tr><td>10 个已发表变换函数大半违反 TP1/TP2（模型检查发现）</td><td>Imine 等人对 GROVE/dOPT/adOPTed/TTF/NICE 等实现的形式化检查系列（2003-2006）</td><td>★★★ 学术结论</td></tr>
+<tr><td>Jupiter：服务器定序 + 每客户端-服务器链路独立两方协议</td><td>Nichols, Palen, Wroblewski《High-Latency, Low-Bandwidth Windowing in the Jupiter Collaboration System》(Xerox PARC, 1995)</td><td>★★★ 原始论文</td></tr>
+<tr><td>Wave：XML item 模型（每个字符/标签是 item）、操作词汇、开源变换实现</td><td>wave-protocol 开源仓 whitepapers/operational-transform（Apache Wave / google-archive）；第三方技术拆解佐证</td><td>★★★ 一手白皮书+代码</td></tr>
+<tr><td>Wave 联邦基于 XMPP 扩展；联邦 ≠ 多权威（每 wavelet 有 authoritative server）</td><td>Google Wave Federation Protocol（2010 规范）；Apache Wave 文档</td><td>★★★ 官方规范</td></tr>
+<tr><td>Wave 经海量模糊/属性测试但无数学证明兜底（对比 CRDT 收敛定理）</td><td>wave-protocol 开源实现 + 学术界对 OT 验证困境的共识表述</td><td>★★ 综合判断（表述保守）</td></tr>
+<tr><td>ShareDB 作者 Joseph Gentle 为前 Wave 团队成员；ShareDB 是 Jupiter 架构流行开源实现</td><td>ShareDB/ShareJS 官方仓库与作者公开自述</td><td>★★★ 官方</td></tr>
+<tr><td>RGA 2010 / YATA-Yjs 2016 / Fugue 2022（Weidner &amp; Kleppmann）/ Eg-walker（EuroSys 2025）演化链与各自机制</td><td>Roh et al. 2010；YATA 论文 2016；《The Art of the Fugue》（2024）；《Eg-walker》（EuroSys 2025）</td><td>★★★ 各原始论文</td></tr>
+<tr><td>Loro 1.0 = Fugue 语义 + Eg-walker 式存储优化</td><td>Loro 官方文档/发布说明</td><td>★★★ 官方</td></tr>
+<tr><td>Automerge 3.0（2025.7）内存降约 10 倍</td><td>Automerge 官方发布公告</td><td>★★★ 官方</td></tr>
+<tr><td>Notion 离线模式采用 CRDT 数据模型</td><td>Notion 官方工程博客（2025）</td><td>★★★ 官方</td></tr>
+<tr><td>Figma：属性级 LWW + 服务器定序，明确非 CRDT</td><td>Figma 工程博客《How Figma's multiplayer technology works》</td><td>★★★ 官方博客</td></tr>
+<tr><td>Zed Delta / DeltaDB：字符级 CRDT 的 delta 流编辑协议</td><td>Zed 官方博客（2025）</td><td>★★★ 官方博客</td></tr>
+<tr><td>飞书：开放平台文档 API 明示"自动计算 offset"（位置偏移修正路线，OT 家族行为特征）；表格内核未公开</td><td>飞书开放平台官方文档（docs API 章节）；第三方拆解（二手）佐证"每文档串行处理 + OT"</td><td>★★★ 官方一手 / 二手拆解仅佐证</td></tr>
+<tr><td>Yjs 32bit clientID 存在碰撞概率并带冲突检测；Yjs 基本不自动 GC；Automerge 有 GC</td><td>Yjs 官方文档（clientID 冲突提示）；各库文档</td><td>★★★ 官方文档</td></tr>
+<tr><td>TP1 具体反例的数值推演（参数顺序平局、off-by-one）</td><td>按文献报告的 bug 模式手工推演（Imine 系列模型检查自动找到的类型），书中推演可逐步复算</td><td>★★ 模式与文献一致、推演自洽</td></tr>
+</table>
+<p class="small">诚实声明：无法证实的传闻一律未收录（如某收购传闻）。凡标注 ★★ 的条目，引用时建议先给结论再补"按文献报告的 bug 模式手工推演"的措辞。</p>
+</section>
+
+<!-- ================= 附录 C ================= -->
+<section id="appC">
+<h2>附录 C · 面试作答模板 <span class="tag">30 秒版 / 3 分钟版 / 追问预判</span></h2>
+
+<h3>30 秒版（被问"协作系统有哪些解决方案"时的开场）</h3>
+<div class="box interview"><div class="boxTitle">🎤 参考作答</div>
+<p>"协作编辑的本质是多副本持续合并，锁只能解决互斥访问，答非所问。业界三条主线：<b>① OT</b>——不改编辑只改执行方式，用变换函数翻译并发操作，Google Docs 路线，靠中央服务器定序绕开理论上不可满足的 TP2；<b>② CRDT</b>——给每个字符发不变 ID、锚定前邻居，让数据结构自己会合并，不依赖服务器裁决，支撑离线和 P2P，Yjs/Loro 路线；<b>③ 同步引擎</b>——Figma 那种属性级最后写入者胜加服务器定序，工程简单性优先。我的项目里表格协同用的是（按实际填），选型逻辑是（按实际填）。"</p></div>
+
+<h3>3 分钟版（面试官说"展开讲讲"时）</h3>
+<div class="box interview"><div class="boxTitle">🎤 叙事骨架：问题 → 尝试 → 翻车 → 解法 → 遗留</div>
+<ol>
+<li><b>锁为什么不够</b>：悲观锁断网悬死、乐观锁 409 让人重做、LWW 输家无声丢尸——它们管的是准入，协作要的是合并。（30 秒）</li>
+<li><b>OT 1989</b>：变换菱形的直觉（插队比喻），TP1 可满足；TP2 三方并发被证明不可满足（Randolph 2013）→ 死穴有理论根源，不是工程没做好。</li>
+<li><b>Jupiter 1995 / Wave</b>：星型服务器定序，把 TP2 的适用场景架构性消除，只需 TP1；代价是中心化依赖 + 有状态服务器 + 离线合并 O(N×M) 平方代价。</li>
+<li><b>CRDT</b>：换哲学——操作自带坐标（不变 ID + 锚点 + Lamport），服务器从裁判降级为邮差；墓碑解决删除锚点问题；七版演化终局是 Fugue 语义 + Eg-walker 存储（内存低一个数量级）。</li>
+<li><b>工程判断</b>：文本级意图保持 + 中心化可接受 → OT；离线/多主/弱网 → CRDT；属性为主的结构化数据 → 同步引擎/LWW；AI 并发编辑 → 虚拟协作者 + 分块流式（Zed Delta 方向）。</li>
+</ol></div>
+
+<h3>追问预判（按被追问概率排序）</h3>
+<table>
+<tr><th>追问</th><th>要点回答</th></tr>
+<tr><td>"TP2 为什么不可满足？"</td><td>三方并发时变换路径无关性要求"裁决平局的尺子在任何问答顺序下稳定"，而尺子量的位置数字本身在问答中被改写；Randolph 等人 2013 用控制器合成穷举证明：insert/delete 签名下不存在这样的尺子（纯插入+全序平局可以，加删除就不行）。</td></tr>
+<tr><td>"既然 OT 有死穴为什么 Google Docs 还在用？"</td><td>死穴是"无中心定序下的理论不可满足"，而星型架构让该场景不出现；生产正确性 = 架构绕开 + 海量模糊测试。代价明确：中心化依赖、权威挂了只读、离线合并平方代价。</td></tr>
+<tr><td>"CRDT 没有 ID 服务器怎么保证不重？"</td><td>本地三件套：随机 clientID + 本地单调 seq + (clientID,seq) 全局唯一；32bit 有生日悖论碰撞概率所以带冲突检测。服务器只当邮差——正确性不依赖它，这是与 OT 的分水岭。</td></tr>
+<tr><td>"RGA 为什么不交错而 Logoot 会？"</td><td>Logoot 每字符独立采样座位号，两串数字天然穿插；RGA 每字符锚定前一字 id 成链，链内顺序被结构锁定，并发链间用 (Lamport, clientID) 一次裁决整链胜负。</td></tr>
+<tr><td>"CRDT 内存为什么大、怎么解决？"</td><td>每字符养对象+墓碑 → 3~16 倍文本。四代瘦身：Yjs 分块+列式编码（3~5 倍）→ Fugue 平时单锚（理论下限）→ Eg-walker 不养树只记事件账本（Event Sourcing，内存低一个数量级、加载快几个数量级）。Loro 1.0 = Fugue 语义 + Eg-walker 存储。</td></tr>
+<tr><td>"墓碑什么时候能删？"</td><td>删除的字符可能是别人插入的锚点，不能立刻物理删；mark-sweep：所有副本的版本向量都确认见过该删除（安全下界）后才剪枝；离线副本会卡住下界，需要 epoch 机制。Yjs 基本不自动 GC，Automerge/Loro 有。</td></tr>
+<tr><td>"AI 同时改文档怎么处理？"</td><td>四实践：AI 当虚拟协作者进 CRDT 文档（Yjs Agent）；多 AI 用包工头分地盘回避并发；分块流式输出支持打断；Zed 把 AI 编辑做成带座位号的 delta 流。核心认识：并发安全解决了"覆盖"，解决不了"意图漂移"——那要靠工作流设计。</td></tr>
+<tr><td>"飞书/腾讯文档用什么？"</td><td>诚实版：飞书未公开表格内核；官方开放平台文档 API 明示 offset 自动修正（OT 家族行为特征），第三方拆解为"每文档串行处理+OT"（二手）。表格类参考架构：单元格内容细粒度合并 + 结构变更服务器定序 + 属性 LWW。展示"从官方 API 行为反推架构"的推理能力，不编造。</td></tr>
+<tr><td>"LWW 和乐观锁什么区别？"</td><td>岗位不同：乐观锁是门卫（管准入，输家重试）；LWW 是合并员（管内容，赢家通吃输家丢尸）。LWW 的家在 CRDT 工具箱——管不占位置的标量字段。</td></tr>
+</table>
+</section>
+
+<!-- ================= 附录 D ================= -->
+<section id="appD">
+<h2>附录 D · 参考与互链</h2>
+<h3>配套交互实验台</h3>
+<p><a href="./collab_evolution_demo.html">collab_evolution_demo.html</a>（同目录）——四个可动手的实验：① 锁的三种失败现场；② OT 变换菱形（带变换/无变换对照）；③ CRDT 三副本乱序投递（墓碑开关 + 交错异常对比）；④ AI 意图漂移（复现 "The ecat sleeps."）。所有书中推演都能在实验台点出来。</p>
+<h3>关键文献清单（按本书引用顺序）</h3>
+<ol>
+<li>Ellis &amp; Gibbs, <i>Concurrency control in groupware systems</i> (GROVE), CSCW 1989 —— OT 起点</li>
+<li>Nichols et al., <i>High-Latency, Low-Bandwidth Windowing in the Jupiter Collaboration System</i>, UIST 1995</li>
+<li>Imine et al. 对已发表变换函数的模型检查系列（2003-2006）；Randolph/Boucheneb/Imine, arXiv:1302.3292 (2013) + IEEE TC 2015 —— TP1+TP2 不可满足定理</li>
+<li>wave-protocol 开源仓库 whitepapers/operational-transform —— Wave XML item 模型与操作词汇；Google Wave Federation Protocol (2010, XMPP 扩展)</li>
+<li>Oster et al. WOOT (2006) / Treedoc (2009)；Weiss et al. Logoot (2009)；Roh et al. RGA (2010)；YATA/Yjs (2016)；Weidner &amp; Kleppmann, <i>The Art of the Fugue</i> (2024)；Weidner, <i>Eg-walker</i>, EuroSys 2025</li>
+<li>Ink &amp; Switch, <i>Local-first software</i> 宣言；Figma 工程博客（多人协作技术）；Notion 离线 CRDT 官方博客（2025）；Automerge 3.0 公告（2025.7）；Zed Delta/DeltaDB 官方博客（2025）；Loro 1.0 官方文档</li>
+</ol>
+<p class="small" style="margin-top:30px">教程书版本：v1.0 · 覆盖 2026-10 会话全部五轮内容 · 深色主题与实验台统一 · 与 collab_evolution_demo.html 互为表里：书中读原理，实验台点现场。</p>
+</section>
+
+</main>
+</div>
+<a class="tocAnchorTop" href="#top">↑ 回顶部</a>
+<script src="anno.js"></script>
+</body>
+</html>

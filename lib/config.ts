@@ -122,6 +122,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: '实时协同编辑全解 · 锁 → OT → CRDT → AI 并发',
+    volume: '后端',
+    description:
+      '以「插队队伍」大白话比喻贯穿全篇讲透协作编辑：锁为何答非所问、OT 变换函数与 TP1/TP2（含可手工复算的反例）、Jupiter/Wave 生产级架构、COT 的三重代价、CRDT 七版演化（WOOT→RGA→Yjs→Fugue→Eg-walker）与元数据瘦身、飞书/Figma 同步引擎、AI 并发编辑四实践；附 22 条比喻词典、16 条事实核查表与面试作答模板，配套同目录交互实验台（4 个可动手实验复刻历史失败现场）。',
+    href: '/books/collab-ot-crdt/collab_ot_crdt_tutorial.html',
+    tags: ['OT', 'CRDT', '分布式', '面试'],
+    accent: '#4f8f7b',
+    category: 'backend',
+  },
+  {
     title: 'Java 复习手册 · 秋招面试向',
     volume: 'Java',
     description:

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时协同编辑演进实验台：锁 → OT → CRDT → AI 并发</title>
+<style>
+/* ============ 全局主题：深色 IDE 风 ============ */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --alice:#3fb950; --bob:#58a6ff; --carol:#d29922; --agent:#bc8cff;
+  --danger:#f85149; --warn:#e3b341; --ok:#3fb950;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.7 system-ui,"PingFang SC","Microsoft YaHei",sans-serif;padding:32px 20px}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:22px;margin-bottom:6px}
+h1 small{color:var(--muted);font-weight:400;font-size:14px}
+.sub{color:var(--muted);margin-bottom:24px}
+nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+nav a{color:var(--bob);text-decoration:none;border:1px solid var(--border);padding:4px 12px;border-radius:6px;font-size:13px}
+nav a:hover{border-color:var(--bob)}
+section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:28px}
+h2{font-size:17px;margin-bottom:4px}
+h2 .tag{font-size:12px;color:var(--dim);font-weight:400;margin-left:8px}
+.desc{color:var(--muted);font-size:13px;margin-bottom:16px}
+.desc b{color:var(--text)}
+.btn{background:#21262d;border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;margin:2px 6px 2px 0}
+.btn:hover{border-color:var(--bob);color:var(--bob)}
+.btn.primary{background:#1f6feb33;border-color:#1f6feb;color:#79b8ff}
+.btn.warn{background:#f8514922;border-color:var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.toolbar{margin-bottom:14px}
+.stage{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
+.col{flex:1 1 300px;min-width:280px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.col h3{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.doc{background:#0a0d12;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:15px;word-break:break-all;min-height:44px;line-height:2}
+.log{background:#0a0d12;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;max-height:220px;overflow:auto;margin-top:12px}
+.log div{padding:1px 0;color:var(--muted)}
+.log .hl{color:var(--warn)}
+.log .good{color:var(--ok)}
+.log .bad{color:var(--danger)}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--border);padding:2px 0 2px 12px;margin-top:12px}
+.note b{color:var(--warn)}
+.ch{display:inline-block;position:relative;padding:0 1px}
+.ch.a{color:var(--alice)} .ch.b{color:var(--bob)} .ch.c{color:var(--carol)} .ch.x{color:var(--agent)} .ch.h{color:var(--warn)}
+.ch.orig{color:var(--dim)}
+.ch.dead{color:var(--danger);opacity:.45;text-decoration:line-through}
+.ch.glow{background:#e3b34126;border-radius:3px;outline:1px solid var(--warn)}
+.cursor{display:inline-block;width:2px;height:1.1em;background:var(--text);vertical-align:-2px;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted);margin-left:6px}
+.badge.ok{color:var(--ok);border-color:var(--ok)}
+.badge.bad{color:var(--danger);border-color:var(--danger)}
+input[type=text]{background:#0a0d12;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:6px 10px;width:100%}
+input[type=text]:disabled{opacity:.4;background:#300}
+.lockhint{color:var(--danger);font-size:12px;margin-top:6px;display:none}
+.flexrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.kv{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.kv b{color:var(--text);font-weight:600}
+hr.sep{border:none;border-top:1px dashed var(--border);margin:16px 0}
+footer{color:var(--dim);font-size:12px;text-align:center;margin-top:10px}
+code{font-family:var(--mono);background:#21262d;padding:1px 6px;border-radius:4px;font-size:12.5px;color:#79b8ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>实时协同编辑演进实验台 <small>锁 → OT → CRDT → AI 并发编辑</small></h1>
+<p class="sub">四个可交互实验，对应面试题"协作系统有哪些解决方案"的完整演进链。每个实验都复刻了历史上真实发生过的失败现场。字符颜色：<span style="color:var(--alice)">■ Alice</span> <span style="color:var(--bob)">■ Bob</span> <span style="color:var(--carol)">■ Carol</span> <span style="color:var(--agent)">■ AI Agent</span> <span style="color:var(--dim)">■ 初始文本</span> <span style="color:var(--danger);text-decoration:line-through">■ 墓碑(已删)</span></p>
+<nav><a href="#d1">实验1 三种锁的失败</a><a href="#d2">实验2 OT 变换菱形</a><a href="#d3">实验3 CRDT 乱序收敛</a><a href="#d4">实验4 AI 意图漂移</a></nav>
+
+<!-- ================= 实验 1：锁的三种失败 ================= -->
+<section id="d1">
+<h2>实验 1：为什么锁答非所问 <span class="tag">悲观锁 / 乐观锁 / LWW 覆盖</span></h2>
+<p class="desc">协作编辑的本质是<b>多副本持续合并</b>，而锁解决的是<b>互斥访问</b>。下面三个按钮分别演示三种"数据库思路"在协作场景下的失败方式。</p>
+
+<div class="toolbar">
+  <button class="btn" onclick="demo1Pessimistic()">▶ 悲观锁：Alice 先锁住段落</button>
+  <button class="btn" onclick="demo1PessimisticCrash()">⚠ Alice 锁住后断网（锁无法释放）</button>
+  <button class="btn" onclick="demo1Optimistic()">▶ 乐观锁：两人基于同一版本编辑后各自保存</button>
+  <button class="btn" onclick="demo1LWW()">▶ LWW：整文档最后写入者胜</button>
+  <button class="btn" onclick="demo1Reset()">重置</button>
+</div>
+<div class="stage">
+  <div class="col">
+    <h3><span class="dot" style="background:var(--alice)"></span>Alice 的编辑器 <span class="badge" id="d1aState">在线</span></h3>
+    <input type="text" id="d1aInput" placeholder="（点击上方场景按钮开始）">
+    <div class="lockhint" id="d1aHint"></div>
+  </div>
+  <div class="col">
+    <h3><span class="dot" style="background:var(--bob)"></span>Bob 的编辑器 <span class="badge" id="d1bState">在线</span></h3>
+    <input type="text" id="d1bInput" placeholder="（点击上方场景按钮开始）">
+    <div class="lockhint" id="d1bHint"></div>
+  </div>
+</div>
+<div class="col" style="min-width:100%">
+  <h3>服务器 / 共享文档</h3>
+  <div class="doc" id="d1Server"><span class="ch orig">共享文档 v1："The fox jumps."</span></div>
+  <div class="log" id="d1Log"><div>等待场景…</div></div>
+</div>
+</section>
+
+<!-- ================= 实验 2：OT 变换菱形 ================= -->
+<section id="d2">
+<h2>实验 2：OT 变换菱形 <span class="tag">GROVE 1989 / Jupiter 服务器定序</span></h2>
+<p class="desc">共享文本 <code>Hello</code>。Alice 与 Bob <b>并发</b>在末尾各插入一段文字。点击"下一步"观察服务器如何定序、双方如何用<b>变换函数 T(op, concurrentOp)</b> 翻译对方的操作，最终菱形闭合（TP1）。切到"无变换"模式可以看到不做变换时的发散现场。</p>
+<div class="toolbar">
+  <button class="btn primary" onclick="otNext()">▶ 下一步</button>
+  <button class="btn" onclick="otRestart(false)">⟲ 重播（带变换）</button>
+  <button class="btn warn" onclick="otRestart(true)">⟲ 重播（无变换对照）</button>
+</div>
+<div class="stage">
+  <div class="col">
+    <h3><span class="dot" style="background:var(--alice)"></span>Alice 视角</h3>
+    <div class="doc" id="otAlice"></div>
+  </div>
+  <div class="col">
+    <h3><span class="dot" style="background:var(--bob)"></span>Bob 视角</h3>
+    <div class="doc" id="otBob"></div>
+  </div>
+</div>
+<div class="col" style="min-width:100%">
+  <h3>服务器日志（Jupiter：服务器定序 = 唯一全局总序）</h3>
+  <div class="log" id="otLog"></div>
+  <p class="note" id="otNote">OT 的正确性来自架构：服务器给所有操作定一个总序，客户端只做"单线变换"，从而绕开了学术界的 TP2 反例难题。同位置并发插入的平局由 <b>clientID 大者排右</b> 规则裁决。</p>
+</div>
+</section>
+
+<!-- ================= 实验 3：CRDT 乱序收敛 ================= -->
+<section id="d3">
+<h2>实验 3：CRDT 三副本乱序投递 <span class="tag">不变 ID + 墓碑 / Yjs·RGA 简化内核</span></h2>
+<p class="desc">共享文本 <code>Hello</code>（Alice 所打）。三个并发操作组：<b style="color:var(--alice)">Alice 续打 " World"</b>、<b style="color:var(--bob)">Bob 插入 "!"</b>、<b style="color:var(--carol)">Carol 删除两个 "l"</b>。每个副本用<b>不同的乱序</b>接收操作——观察最终是否收敛为同一文本（乱序仅在并发组之间，因果相关的操作保持先后，真实协议由版本向量保证）。</p>
+<div class="toolbar">
+  <button class="btn primary" onclick="crdtDeliver()">▶ 随机乱序投递</button>
+  <button class="btn" onclick="crdtFast()">⏩ 瞬时完成</button>
+  <button class="btn" onclick="crdtInit()">⟲ 重置</button>
+  <label style="color:var(--muted);font-size:13px;margin-left:8px"><input type="checkbox" id="crdtShowTomb" onchange="crdtRender()"> 显示墓碑</label>
+</div>
+<div class="stage">
+  <div class="col"><h3>副本 1（Alice 端）</h3><div class="doc" id="crdtRep1"><span class="ch orig">Hello</span></div></div>
+  <div class="col"><h3>副本 2（Bob 端）</h3><div class="doc" id="crdtRep2"><span class="ch orig">Hello</span></div></div>
+  <div class="col"><h3>副本 3（Carol 端）</h3><div class="doc" id="crdtRep3"><span class="ch orig">Hello</span></div></div>
+</div>
+<div class="col" style="min-width:100%">
+  <h3>投递队列（每次乱序都不同）</h3>
+  <div class="log" id="crdtLog"><div>等待投递…</div></div>
+  <p class="note">收敛判据：<b id="crdtVerdict">未投递</b>。每个字符块携带 <code>{id: 逻辑时钟+客户端, origin: 左邻居id, tomb: 墓碑}</code>。合并规则只看 ID 与因果，与到达顺序无关——这是与 OT「变换操作」完全不同的哲学：<b>让数据结构自己会合并</b>。Carol 的删除不真删，只打墓碑（勾选上方复选框查看），因为被删的字符可能正是别人插入新字的锚点。</p>
+</div>
+<hr class="sep">
+<p class="desc"><b>附：交错异常（Logoot 类位置型 CRDT 的病）</b>——Alice 与 Bob 并发在同一位置各打一个词，位置型算法按"分数位置"排序，两个词逐字符穿插：</p>
+<div class="toolbar"><button class="btn" onclick="interleave()">▶ 演示并发同位置打词</button></div>
+<div class="stage">
+  <div class="col"><h3>Yjs/RGA（引用型）</h3><div class="doc" id="ilvGood" style="min-height:66px"></div></div>
+  <div class="col"><h3>位置型示意模型（Logoot 病理）</h3><div class="doc" id="ilvBad" style="min-height:66px"></div></div>
+</div>
+<p class="note" id="ilvNote">两个结果都"收敛"了，但右边的收敛<b>没有任何人的意图被保留</b>——这就是"收敛 ≠ 意图保持"，也是 Fugue（2022）用树结构要根治的问题。（注：右侧为教学示意复现，真实 Logoot 用整数位置前缀，病理相同：两个站点独立生成的位置区间相互重叠。）</p>
+</section>
+
+<!-- ================= 实验 4：AI 意图漂移 ================= -->
+<section id="d4">
+<h2>实验 4：AI Agent 成为并发编辑者 <span class="tag">2025 前沿：收敛了，意图却漂走了</span></h2>
+<p class="desc">人类正在句中打字（想把 fox 改成复数），同时 AI Agent 收到指令"<b>把 fox jumps 改写成 cat sleeps</b>"，发起整段重写。两者在 CRDT 上并发合并——CRDT 忠实完成了它的合同（收敛），但人的字漂到了意想不到的位置。这正是字符级收敛与语义级意图的鸿沟。</p>
+<div class="toolbar">
+  <button class="btn primary" onclick="aiNext()">▶ 下一步</button>
+  <button class="btn" onclick="aiRestart()">⟲ 重置</button>
+</div>
+<div class="stage">
+  <div class="col"><h3><span class="dot" style="background:var(--warn)"></span>人类视角（client H）</h3><div class="doc" id="aiHuman" style="min-height:66px"><span class="ch orig">The fox jumps.</span></div></div>
+  <div class="col"><h3><span class="dot" style="background:var(--agent)"></span>AI Agent 视角（client X）</h3><div class="doc" id="aiAgent" style="min-height:66px"><span class="ch orig">The fox jumps.</span></div></div>
+</div>
+<div class="col" style="min-width:100%">
+  <h3>合并后的世界（真实 CRDT 状态）</h3>
+  <div class="doc" id="aiMerged" style="min-height:66px"><span class="ch orig">The fox jumps.</span></div>
+  <div class="log" id="aiLog"><div>等待…</div></div>
+  <p class="note" id="aiNote">CRDT 没有故障——它精确合并了每一个操作。问题在于：<b>字符级收敛的合同里从来不包含"语义意图"</b>。人类意图（改 fox 为复数）锚定在旧句上，旧句被 Agent 删除后，人的字失去了语境，漂到了句尾孤零零地挂着。业界三种应对：服务器端 Yjs Agent（Agent 当虚拟协作者）、主管+写手分区（Agent 只在专属区域工作）、Zed Delta 式流式编辑（人可随时打断）。</p>
+</div>
+</section>
+
+<footer>配套讲解见对话正文 · OT/CRDT 内核为教学简化实现（完整算法见 Yjs / Automerge / Loro 源码）</footer>
+</div>
+
+<script>
+/* ================================================================
+ * 通用工具
+ * ================================================================ */
+const $ = id => document.getElementById(id);
+// 把纯文本渲染成"初始文本"色的 span 序列
+const origSpans = s => [...s].map(c=>`<span class="ch orig">${c===' '?'␣':c}</span>`).join('');
+// 带颜色的字符 span。cls: a/b/c/x/h/orig/dead, title 悬停提示
+const chSpan = (c, cls, tip, glow) =>
+  `<span class="ch ${cls}${glow?' glow':''}"${tip?` title="${tip}"`:''}>${c===' '?'␣':c}</span>`;
+const logTo = (el, html) => { el.innerHTML += `<div>${html}</div>`; el.scrollTop = el.scrollHeight; };
+
+/* ================================================================
+ * 实验 1：锁的三种失败
+ * ================================================================ */
+function demo1Reset(){
+  ['d1aInput','d1bInput'].forEach(i=>{ $(i).value=''; $(i).disabled=false; });
+  ['d1aHint','d1bHint'].forEach(i=>$(i).style.display='none');
+  $('d1aState').textContent='在线'; $('d1aState').className='badge';
+  $('d1bState').textContent='在线'; $('d1bState').className='badge';
+  $('d1aState').textContent='在线';
+  $('d1Server').innerHTML = '<span class="ch orig">共享文档 v1："The fox jumps."</span>';
+  $('d1Log').innerHTML = '<div>等待场景…</div>';
+}
+// 悲观锁：编辑前先拿锁 → 协作退化成"轮流编辑"
+function demo1Pessimistic(){
+  demo1Reset();
+  $('d1aInput').value='The fox jumps quickly.'; $('d1aInput').disabled=true;
+  $('d1bInput').disabled=true;
+  $('d1bHint').style.display='block';
+  $('d1bHint').textContent='段落已被 Alice 锁定（服务器租约 60s）——你只能看，不能打字';
+  $('d1bState').textContent='被锁阻塞'; $('d1bState').className='badge bad';
+  logTo($('d1Log'),'Alice: LOCK paragraph-1 成功 → 开始编辑');
+  logTo($('d1Log'),'Bob: 尝试编辑 → <span class="bad">BLOCKED（锁被 Alice 持有）</span>');
+  logTo($('d1Log'),'<span class="hl">问题：协作实时性死亡。粒度越粗阻塞越狠，粒度越细锁开销越大。</span>');
+}
+// 网络分区下悲观锁的死局：持锁者失联，锁悬死
+function demo1PessimisticCrash(){
+  demo1Pessimistic();
+  $('d1aState').textContent='断网'; $('d1aState').className='badge bad';
+  $('d1bHint').textContent='Alice 断网，锁无法主动释放。等租约超时？那 Alice 网络恢复后的编辑怎么办？';
+  logTo($('d1Log'),'Alice: 网络分区，心跳中断 → 锁进入"悬死"状态');
+  logTo($('d1Log'),'<span class="bad">两难：提前释放 → Alice 回来后编辑冲突；不释放 → Bob 干等到超时</span>');
+  logTo($('d1Log'),'<span class="hl">这就是数据库单机并发控制思想撞上分布式协作的第一堵墙。</span>');
+}
+// 乐观锁：version/CAS → 冲突方编辑被拒 = 丢用户输入
+function demo1Optimistic(){
+  demo1Reset();
+  $('d1aInput').value='The fox jumps quickly.'; $('d1aInput').disabled=true;
+  $('d1bInput').value='The red fox jumps.'; $('d1bInput').disabled=true;
+  logTo($('d1Log'),'Alice 基于 v1 编辑 → 保存 → version 1→2 <span class="good">成功</span>');
+  logTo($('d1Log'),'Bob（也基于 v1）保存 → <span class="bad">409 冲突！当前已是 v2</span>');
+  setTimeout(()=>{
+    $('d1bInput').value='';
+    $('d1bHint').style.display='block';
+    $('d1bHint').textContent='版本冲突：你的编辑被拒绝，请刷新后重打一遍（编辑内容已丢弃）';
+    $('d1bState').textContent='编辑被丢弃'; $('d1bState').className='badge bad';
+    logTo($('d1Log'),'服务器把 Bob 的 "red" 丢掉了 → <span class="bad">用户输入不可重试：事务能 abort-retry，人打的字不能</span>');
+  }, 700);
+}
+// LWW：整文档级最后写入者胜 → 覆盖丢字
+function demo1LWW(){
+  demo1Reset();
+  $('d1aInput').value='The fox jumps quickly.'; $('d1aInput').disabled=true;
+  $('d1bInput').value='The red fox jumps.'; $('d1bInput').disabled=true;
+  logTo($('d1Log'),'Alice 与 Bob 基于同一原文并发编辑（一个加了 quickly，一个加了 red）');
+  setTimeout(()=>{
+    $('d1Server').innerHTML =
+      origSpans('The fox jumps. → 最终：The red fox jumps.') +
+      ' <span class="badge bad">Alice 的 "quickly" 被整个覆盖丢失</span>';
+    logTo($('d1Log'),'同步：后写入者 Bob 整体覆盖 → <span class="bad">Alice 的增量 "quickly" 消失</span>');
+    logTo($('d1Log'),'<span class="hl">LWW 只有在"属性级"小粒度冲突时勉强可用（Figma 的选择），文档级直接灾难。</span>');
+  }, 800);
+}
+
+/* ================================================================
+ * 实验 2：OT 变换菱形
+ * 核心：transformIns(a, b) —— 把操作 a 翻译到"已并发应用了 b"的世界
+ * ================================================================ */
+// 变换函数（TP1 基础情形：insert vs insert）
+// 规则：b 在 a 之前生效。若 b 的插入点在 a 的位置左边（或同位置但 b 的 clientID 更大），
+// 则 a 的位置要向后平移 len(b.str)，语义是"b 的内容插到了 a 前面"。
+function transformIns(a, b){
+  if (a.pos > b.pos || (a.pos === b.pos && a.client > b.client)){
+    return { client:a.client, pos: a.pos + b.str.length, str: a.str };
+  }
+  return { client:a.client, pos:a.pos, str:a.str };
+}
+const applyIns = (text, op) => text.slice(0, op.pos) + op.str + text.slice(op.pos);
+
+let ot = null;
+function otRestart(noTransform){
+  // op_A / op_B 都基于初始态 "Hello"（并发）
+  ot = {
+    step: 0, noTransform,
+    opA: { client:1, pos:5, str:' World' },   // Alice 在末尾插 " World"
+    opB: { client:2, pos:5, str:'!' },        // Bob 并发在末尾插 "!"
+    aliceText:'Hello', bobText:'Hello',
+  };
+  $('otLog').innerHTML='';
+  otRender('初始化：双方副本一致 = "Hello"，Alice 与 Bob 并发开始打字');
+}
+function otRender(msg){
+  $('otAlice').innerHTML = [...ot.aliceText].map(c=>`<span class="ch a">${c===' '?'␣':c}</span>`).join('');
+  $('otBob').innerHTML   = [...ot.bobText].map(c=>`<span class="ch b">${c===' '?'␣':c}</span>`).join('');
+  if (msg) logTo($('otLog'), msg);
+}
+function otNext(){
+  if (!ot) otRestart(false);
+  const {opA, opB} = ot;
+  switch(ot.step){
+    case 0: // Alice 本地生效
+      ot.aliceText = applyIns(ot.aliceText, opA);
+      otRender('① op_A = ins(5, " World") 在 Alice 本地立即生效（乐观策略：先本地，后同步）');
+      break;
+    case 1: // Bob 本地生效
+      ot.bobText = applyIns(ot.bobText, opB);
+      otRender('② op_B = ins(5, "!") 在 Bob 本地生效 —— <b>此刻两个副本已分叉</b>，OT 要回答"如何合并且不丢意图"');
+      break;
+    case 2: // 服务器定序
+      otRender(`③ 服务器定序（Jupiter 模型）：先收到 op_A → 全局总序 = [op_A, op_B]。服务器把 op_A 原样转发给 Bob`);
+      break;
+    case 3: { // Bob 变换应用
+      // Bob 本地已有 op_B，收到 op_A，需计算 T(op_A, op_B)
+      const t = ot.noTransform ? opA : transformIns(opA, opB);
+      ot.bobText = applyIns(ot.bobText, t);
+      otRender(ot.noTransform
+        ? `④(无变换对照) Bob 直接套用 op_A@5 → "${ot.bobText}" —— 碰巧像样（他的 '!' 恰好已在末尾，纯运气）`
+        : `④ Bob 计算 T(op_A, op_B)：同位置平局，client 1 &lt; 2 → Alice 的词排在 Bob 左边 → pos 5 不变。应用 ins(5," World") → "${ot.bobText}"`);
+      break;
+    }
+    case 4: { // Alice 变换应用
+      const t = ot.noTransform ? opB : transformIns(opB, opA);
+      ot.aliceText = applyIns(ot.aliceText, t);
+      otRender(ot.noTransform
+        ? `⑤(无变换对照) Alice 直接套用 op_B@5 → "${ot.aliceText}" —— <span class="bad">两边发散！Alice="${ot.aliceText}" vs Bob="${ot.bobText}"</span>`
+        : `⑤ Alice 计算 T(op_B, op_A)：同位置平局，client 2 &gt; 1 → Bob 的 "!" 排右边 → pos 5→11。应用 → "${ot.aliceText}"`);
+      break;
+    }
+    case 5:
+      if (ot.noTransform){
+        otRender(`<span class="bad">结论：不做变换 → 收敛失败（TP1 菱形不闭合）。</span>`);
+      } else {
+        otRender(`<span class="good">结论：菱形闭合（TP1 满足）—— Alice 与 Bob 均为 "${ot.aliceText}"，且两人意图都保留：词紧接 Hello，叹号收尾。</span>`);
+        otRender(`补充：服务器定序使每个客户端只需"单线变换"（TP1 即可），彻底绕开学术界 TP2 反例难题 —— <b>OT 的正确性是架构给的</b>。`);
+      }
+      ot.step = 99; return;
+  }
+  ot.step++;
+}
+
+/* ================================================================
+ * 实验 3：CRDT 内核（Yjs/RGA 教学简化版）
+ * 块结构：{ uid, ch, clock, client, origin, tomb }
+ *  - uid: 全局唯一 ID（不变 ID）
+ *  - origin: 插入时的"左邻居"块 uid（意图锚点）
+ *  - tomb: 墓碑标记（删除不真删）
+ * ================================================================ */
+let crdt = null;
+function newReplica(){ return { blocks: [], pending: null }; }
+// —— 核心：integrate —— 把新块插入副本链表。
+// 位置只由 (origin, id比较) 决定，与到达顺序无关 → 任意乱序可收敛。
+function integrate(rep, nb){
+  const blocks = rep.blocks;
+  // 1) 找到锚点 origin 的下标（origin 为 null 表示文档开头）
+  const start = nb.origin === null ? -1 : blocks.findIndex(b => b.uid === nb.origin);
+  // 2) 从 start+1 向右扫描，跳过所有"必须排在 nb 左边"的块：
+  //    (a) 并发兄弟：与 nb 同 origin 且 ID 更小（同位平局由 (clock,client) 裁决）
+  //    (b) 已跳过块的后代：c.origin 挂在 (start, last] 区间内的块上
+  //    (c) 右边界 originRight：插入时刻用户看到的右邻居（对应 Yjs 的 right origin），
+  //        扫描绝不越过它——否则锚在句中的插入会被右侧历史块一路推到句尾
+  let j = start + 1, last = start;
+  while (j < blocks.length){
+    const c = blocks[j];
+    if (nb.originRight && c.uid === nb.originRight) break;
+    const cOriginIdx = c.origin === null ? -1 : blocks.findIndex(b => b.uid === c.origin);
+    const condA = c.origin === nb.origin && cmpId(c, nb) < 0;
+    const condB = cOriginIdx > start && cOriginIdx <= last;
+    if (condA || condB){ last = j; j++; } else break;
+  }
+  blocks.splice(j, 0, nb);
+}
+// ID 全序比较：先比逻辑时钟，再比客户端 ID（平局规则，保证所有副本裁决一致）
+function cmpId(a, b){ return a.clock - b.clock || a.client - b.client; }
+function tombstone(rep, uid){ const b = rep.blocks.find(x=>x.uid===uid); if(b) b.tomb = true; }
+// 渲染一个副本：墓碑字符加删除线（可选显示）
+function renderRep(rep, showTomb){
+  const vis = rep.blocks.filter(b => showTomb || !b.tomb);
+  return vis.map(b=>{
+    const cls = b.client===1?'a':b.client===2?'b':b.client===3?'c':'x';
+    const tip = `id=(${b.clock},${b.client}) origin=${b.origin??'∅'}`;
+    return chSpan(b.ch, b.tomb?(showTomb?'orig dead':''):(b.client===0?'orig':cls), tip, b.glow);
+  }).join('') || '<span style="color:var(--dim)">(空)</span>';
+}
+function crdtInit(){
+  // 初始文本 Hello 由"用户0"打出（client=0 视为初始灰色）
+  const mk = (ch,i)=>({uid:'u'+i, ch, clock:i, client:0, origin:i===1?null:'u'+(i-1), tomb:false});
+  crdt = { reps:[newReplica(),newReplica(),newReplica()], queue:[], timer:null };
+  const hello = ['H','e','l','l','o'];
+  crdt.reps.forEach(r=> hello.forEach((ch,i)=> integrate(r, mk(ch,i+1))) );
+  crdtRenderAll();
+  $('crdtLog').innerHTML='<div>已就绪：三个副本均为 "Hello"。点击"随机乱序投递"。</div>';
+  $('crdtVerdict').textContent='未投递'; $('crdtVerdict').style.color='var(--muted)';
+}
+function crdtOps(){
+  // 三个并发操作"组"（组内保持因果序，组间乱序）：
+  // A组: Alice 续打 " World"（锚在 'o' 即 u5 后）
+  const A = [...' World'].map((ch,i)=>({
+    uid:`a${i}`, ch, clock:6+i, client:1,
+    origin: i===0 ? 'u5' : `a${i-1}`, tomb:false
+  }));
+  // B组: Bob 并发插入 "!"（同样锚在 'o' 后 —— 与 A 组第一个块是并发兄弟）
+  const B = [{uid:'b0', ch:'!', clock:6, client:2, origin:'u5', tomb:false}];
+  // C组: Carol 删除两个 'l'（u3, u4 → 墓碑）
+  const C = [
+    {del:'u3'}, {del:'u4'}
+  ];
+  return [
+    {name:'Alice: 插入 " World"', color:'a', run:rep=>A.forEach(nb=>integrate(rep,nb))},
+    {name:'Bob: 插入 "!"', color:'b', run:rep=>B.forEach(nb=>integrate(rep,nb))},
+    {name:'Carol: 删除 l,l（打墓碑）', color:'c', run:rep=>C.forEach(d=>tombstone(rep,d.del))},
+  ];
+}
+function crdtDeliver(){ if(!crdt) crdtInit(); if(crdt.timer) return; crdtRun(false); }
+function crdtFast(){ if(!crdt) crdtInit(); if(crdt.timer) return; crdtRun(true); }
+function crdtRun(fast){
+  const ops = crdtOps();
+  // 每个副本独立生成自己的乱序（洗牌各不相同）
+  crdt.reps.forEach(rep => rep.pending = ops.slice().sort(()=>Math.random()-0.5));
+  $('crdtLog').innerHTML = '';
+  crdt.reps.forEach((rep,i)=> $('crdtLog').innerHTML += `<div>副本${i+1} 的乱序：${rep.pending.map(o=>`<span class="${o.color}">${o.name}</span>`).join(' → ')}</div>`);
+  let step = 0;
+  const tick = ()=>{
+    let allDone = true;
+    crdt.reps.forEach((rep,i)=>{
+      if (step < rep.pending.length){
+        allDone = false;
+        rep.pending[step].run(rep);
+      }
+    });
+    crdtRenderAll();
+    if (step >= 1 && step <= 3) logTo($('crdtLog'), `投递轮 ${step} — 各副本状态可能暂时不同（正常！收敛是"最终"性质）`);
+    step++;
+    if (!allDone){ crdt.timer = fast ? requestAnimationFrame(tick) : setTimeout(tick, 650); }
+    else {
+      crdt.timer = null;
+      // 收敛判据：三个副本可见文本完全一致
+      const texts = crdt.reps.map(r => r.blocks.filter(b=>!b.tomb).map(b=>b.ch).join(''));
+      const same = texts.every(t=>t===texts[0]);
+      $('crdtVerdict').innerHTML = same
+        ? `✓ 三副本一致 "${texts[0]}"（${texts.map(t=>`"${t}"`).join(' = ')}）`
+        : `✗ 发散：${texts.map(t=>`"${t}"`).join(' ≠ ')}`;
+      $('crdtVerdict').style.color = same ? 'var(--ok)' : 'var(--danger)';
+      logTo($('crdtLog'), same
+        ? `<span class="good">收敛达成：三个副本乱序接收，最终文本完全一致 —— CRDT 的交换律在起作用。注意 "World" 与 "!" 的先后由 (clock,client) 平局规则在所有副本上做出<b>相同裁决</b>。</span>`
+        : `<span class="bad">本教学简化内核在此场景出现了发散（完整 Yjs/RGA 规则会处理更深的嵌套并发）</span>`);
+    }
+  };
+  tick();
+}
+function crdtRenderAll(){ crdt.reps.forEach((r,i)=> $('crdtRep'+(i+1)).innerHTML = renderRep(r, $('crdtShowTomb').checked)); }
+function crdtRender(){ crdtRenderAll(); }
+
+// —— 交错异常演示 ——
+function interleave(){
+  // 左：引用型（Yjs 简化规则）——并发词作为"整体分支"挂到锚点上，不会拆散
+  const anchor = [];
+  const good = [...'hello'].map((ch,i)=>({ch,cls:'a',pos:i}))           // Alice 的 hello：顺序链
+    .concat([...'world'].map((ch,i)=>({ch,cls:'b',pos:i+100})));          // Bob 的 world：独立分支排在后面
+  $('ilvGood').innerHTML =
+    'h e l l o'.split(' ').map(c=>chSpan(c,'a')).join('') +
+    ' w o r l d'.split(' ').map(c=>chSpan(c,'b')).join('');
+  // 右：位置型示意 —— 两个站点独立生成重叠的"分数位置"，排序后逐字符穿插
+  const items = [];
+  [...'hello'].forEach((ch,i)=>items.push({ch,cls:'a',pos:5.0+i*0.1}));   // Alice 生成 5.0,5.1,...
+  [...'world'].forEach((ch,i)=>items.push({ch,cls:'b',pos:5.0+i*0.1+0.05})); // Bob 独立生成 5.05,5.15,...（区间重叠）
+  items.sort((x,y)=>x.pos-y.pos);
+  $('ilvBad').innerHTML = items.map(it=>chSpan(it.ch,it.cls)).join('');
+  $('ilvNote').innerHTML = `左图 <b>hello</b> 与 <b>world</b> 各自完整（引用型：整词是一个挂在锚点上的分支链）；右图两词逐字符穿插为 <b>"${items.map(i=>i.ch).join('')}"</b>（位置型：两站点独立生成的位置序列互相重叠）。<b>两个结果都收敛了，但右边没有任何人的意图被保留</b>——这就是"收敛 ≠ 意图保持"，也是 Fugue（2022）用树结构要根治的问题。（注：右侧为教学示意复现，真实 Logoot 用整数位置前缀，病理相同。）`;
+}
+
+/* ================================================================
+ * 实验 4：AI 意图漂移（复用上面的 CRDT 内核）
+ * ================================================================ */
+let ai = null;
+function aiRestart(){
+  const mk = (ch,i)=>({uid:'u'+i, ch, clock:i, client:0, origin:i===1?null:'u'+(i-1), tomb:false});
+  ai = { step:0,
+    human:newReplica(), agent:newReplica(), merged:newReplica(),
+    humanOps:[], agentOps:[] };
+  // 初始文本 "The fox jumps."（14 块, u1..u14；u5-u7=fox, u9-u13=jumps）
+  [...'The fox jumps.'].forEach((ch,i)=>{ integrate(ai.human, mk(ch,i+1)); integrate(ai.agent, mk(ch,i+1)); integrate(ai.merged, mk(ch,i+1)); });
+  // —— 人类操作：在 'x'(u7) 后打 'e'（想打成 foxes）——
+  // originRight=u8：插入瞬间用户看到的右邻居是 fox 后的空格，扫描绝不越过右锚点
+  const hOp = { uid:'h1', ch:'e', clock:16, client:1, origin:'u7', originRight:'u8', tomb:false, glow:true };
+  // —— Agent 操作：删除 f,o,x(u5-u7) 与 jumps(u9-u13)，插入 "cat sleeps"（锚定 x 与右空格之间）——
+  // 'cat ' 尾部自带空格，保证 cat 与 sleeps 不粘连；x2_0 的左锚点即该空格块 x1_3
+  const xWords = [...'cat '].map((ch,i)=>({uid:`x1_${i}`, ch, clock:16+i, client:9, origin:i===0?'u7':`x1_${i-1}`, originRight:'u8', tomb:false}));
+  const xWords2 = [...'sleeps'].map((ch,i)=>({uid:`x2_${i}`, ch, clock:20+i, client:9, origin:i===0?'x1_3':`x2_${i-1}`, originRight:'u8', tomb:false}));
+  const xDels = ['u5','u6','u7','u9','u10','u11','u12','u13'].map(uid=>({del:uid}));
+  ai.humanOps = [ {name:'H 插入 "e"（origin=fox 的 x）', run:r=>integrate(r,hOp)} ];
+  ai.agentOps = [
+    {name:'X 删除 "fox jumps"（8 个墓碑）', run:r=>xDels.forEach(d=>tombstone(r,d.del))},
+    {name:'X 插入 "cat sleeps"（锚定在 x 与右空格之间）', run:r=>{ xWords.forEach(nb=>integrate(r,nb)); xWords2.forEach(nb=>integrate(r,nb)); }},
+  ];
+  $('aiHuman').innerHTML = renderRep(ai.human,false);
+  $('aiAgent').innerHTML = renderRep(ai.agent,false);
+  $('aiMerged').innerHTML = renderRep(ai.merged,false);
+  $('aiLog').innerHTML='<div>场景就绪：人类想打 "foxes"，Agent 同时收到"改写为 cat sleeps"的指令。</div>';
+}
+function aiNext(){
+  if (!ai) aiRestart();
+  switch(ai.step){
+    case 0:
+      ai.humanOps.forEach(o=>o.run(ai.human));
+      $('aiHuman').innerHTML = renderRep(ai.human,false);
+      logTo($('aiLog'),'① 人类在 "fox" 后打入 "e"（本地立即生效，尚未同步）：The fox<span class="glow ch h">e</span> jumps.');
+      break;
+    case 1:
+      ai.agentOps.forEach(o=>o.run(ai.agent));
+      $('aiAgent').innerHTML = renderRep(ai.agent,false);
+      logTo($('aiLog'),'② Agent 基于<b>旧状态</b>执行重写：删除 fox jumps（8 个字符打墓碑），在原位置插入 "cat sleeps" → The <span class="ch x">cat sleeps</span>.（Agent 对人类的 "e" 一无所知 —— 两边已分叉）');
+      break;
+    case 2:
+      // 合并：两边的操作投递到同一个 CRDT 文档
+      ai.humanOps.forEach(o=>o.run(ai.merged));
+      ai.agentOps.forEach(o=>o.run(ai.merged));
+      // 人类和 Agent 的插入块同为 origin='u7'，(16,1) vs (16,9) → 人类的小，排左
+      const m = renderRep(ai.merged,true);
+      $('aiMerged').innerHTML = m;
+      const humanTxt = ai.merged.blocks.filter(b=>!b.tomb).map(b=>b.ch).join('');
+      logTo($('aiLog'),`③ 双方操作互相同步（CRDT 合并）：锚点 "x"(u7) 上出现两个并发分支 —— 人类的 "e"(clock16,client1) 与 Agent 的 " cat"(clock16,client9)，平局规则让人类的 "e" 排左。`);
+      logTo($('aiLog'),`<span class="hl">合并结果："${humanTxt}" —— 人类的 "e" 漂到了 "The" 后面，孤零零地悬在 Agent 的新句子前面！</span>`);
+      logTo($('aiLog'),`<span class="good">CRDT 完美履行了合同：所有操作无一丢失、两侧收敛一致。</span> <span class="bad">但人类的意图（把 fox 改成 foxes）在语义上彻底漂移 —— 这就是"字符级收敛 ≠ 语义级意图保持"。</span>`);
+      logTo($('aiLog'),`业界应对：① 服务器端 Yjs Agent（Agent=虚拟协作者，可见性优先）② 主管+写手分区（Agent 只在自己领地写）③ Zed Delta 流式编辑（人可随时打断 Agent 的编辑流）。根治之道仍在研究：语义合并。`);
+      ai.step=99; return;
+  }
+  ai.step++;
+}
+
+/* —— 初始化 —— */
+demo1Reset(); otRestart(false); crdtInit(); aiRestart();
+</script>
+</body>
+</html>

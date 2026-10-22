@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限体系・第一册：三层权限与模型发展史</title>
+<style>
+:root {
+  --bg: #f5f6f9; --card: #ffffff; --ink: #1b2430; --ink-2: #455161; --ink-3: #6b7688;
+  --line: #e4e7ee; --primary: #3b4f8a; --primary-soft: #eceff8; --primary-deep: #2b3a66;
+  --high: #be3a34; --high-bg: #fdf0ef; --hard: #6d28d9; --hard-bg: #f4f0fe;
+  --trap: #c2620d; --trap-bg: #fef6ec; --py: #0f766e; --py-bg: #ecfaf7;
+  --code-bg: #141c2e; --code-ink: #c6d0e4;
+  --radius: 12px; --shadow: 0 1px 3px rgba(20,30,55,.06), 0 1px 2px rgba(20,30,55,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+.hero { background: linear-gradient(135deg,#ffffff 0%,#eef1f9 60%,#e3e9f7 100%); border-bottom: 1px solid #d6ddef; padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 29px; font-weight: 800; color: #141c2e; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #39435a; max-width: 820px; }
+.hero .sub b { color: #141c2e; }
+.progress-track { margin-top: 20px; height: 8px; background: #d3daf0; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 20%; background: linear-gradient(90deg,#3b4f8a,#6b7fc0); border-radius: 4px; }
+.hero .pct { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #455161; text-decoration: none; border: 1px solid #cbd3e4; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav .home { border-style: dashed; }
+
+.wrap { max-width: 1260px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 250px 1fr; gap: 34px; }
+main { min-width: 0; max-width: 100%; }
+.codebox { min-width: 0; max-width: 100%; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } table { display: block; overflow-x: auto; } .codebox { max-width: 100%; } }
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #c6cfee; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fde9a8; padding: 0 3px; border-radius: 3px; }
+a.inline { color: var(--primary); }
+
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #f3c4c1; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddcdf8; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #f6d8ae; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #9de2d6; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.6px; background: #fff; }
+th { background: #eef1f7; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td code, li code, p code { background: #e9edf6; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #b4352f; }
+table.ftl { table-layout: fixed; }
+
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1c2740; color: #b9c6e0; font-size: 12px; padding: 7px 14px; display: flex; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.72; min-width: 0; max-width: 100%; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #b79df0; } .tok-str { color: #b6e09a; } .tok-com { color: #7685a8; font-style: italic; }
+.tok-num { color: #f0a27f; } .tok-anno { color: #ffcb6b; }
+
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; }
+.tb-mem { background: var(--primary-soft); border-color: #c7d1f0; color: var(--primary-deep); }
+.tb-warn { background: var(--trap-bg); border-color: #f6d8ae; color: #9a4d10; }
+.tb-py { background: var(--py-bg); border-color: #9de2d6; color: #0b5f57; }
+.tb-hard { background: var(--hard-bg); border-color: #ddcdf8; color: #5b21b6; }
+.tb-bad { background: var(--high-bg); border-color: #f3c4c1; color: #992720; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none; }
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+
+/* 机制图容器 */
+.fig { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; padding: 16px; margin: 16px 0; }
+.fig .fcap { font-size: 12.5px; color: var(--ink-3); text-align: center; margin-top: 10px; }
+.frow { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.fbox { border: 1.5px solid #9fb0d8; border-radius: 9px; background: #fff; padding: 10px 12px; flex: 1; min-width: 130px; }
+.fbox .ft { font-weight: 700; font-size: 12.8px; color: var(--primary-deep); margin-bottom: 4px; }
+.fbox .fd { font-size: 11.8px; color: var(--ink-2); line-height: 1.6; }
+.fbox.b { border-color: #0f766e; } .fbox.b .ft{ color:#0b5f57; }
+.fbox.p { border-color: #6d28d9; } .fbox.p .ft{ color:#5b21b6; }
+.fbox.o { border-color: #c2620d; } .fbox.o .ft{ color:#9a4d10; }
+.fbox.r { border-color: #be3a34; } .fbox.r .ft{ color:#992720; }
+.farrow { display:flex; align-items:center; color: #8a94ad; font-size: 18px; }
+.flayer { border-radius: 9px; padding: 11px 14px; margin-bottom: 9px; }
+.flayer .lt { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+.flayer .ld { font-size: 12px; line-height: 1.6; }
+.l1 { background:#eceff8; border:1.5px solid #3b4f8a; } .l1 .lt{ color:#2b3a66; }
+.l2 { background:#ecfaf7; border:1.5px solid #0f766e; } .l2 .lt{ color:#0b5f57; }
+.l3 { background:#f4f0fe; border:1.5px solid #6d28d9; } .l3 .lt{ color:#5b21b6; }
+
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.pagenav .disabled { color: #9aa3b5; pointer-events: none; border-style: dashed; }
+.checklist li { list-style: none; margin-left: 0; }
+.checklist label { display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--ink-2); padding:5px 0; cursor:pointer; }
+.checklist input { margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">PERMISSION HANDBOOK · 第一册（共 5 册）</div>
+  <h1>地基：三层权限与模型发展史</h1>
+  <div class="sub">
+    从一道真实面试题出发，先建立 <b>功能权限 / 数据权限（行级）/ 字段级权限</b> 三层正交的坐标系；
+    再沿 ACL → RBAC → ABAC → ReBAC 的演进史理解每个模型解决了什么问题；最后把最难的<b>多对多数据权限</b>用 <code>resource_owner</code> 表彻底讲清。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="pct">第 1 / 5 册 · 建议最先通读，后四册都建立在这些概念上</div>
+</div>
+
+<nav class="mod-nav">
+  <a class="home" href="index.html">总目录</a>
+  <span class="cur">① 地基</span>
+  <a href="02-ruoyi.html">② 若依</a>
+  <a href="03-casbin.html">③ Casbin</a>
+  <a href="04-opa.html">④ OPA</a>
+  <a href="05-comparison-interview.html">⑤ 对比与收口</a>
+</nav>
+
+<div class="wrap">
+  <aside class="toc">
+    <div class="toc-title">本册目录</div>
+    <a href="#s1">01 面试原题复盘</a>
+    <a href="#s2">02 三层权限坐标系</a>
+    <a href="#s3">03 模型发展史</a>
+    <a href="#s4">04 role/group/dept 辨析</a>
+    <a href="#s5">05 数据权限两条路线</a>
+    <a href="#s6">06 resource_owner 表设计</a>
+    <a href="#s7">07 Redis 缓存与权限 Set</a>
+    <a href="#s8">08 本册小结与自测</a>
+  </aside>
+
+  <main>
+  <!-- ============ §1 面试原题 ============ -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><div class="sec-no">01</div><h2>面试原题复盘：卡在哪里 <span class="stars">★★★★★</span></h2></div>
+
+    <h3 class="kp">1.1 原题（素材平台 · 页面级 RBAC）</h3>
+    <p>项目背景是一个面向多角色的素材平台，数据库用的是 <b>MongoDB</b>（写多读少场景）。面试中的原始问答与追问如下：</p>
+    <table class="ftl">
+      <colgroup><col style="width:26%"><col style="width:48%"><col style="width:26%"></colgroup>
+      <tr><th>环节</th><th>内容</th><th>评价</th></tr>
+      <tr><td><b>页面级 RBAC</b></td><td>实现了用户、角色两部分；<b>没有建权限表</b>，权限以"页面 / 模块的权限字典"形式存在；用户登录后按权限决定页面显示与操作能力。</td><td>功能权限基本成立，权限点字典化是常见简化</td></tr>
+      <tr><td><b>为什么用 MongoDB</b></td><td>该场景写多读少，MongoDB 有优势。</td><td>选型理由可接受（注：口语常误读为 Mongos）</td></tr>
+      <tr><td><b>追问：用户能分组吗</b></td><td>平台面向素材需求提供者、创作者、投放者、管理员、普通用户，不同人页面权限不同——答出了"按角色分组"。</td><td>角色与用户组概念开始混淆</td></tr>
+      <tr><td><b>追问：行级数据权限</b></td><td>"能打开页面，但只能看到自己投放的素材"——提出"中间表 + 给游戏/素材写入 user id"。</td><td><span class="badge b-high">卡壳</span> 只有思路，没有表结构</td></tr>
+      <tr><td><b>追问：写了 user_id 又分组，group_id 怎么办</b></td><td>两个组都对同一游戏有权限时如何处理。</td><td><span class="badge b-high">未答出</span> 多对多归属</td></tr>
+      <tr><td><b>追问：多对多怎么用表维护</b></td><td>—</td><td><span class="badge b-high">未答出</span></td></tr>
+      <tr><td><b>追问：了解 Casbin / OPA 吗</b></td><td>没有了解过。</td><td>开源方案盲区</td></tr>
+    </table>
+
+    <h3 class="kp">1.2 标准答案（面试官视角）</h3>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">页面级 RBAC（功能权限）</div>
+      <p>用户 → 角色 → 权限（页面 / 模块粒度），MongoDB 写多读少场景可用文档存储；权限码用 <code>模块:页面:操作</code> 命名。</p>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">数据权限（Data-level Permission，行级）</div>
+      <p>核心是 <b>用户 / 角色与数据实体之间是多对多关系</b>，需要 <b>资源归属表 + 权限关联表</b>（如 <code>resource_owner(resource_id, owner_type, owner_id)</code>），支持「本人 / 所在组 / 游戏级 / 游戏类别级」多层范围。</p>
+    </div>
+    <div class="tipbox tb-hard">
+      <div class="tb-title">开源方案</div>
+      <p><b>Casbin</b>：经典 RBAC/ABAC 权限库，支持策略模型；<b>OPA（Open Policy Agent）</b>：统一策略引擎，Rego 语言。</p>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">一句话点题</div>
+      <p>这道题的真正考点是：你能不能把"权限"从"能不能打开页面"细化到"能看到哪些数据行、哪些字段"，并且设计出多对多的存储模型。</p>
+    </div>
+  </section>
+
+  <!-- ============ §2 三层权限 ============ -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><div class="sec-no">02</div><h2>三层权限坐标系 <span class="badge b-high">全书核心</span></h2></div>
+    <p>所有权限系统——无论自研、Casbin 还是 OPA——解决的都是下面这三个正交（互不重叠）的问题。<b>先把这张图刻进脑子</b>，后面的所有内容都是这三层的不同实现。</p>
+
+    <div class="fig">
+      <div class="flayer l1">
+        <div class="lt">① 功能权限（Functional Permission）· RBAC 的主战场</div>
+        <div class="ld">
+          控制 <b>能不能看到页面 / 按钮 / 能不能调接口</b>。例：投放者能看到"素材投放"菜单、能点"新增素材"按钮、能调 <code>material:add</code> 接口。<br>
+          粒度：页面级、模块级、按钮级、接口级。本质：<b>路由/动作的开关</b>，与具体数据无关。
+        </div>
+      </div>
+      <div class="flayer l2">
+        <div class="lt">② 数据权限（Data Permission · 行级 / Row-level）· 最难的一层</div>
+        <div class="ld">
+          功能权限放你进了"素材列表"页面，<b>这一层决定列表里能列出哪些行</b>。例：只能看到自己投放的素材；主管能看到本部门所有人的素材；管理员能看全部。<br>
+          粒度：数据库的<b>行</b>。本质：<b>查询范围</b>（WHERE 条件 / 归属关系）。
+        </div>
+      </div>
+      <div class="flayer l3">
+        <div class="lt">③ 字段级权限（Field-level · 列级 / Column-level）· 最细粒度</div>
+        <div class="ld">
+          同一行数据，<b>不同人能看到的列不同</b>。例：普通员工看不到手机号、成本价列，高管 / 财务能看。<br>
+          粒度：数据库的<b>列</b>。本质：<b>序列化输出时裁字段</b>。
+        </div>
+      </div>
+      <div class="fcap">图 1-1　三层权限：功能权限开门，行级权限筛行，字段级权限裁列</div>
+    </div>
+
+    <h3 class="kp">2.1 一个请求依次穿过三道门</h3>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox"><div class="ft">用户请求</div><div class="fd">GET /material/list</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox" style="border-color:#3b4f8a"><div class="ft">第 1 关·功能</div><div class="fd">有 material:list 权限？否则 403</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox b"><div class="ft">第 2 关·行级</div><div class="fd">SQL 拼 WHERE：只查本人/本组的行</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox p"><div class="ft">第 3 关·字段</div><div class="fd">序列化时剔掉无权限列（phone、cost）</div></div>
+      </div>
+      <div class="fcap">图 1-2　功能权限失败 → 403；行级决定查哪些行；字段级决定返回哪些列</div>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">最常见的认知误区（也是面试卡壳点）</div>
+      <p>把"我能看到这个页面"等同于"我能看到页面里的所有数据"。页面级 RBAC 只管第 1 关；<b>"只能看到自己投放的素材"是第 2 关（行级），它不在 RBAC 的经典职责里，需要额外的数据归属模型</b>，这正是本题被追问到答不出的地方。</p>
+    </div>
+
+    <details class="qa">
+      <summary>功能权限和行级权限为什么不能合成一张表？</summary>
+      <div class="qa-body">
+        <p>功能权限是 <b>角色 ↔ 动作</b> 的关系（哪个角色能调哪个接口），数量有限、变化慢、对所有人生效规则相同；行级权限是 <b>主体 ↔ 具体数据实例</b> 的关系（u101 对 M100 这一条素材有权限），随业务数据爆发增长（每新建一条素材可能产生一条归属）。二者数据量、变化频率、查询方式完全不同，强行合一就是 Casbin EAV 表要面对的"策略膨胀"问题（第三册讲）。</p>
+      </div>
+    </details>
+  </section>
+  <!-- ============ §3 模型发展史 ============ -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><div class="sec-no">03</div><h2>权限模型发展史：每一步都在解决上一代的痛</h2></div>
+    <p>权限模型不是凭空设计的，而是沿着"用户多了怎么办、组织复杂了怎么办、数据海量了怎么办"一步步演进。</p>
+
+    <div class="fig">
+      <div style="position:relative; padding-left:26px;">
+        <div style="position:absolute; left:8px; top:8px; bottom:8px; width:2px; background:#c3cde6;"></div>
+        <!-- ACL -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#be3a34; border:2px solid #fff; box-shadow:0 0 0 2px #be3a34;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#992720;">ACL · 访问控制列表（Access Control List）</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            <b>做法：</b>每个资源直接挂一串"谁能干什么"：文件 → {u101:rw, u102:r}。最直观，文件系统至今在用。<br>
+            <b>痛点：</b>用户一多，授权要逐人逐资源配，<b>无法批量管理</b>。100 个员工换岗位，要改 100 个地方。
+          </div>
+        </div>
+        <!-- RBAC0 -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#3b4f8a; border:2px solid #fff; box-shadow:0 0 0 2px #3b4f8a;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#2b3a66;">RBAC0 · 基础模型（NIST 标准）—— 用户 → 角色 → 权限</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            <b>核心抽象：</b>在用户和权限之间加一层<b>角色</b>。用户绑定角色，角色绑定权限，给人授角色就是授一批权限。<br>
+            <b>价值：</b>新人入职给个"投放者"角色即可；权限只在角色上配一次。这是 90% 后台系统的地基。
+          </div>
+        </div>
+        <!-- RBAC1 -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#3b4f8a; border:2px solid #fff; box-shadow:0 0 0 2px #3b4f8a;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#2b3a66;">RBAC1 · 角色继承（Role Hierarchy）</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            角色可以继承："高级投放者"继承"投放者"的全部权限，再加几个。子角色自动拥有父角色权限，避免重复配置。<b>Casbin 用 RoleManager 内存图实现，若依角色是扁平的、没有继承。</b>
+          </div>
+        </div>
+        <!-- RBAC2 -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#3b4f8a; border:2px solid #fff; box-shadow:0 0 0 2px #3b4f8a;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#2b3a66;">RBAC2 · 约束（Constraints）</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            给角色加规则：<b>互斥角色</b>（出纳和会计不能同一人）、角色人数上限、角色激活前置条件等。面向职责分离的合规场景。
+          </div>
+        </div>
+        <!-- RBAC3 -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#3b4f8a; border:2px solid #fff; box-shadow:0 0 0 2px #3b4f8a;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#2b3a66;">RBAC3 · 合体（RBAC0 + 1 + 2）</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">基础 + 继承 + 约束的完整模型。</div>
+        </div>
+        <!-- ABAC -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#0f766e; border:2px solid #fff; box-shadow:0 0 0 2px #0f766e;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#0b5f57;">ABAC · 基于属性的访问控制（Attribute-Based）</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            <b>不再只看"你是谁"，而是看一组属性：</b>谁（user 部门/级别）、什么资源（resource 的 owner/分类）、什么动作（action）、什么环境（time/IP）。<br>
+            规则形如 <code>resource.owner_id == user.id OR resource.group_id IN user.groups</code>。<b>行级权限的天然工具</b>，规则型数据权限（如若依 data_scope）就是 ABAC 的简化实践。
+          </div>
+        </div>
+        <!-- PBAC -->
+        <div style="position:relative; margin-bottom:16px;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#c2620d; border:2px solid #fff; box-shadow:0 0 0 2px #c2620d;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#9a4d10;">PBAC · 策略即代码（Policy-Based）—— OPA 为代表</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            把授权规则写成可版本化、可评审、可测试的<b>策略代码</b>（Rego），由独立引擎统一决策。规则不再散落在业务代码里。
+          </div>
+        </div>
+        <!-- ReBAC -->
+        <div style="position:relative;">
+          <div style="position:absolute; left:-22px; top:4px; width:12px; height:12px; border-radius:50%; background:#6d28d9; border:2px solid #fff; box-shadow:0 0 0 2px #6d28d9;"></div>
+          <div style="font-weight:700; font-size:14.5px; color:#5b21b6;">ReBAC · 基于关系的访问控制（Relationship-Based）—— Google Zanzibar / OpenFGA</div>
+          <div style="font-size:13px; color:var(--ink-2); margin-top:3px;">
+            把"人 ↔ 资源"的关系本身存成一张关系图（文档-编辑者-用户、文件夹-包含-文档、群组-成员-用户），沿关系链求可达性。Google Docs 里"文档共享给某群，群成员可看"就是它。<b>resource_owner 是 ReBAC 的朴素雏形。</b>
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 1-3　权限模型演进时间线（ACL 直挂 → RBAC 角色 → ABAC 属性 → PBAC 策略 → ReBAC 关系）</div>
+    </div>
+
+    <h3 class="kp">3.1 横向对比</h3>
+    <table class="ftl">
+      <colgroup><col style="width:13%"><col style="width:30%"><col style="width:31%"><col style="width:26%"></colgroup>
+      <tr><th>模型</th><th>判断依据</th><th>擅长</th><th>短板</th></tr>
+      <tr><td><b>ACL</b></td><td>资源上的名单</td><td>少量资源、精细到人</td><td>海量用户无法批量</td></tr>
+      <tr><td><b>RBAC</b></td><td>角色</td><td>功能权限、按岗位批量授权</td><td>行级数据、动态条件无能为力</td></tr>
+      <tr><td><b>ABAC</b></td><td>用户/资源/环境属性 + 规则</td><td>行级、时间、地域等动态细粒度</td><td>规则复杂、难调试、难审计</td></tr>
+      <tr><td><b>PBAC</b></td><td>集中策略代码</td><td>微服务统一策略、合规审计</td><td>引入新语言和独立服务</td></tr>
+      <tr><td><b>ReBAC</b></td><td>关系图可达性</td><td>分享、协作、嵌套资源继承</td><td>关系写入与图计算成本</td></tr>
+    </table>
+
+    <div class="tipbox tb-mem">
+      <div class="tb-title">记忆要点</div>
+      <p>不是新模型取代旧模型，而是<b>各管一层</b>：生产系统几乎都是 <b>RBAC 管功能权限 + ABAC/ReBAC 管数据权限</b>。若依、Casbin、OPA 三套方案都能组合，只是实现位置不同。</p>
+    </div>
+  </section>
+
+  <!-- ============ §4 role/group/dept ============ -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><div class="sec-no">04</div><h2>易混概念：role / group / dept 与权限码</h2></div>
+    <p>面试中"用户可以分组吗"一追问就乱，根因是把三个都叫"组"的东西混为一谈。</p>
+
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#3b4f8a">
+          <div class="ft">角色 role（功能维度）</div>
+          <div class="fd">
+            <b>作用：</b>功能权限的分组容器，<b>挂权限</b>。<br>
+            例：投放者、创作者、管理员。<br>
+            一人可多角色；岗位变了角色变。<br>
+            回答："这个菜单/按钮你能不能用"。
+          </div>
+        </div>
+        <div class="fbox b">
+          <div class="ft">用户组 group（数据归属维度）</div>
+          <div class="fd">
+            <b>作用：</b>横向的数据归属，<b>建议不挂功能权限</b>。<br>
+            扁平结构，一人可属多个组（如同时在 A、B 项目组）。<br>
+            回答："这条数据分享给哪个组"。
+          </div>
+        </div>
+        <div class="fbox p">
+          <div class="ft">部门 dept（组织维度）</div>
+          <div class="fd">
+            <b>作用：</b>树形组织架构，<b>parent_id 自关联</b>。<br>
+            一人通常只属一个部门；主管可看本部门及下属部门数据。<br>
+            回答："你属于哪个组织、归谁管"。
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 1-4　role 挂权限、group 归数据、dept 表组织——三者正交，不要混用</div>
+    </div>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">为什么 group 不建议挂功能权限？</div>
+      <p>功能权限按岗位（role）走，数据归属按协作关系（group）走。若把功能权限也挂到 group，"A 项目组临时加一个人"就会把这个人不该有的菜单权限也带进来，两个维度耦合后无法独立调整。<b>职责分离是权限模型可维护性的关键。</b></p>
+    </div>
+
+    <h3 class="kp">4.1 权限码（权限标识）的三级命名</h3>
+    <p>功能权限最终落成一个字符串 <b>权限码</b>，业界通用三段式：<code>模块:页面:操作</code>。</p>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>权限码命名示例</div>
+<pre><code>material:list:query     <span class="tok-com">// 素材模块 · 列表页 · 查询（查看素材列表）</span>
+material:list:add       <span class="tok-com">// 素材模块 · 列表页 · 新增</span>
+material:list:export    <span class="tok-com">// 素材模块 · 列表页 · 导出按钮</span>
+material:detail:edit    <span class="tok-com">// 素材模块 · 详情页 · 编辑</span>
+system:user:remove      <span class="tok-com">// 系统模块 · 用户页 · 删除</span>
+*:*:*                   <span class="tok-com">// 超级管理员通配（若依约定）</span></code></pre>
+    </div>
+    <p>权限码是<b>代码与数据库之间的约定字符串</b>：代码注解里写一份，菜单表 <code>perms</code> 字段存一份，靠字符串完全相等来匹配。这套约定的具体落地在第二册（若依）讲。</p>
+  </section>
+  <!-- ============ §5 数据权限两条路线 ============ -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><div class="sec-no">05</div><h2>数据权限（行级）的两条路线 <span class="badge b-high">本题核心</span></h2></div>
+    <p>这是面试卡壳的地方。"只能看到自己投放的素材"本质是<b>行级过滤</b>，业界有两条互补的实现路线，生产中常常混用。</p>
+
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox b">
+          <div class="ft">路线 A · 规则型（data_scope / ABAC 简化）</div>
+          <div class="fd">
+            <b>不存逐条关系</b>，只配规则："本部门可见""仅本人可见"。<br>
+            查询时把规则翻译成 <b>WHERE 条件</b>拼进 SQL。<br>
+            适合：海量、规整、按组织归属的数据（订单、部门数据）。<br>
+            <b>代表：若依 @DataScope 五档</b>。
+          </div>
+        </div>
+        <div class="fbox p">
+          <div class="ft">路线 B · 关系型（资源归属表 / ACL 实例表）</div>
+          <div class="fd">
+            <b>存一条条"谁对哪条资源有什么权限"的关系</b>。<br>
+            查可见资源 = 查归属表中属于我的关系。<br>
+            适合：不规则、动态的分享 / 转派 / 协作（文档共享、素材分享给某组）。<br>
+            <b>代表：resource_owner、Google Docs、Zanzibar</b>。
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 1-5　规则型"按规则现算"，关系型"按关系查表"；不是二选一，生产常 OR 合并</div>
+    </div>
+
+    <table class="ftl">
+      <colgroup><col style="width:16%"><col style="width:42%"><col style="width:42%"></colgroup>
+      <tr><th>维度</th><th>路线 A · 规则型</th><th>路线 B · 关系型</th></tr>
+      <tr><td><b>存什么</b></td><td>角色上的数据范围配置（如 data_scope=本部门）</td><td>主体 ↔ 资源实例的逐条关系（resource_owner）</td></tr>
+      <tr><td><b>判断方式</b></td><td>查询时拼 WHERE：<code>dept_id IN (本部门)</code></td><td>JOIN/子查询归属表：<code>resource_id IN (我有归属的)</code></td></tr>
+      <tr><td><b>新增数据</b></td><td>零成本，新行天然带 dept_id/create_by 即满足规则</td><td>要同步写入一条归属关系（分享即写）</td></tr>
+      <tr><td><b>数据量</b></td><td>规则数固定，不随业务增长</td><td>随业务数据线性增长，可能百万级</td></tr>
+      <tr><td><b>灵活度</b></td><td>只能表达预设的几种范围</td><td>任意人/组/资源的任意组合，最灵活</td></tr>
+      <tr><td><b>典型场景</b></td><td>员工看本部门订单；主管看下属数据</td><td>把素材 M100 分享给 G5 组；把文档转派给某人</td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">本题素材平台怎么选</div>
+      <p>"只能看自己投放的素材" → 规则型即可（<code>owner_id = 当前用户</code>）；"素材分享给某几个组 / 某个游戏多个组都有权限" → 必须上关系型 resource_owner。两者混用：可见范围 = 规则条件 OR 归属表关系。</p>
+    </div>
+  </section>
+
+  <!-- ============ §6 resource_owner ============ -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><div class="sec-no">06</div><h2>resource_owner 资源归属表设计（多对多的标准答案）</h2></div>
+
+    <h3 class="kp">6.1 先理解：为什么是"多对多"</h3>
+    <p>面试追问的两个问题，本质都是多对多：</p>
+    <ul>
+      <li><b>一个用户 / 组 → 能访问多条素材</b>；</li>
+      <li><b>一条素材 → 能被多个用户 / 组访问</b>（"两个组都对同一游戏有权限"）。</li>
+    </ul>
+    <p>关系型数据库用<b>中间表</b>表达多对多；MongoDB 也可以用一个归属集合。这张表不关心业务字段，只记录"哪个主体对哪条资源拥有什么权限"。</p>
+
+    <h3 class="kp">6.2 表结构（通用设计，多资源类型共用一张表）</h3>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>resource_owner（资源归属 / ACL 实例表）</div>
+<pre><code><span class="tok-kw">CREATE TABLE</span> resource_owner (
+  id           <span class="tok-kw">BIGINT PRIMARY KEY AUTO_INCREMENT</span>,
+  resource_type <span class="tok-kw">VARCHAR</span>(32)  <span class="tok-kw">NOT NULL</span>,  <span class="tok-com">-- 资源类型：material / game / category</span>
+  resource_id   <span class="tok-kw">VARCHAR</span>(64)  <span class="tok-kw">NOT NULL</span>,  <span class="tok-com">-- 资源 ID（素材 M100 / 游戏 G1）</span>
+  owner_type    <span class="tok-kw">VARCHAR</span>(16)  <span class="tok-kw">NOT NULL</span>,  <span class="tok-com">-- 归属主体类型：user / group / dept</span>
+  owner_id      <span class="tok-kw">VARCHAR</span>(64)  <span class="tok-kw">NOT NULL</span>,  <span class="tok-com">-- 主体 ID：u101 / g5 / dept8</span>
+  perm          <span class="tok-kw">VARCHAR</span>(16)  <span class="tok-kw">NOT NULL DEFAULT</span> <span class="tok-str">'view'</span>, <span class="tok-com">-- view / edit / manage</span>
+  <span class="tok-kw">UNIQUE KEY</span> uk_rel (resource_type, resource_id, owner_type, owner_id),
+  <span class="tok-kw">KEY</span> idx_owner (owner_type, owner_id),
+  <span class="tok-kw">KEY</span> idx_res (resource_type, resource_id)
+);</code></pre>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">回答追问"多个不同字段管理权限，是否都放同一张表？"</div>
+      <p><b>是的。</b>用 <code>resource_type</code> 区分素材、游戏、类别，不同资源类型共用这一张归属表；用 <code>owner_type</code> 区分归属到个人 / 组 / 部门。这就是"通用 ACL 表"的写法，避免每加一种资源就新建一张表。</p>
+    </div>
+
+    <h3 class="kp">6.3 示例数据（含"两个组都对游戏有权限"）</h3>
+    <table class="ftl">
+      <colgroup><col style="width:18%"><col style="width:18%"><col style="width:16%"><col style="width:16%"><col style="width:14%"><col style="width:18%"></colgroup>
+      <tr><th>resource_type</th><th>resource_id</th><th>owner_type</th><th>owner_id</th><th>perm</th><th>含义</th></tr>
+      <tr><td>material</td><td>M100</td><td>user</td><td>u101</td><td>manage</td><td>u101 是 M100 投放者</td></tr>
+      <tr><td>material</td><td>M100</td><td>group</td><td>g5</td><td>view</td><td>G5 组可查看 M100</td></tr>
+      <tr><td>material</td><td>M101</td><td>user</td><td>u102</td><td>manage</td><td>u102 是 M101 投放者</td></tr>
+      <tr><td><b>game</b></td><td><b>G1</b></td><td>group</td><td><b>g5</b></td><td>view</td><td>G5 组对游戏 G1 有权限</td></tr>
+      <tr><td><b>game</b></td><td><b>G1</b></td><td>group</td><td><b>g7</b></td><td>view</td><td><b>G7 组也对 G1 有权限（多组共存，两条记录即可）</b></td></tr>
+    </table>
+
+    <h3 class="kp">6.4 游戏级继承：素材挂在游戏下，权限向下继承</h3>
+    <p>业务素材表冗余一个 <code>game_id</code>。当组对游戏有权限时，该组能看到该游戏下所有素材——这是一层"资源层级继承"，不需要给每个素材复制归属。</p>
+
+    <h3 class="kp">6.5 查询：当前用户能看到哪些素材（完整 SQL）</h3>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>可见素材 = 本人/本组的素材 OR 本人/本组有权限的游戏下的素材</div>
+<pre><code><span class="tok-kw">SELECT DISTINCT</span> m.*
+<span class="tok-kw">FROM</span> material m
+<span class="tok-kw">WHERE</span>
+  <span class="tok-com">-- ① 素材直接归属：本人 或 我所在的组</span>
+  <span class="tok-kw">EXISTS</span> (
+    <span class="tok-kw">SELECT</span> 1 <span class="tok-kw">FROM</span> resource_owner ro
+    <span class="tok-kw">WHERE</span> ro.resource_type=<span class="tok-str">'material'</span> <span class="tok-kw">AND</span> ro.resource_id=m.id
+      <span class="tok-kw">AND</span> (
+        (ro.owner_type=<span class="tok-str">'user'</span>  <span class="tok-kw">AND</span> ro.owner_id= :userId)
+        <span class="tok-kw">OR</span>
+        (ro.owner_type=<span class="tok-str">'group'</span> <span class="tok-kw">AND</span> ro.owner_id <span class="tok-kw">IN</span> (:myGroupIds))
+      )
+  )
+  <span class="tok-kw">OR</span>
+  <span class="tok-com">-- ② 游戏级继承：素材所属游戏被分享给本人/本组</span>
+  <span class="tok-kw">EXISTS</span> (
+    <span class="tok-kw">SELECT</span> 1 <span class="tok-kw">FROM</span> resource_owner ro
+    <span class="tok-kw">WHERE</span> ro.resource_type=<span class="tok-str">'game'</span> <span class="tok-kw">AND</span> ro.resource_id=m.game_id
+      <span class="tok-kw">AND</span> (
+        (ro.owner_type=<span class="tok-str">'user'</span>  <span class="tok-kw">AND</span> ro.owner_id= :userId)
+        <span class="tok-kw">OR</span>
+        (ro.owner_type=<span class="tok-str">'group'</span> <span class="tok-kw">AND</span> ro.owner_id <span class="tok-kw">IN</span> (:myGroupIds))
+      )
+  );</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">关键细节</div>
+      <ul>
+        <li><b>多组并集：</b>一个人在多个组，用 <code>IN (:myGroupIds)</code> 一次覆盖；多个组对同一游戏有权限就是多条 owner 记录，查询天然命中——<b>多对多问题就此解决，不需要在素材上写 group_id</b>。</li>
+        <li><b>去重：</b>本人 + 多个组可能同时命中，用 <code>DISTINCT</code>（或 EXISTS 天然不重复）。</li>
+        <li><code>:myGroupIds</code> 来自"用户-组"中间表，登录时查出（可缓存，见第 7 章）。</li>
+      </ul>
+    </div>
+
+    <h3 class="kp">6.6 实体表与中间表全景（8~9 张表的完整框架）</h3>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#3b4f8a"><div class="ft">实体表</div><div class="fd">sys_user（用户）<br>sys_group（用户组）<br>sys_role（角色）<br>sys_permission/菜单（权限点，若依合一为 sys_menu）<br>sys_dept（部门，树形）</div></div>
+        <div class="fbox b"><div class="ft">关系中间表</div><div class="fd">user_group（用户-组）<br>user_role（用户-角色）<br>role_menu（角色-权限）<br>role_dept（角色-数据范围部门）<br>group_permission（可选，一般不建）</div></div>
+        <div class="fbox p"><div class="ft">数据归属表</div><div class="fd">resource_owner（通用 ACL）<br>resource_type/resource_id<br>owner_type/owner_id/perm<br>替代在业务表写死 user_id</div></div>
+      </div>
+      <div class="fcap">图 1-6　实体表 + 关系中间表 + 资源归属表三层；若依把"权限表"并入 sys_menu，故约 8~9 张</div>
+    </div>
+
+    <details class="qa">
+      <summary>字段级权限（手机号列）也走 resource_owner 吗？</summary>
+      <div class="qa-body">
+        <p><b>不走。</b>resource_owner 解决的是"哪些<b>行</b>"，字段是<b>列</b>，列对所有行规则一致，属于功能权限范畴的扩展——用"字段权限码"（如 <code>field:user:phone</code>）挂角色，序列化时按权限码裁列即可，不需要为每一行存字段关系。具体在第二册（若依）和第三册（Casbin 字段级）展开。</p>
+      </div>
+    </details>
+  </section>
+  <!-- ============ §7 Redis 缓存 ============ -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><div class="sec-no">07</div><h2>性能：Redis 缓存登录权限与权限 Set</h2></div>
+    <p>功能权限的特点是<b>每个请求都要校验、但变化很少</b>。如果每次请求都查库 JOIN 一遍用户-角色-权限，纯属浪费。标准做法是登录时聚合一次、缓存起来。</p>
+
+    <h3 class="kp">7.1 登录时聚合：把"我是谁、我能干什么"算成集合</h3>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>登录后写入 Redis（Key 设计）</div>
+<pre><code><span class="tok-com"># 权限码集合（功能权限）—— 天然就是 Set</span>
+SET  perm:user:{userId}     material:list:query  material:list:add  material:list:export
+<span class="tok-com"># 角色集合</span>
+SET  role:user:{userId}     publisher  creator
+<span class="tok-com"># 用户组 ID 集合（数据权限用）</span>
+SET  group:user:{userId}    g5  g7
+<span class="tok-com"># 数据范围（规则型，行级）</span>
+STRING scope:user:{userId}  data_scope=4   deptIds=[8,12]
+<span class="tok-com"># 统一用一个 Hash 也常见（登录态对象）</span>
+HSET login:{userId}  perms {...}  roles {...}  groups {...}</code></pre>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">呼应你想到的"Redis Set"——完全正确</div>
+      <p>一个人在多个组、多个角色，权限来自多个角色、多个组，天然是<b>多集合求并集</b>：Redis Set 的 <code>SUNION</code> / 应用层 <code>Set.addAll</code> 正好；校验单个权限码用 <code>SISMEMBER</code>（Redis）或 <code>HashSet.contains</code>（内存），<b>O(1)</b>。</p>
+    </div>
+
+    <h3 class="kp">7.2 校验链路（一次请求的权限开销）</h3>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#3b4f8a"><div class="ft">请求进来</div><div class="fd">携带 token / session</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox b"><div class="ft">取权限 Set</div><div class="fd">先查本地/Redis 缓存，未命中才查库并回填</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox p"><div class="ft">功能校验</div><div class="fd">set.contains("material:list:add")，O(1)</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox o"><div class="ft">行级过滤</div><div class="fd">groups + data_scope 拼 WHERE（不缓存行）</div></div>
+      </div>
+      <div class="fcap">图 1-7　功能权限集合缓存复用；行级只缓存"范围/组"，真正的数据行仍由数据库按 WHERE 过滤</div>
+    </div>
+
+    <table class="ftl">
+      <colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
+      <tr><th>缓存内容</th><th>说明</th><th>失效时机</th></tr>
+      <tr><td>权限码 / 角色 / 组集合</td><td>小、变化少，命中率极高</td><td>授权变更时主动删 key（pull 失效）</td></tr>
+      <tr><td>数据范围配置（data_scope）</td><td>几条规则配置</td><td>角色配置变更时删</td></tr>
+      <tr><td><b>具体数据行（素材列表）</b></td><td><b>一般不缓存</b>：数据量大、实时性要求高、每个用户结果不同</td><td>—（交给数据库 + 行级 WHERE）</td></tr>
+    </table>
+
+    <div class="tipbox tb-warn">
+      <div class="tb-title">缓存一致性（多实例）</div>
+      <p>授权变更后各实例缓存要失效：① 后台改完<b>删除 Redis 中该用户的权限 key</b>（下次请求重新聚合，pull 式）；② 多实例若用本地缓存，可借 Redis 发布订阅通知（这就是 Casbin Watcher 的同款思路，第三册讲）。</p>
+    </div>
+  </section>
+
+  <!-- ============ §8 小结自测 ============ -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><div class="sec-no">08</div><h2>本册小结与自测</h2></div>
+
+    <h3 class="kp">8.1 必须带走的 6 句话</h3>
+    <ol>
+      <li>权限分三层，<b>正交</b>：功能权限（页面/按钮/接口）、行级（哪些行）、字段级（哪些列）。</li>
+      <li>RBAC 用"角色"解决批量授权；模型演进 ACL→RBAC0-3→ABAC→PBAC→ReBAC，各管一层，不互斥。</li>
+      <li><b>role 挂功能权限、group 表数据归属、dept 表组织树</b>，不要混用。</li>
+      <li>行级权限两条路线：规则型（data_scope 拼 SQL）+ 关系型（resource_owner 查表），生产 OR 合并。</li>
+      <li>多对多用 <code>resource_owner(resource_type, resource_id, owner_type, owner_id, perm)</code>，多组授权靠多条记录 + IN，权限随游戏层级继承。</li>
+      <li>功能权限集合缓存到 Redis，校验是 O(1) 的 Set.contains；数据行不缓存，交给数据库 WHERE。</li>
+    </ol>
+
+    <h3 class="kp">8.2 自测清单（勾选进度自动保存）</h3>
+    <ul class="checklist" id="checklist-c1">
+      <li><label><input type="checkbox" data-q="c1q1">能不看资料画出三层权限与"一个请求过三关"的流程。</label></li>
+      <li><label><input type="checkbox" data-q="c1q2">能说出 RBAC0/1/2/3 各自加了什么，以及 ABAC、ReBAC 解决什么。</label></li>
+      <li><label><input type="checkbox" data-q="c1q3">能讲清 role、group、dept 的区别和为什么 group 不挂功能权限。</label></li>
+      <li><label><input type="checkbox" data-q="c1q4">能写出 resource_owner 表结构，并解释每个字段的作用。</label></li>
+      <li><label><input type="checkbox" data-q="c1q5">能写出"本人/本组 + 游戏级继承"的可见素材 SQL。</label></li>
+      <li><label><input type="checkbox" data-q="c1q6">能解释"两个组都对同一游戏有权限"怎么存、怎么查（多对多 + 并集）。</label></li>
+      <li><label><input type="checkbox" data-q="c1q7">能说出规则型与关系型数据权限各自适用场景。</label></li>
+      <li><label><input type="checkbox" data-q="c1q8">能说清权限缓存什么、不缓存什么、如何失效。</label></li>
+    </ul>
+
+    <div class="pagenav" style="margin-top:26px;">
+      <a href="index.html">← 返回总目录</a>
+      <a href="02-ruoyi.html">第二册 · 若依自研体系 →</a>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var KEY='rbac-handbook-checks';
+  try{
+    var saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    document.querySelectorAll('.checklist input[data-q]').forEach(function(cb){
+      if(saved[cb.dataset.q]) cb.checked=true;
+      cb.addEventListener('change',function(){
+        var s=JSON.parse(localStorage.getItem(KEY)||'{}');
+        s[cb.dataset.q]=cb.checked; localStorage.setItem(KEY,JSON.stringify(s));
+      });
+    });
+  }catch(e){}
+})();
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

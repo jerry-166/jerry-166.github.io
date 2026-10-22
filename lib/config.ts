@@ -161,6 +161,16 @@ export const tutorialBooks: TutorialBook[] = [
     accent: '#b0712a',
     category: 'java',
   },
+  {
+    title: '权限体系・从页面级 RBAC 到 Casbin/OPA',
+    volume: '后端',
+    description:
+      '一道页面级 RBAC 面试题贯穿的五层权限教程：三层权限（功能/行级/字段）与 ACL→RBAC→ABAC→PBAC/OPA→ReBAC 演进 → 若依自研（sys_menu 双重身份、M/C/F/I、data_scope 五档、Jackson 字段级）→ Casbin（PERM 模型、EAV 表、RoleManager 可达性、Adapter/Watcher、行级两路线）→ OPA（Rego、PEP/PDP/PIP/PAP、Bundle 热更新、部分求值 SQL 下推）→ 全维度对比、Redis Set 缓存、完整术语表与 30 秒/3 分钟面试口述稿。',
+    href: '/books/rbac-permission-handbook/index.html',
+    tags: ['RBAC', '权限', 'Casbin', 'OPA', '面试'],
+    accent: '#3b4f8a',
+    category: 'backend',
+  },
 ]
 
 // 玩物志：AI 协作创作的闲趣小件（静态交互页面，部署在 /public/playground 下）

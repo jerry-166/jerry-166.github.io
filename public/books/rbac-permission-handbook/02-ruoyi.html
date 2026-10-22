@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限体系・第二册：若依（RuoYi）自研体系</title>
+<style>
+:root {
+  --bg: #f5f6f9; --card: #ffffff; --ink: #1b2430; --ink-2: #455161; --ink-3: #6b7688;
+  --line: #e4e7ee; --primary: #0f766e; --primary-soft: #ecfaf7; --primary-deep: #0b5f57;
+  --high: #be3a34; --high-bg: #fdf0ef; --hard: #6d28d9; --hard-bg: #f4f0fe;
+  --trap: #c2620d; --trap-bg: #fef6ec; --py: #3b4f8a; --py-bg: #eceff8;
+  --code-bg: #141c2e; --code-ink: #c6d0e4;
+  --radius: 12px; --shadow: 0 1px 3px rgba(20,30,55,.06), 0 1px 2px rgba(20,30,55,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+.hero { background: linear-gradient(135deg,#ffffff 0%,#e7f6f3 60%,#dcf0ec 100%); border-bottom: 1px solid #cfe7e2; padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 29px; font-weight: 800; color: #102a26; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #334155; max-width: 820px; }
+.hero .sub b { color: #102a26; }
+.progress-track { margin-top: 20px; height: 8px; background: #bfe3dc; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 40%; background: linear-gradient(90deg,#0f766e,#3db4a7); border-radius: 4px; }
+.hero .pct { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #455161; text-decoration: none; border: 1px solid #cbd3e4; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav .home { border-style: dashed; }
+.wrap { max-width: 1260px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 250px 1fr; gap: 34px; }
+main { min-width: 0; max-width: 100%; }
+.codebox { min-width: 0; max-width: 100%; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } table { display: block; overflow-x: auto; } .codebox { max-width: 100%; } }
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #bfe3dc; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fde9a8; padding: 0 3px; border-radius: 3px; }
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #f3c4c1; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddcdf8; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #f6d8ae; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #c7d1f0; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.6px; background: #fff; }
+th { background: #eef6f4; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fafdfc; }
+td code, li code, p code { background: #e4f1ee; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #0b5f57; }
+table.ftl { table-layout: fixed; }
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1c2740; color: #b9c6e0; font-size: 12px; padding: 7px 14px; display: flex; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.72; min-width: 0; max-width: 100%; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #b79df0; } .tok-str { color: #b6e09a; } .tok-com { color: #7685a8; font-style: italic; }
+.tok-num { color: #f0a27f; } .tok-anno { color: #ffcb6b; }
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; }
+.tb-mem { background: var(--py-bg); border-color: #c7d1f0; color: var(--primary-deep); }
+.tb-warn { background: var(--trap-bg); border-color: #f6d8ae; color: #9a4d10; }
+.tb-py { background: var(--primary-soft); border-color: #9de2d6; color: #0b5f57; }
+.tb-hard { background: var(--hard-bg); border-color: #ddcdf8; color: #5b21b6; }
+.tb-bad { background: var(--high-bg); border-color: #f3c4c1; color: #992720; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none; }
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+.fig { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; padding: 16px; margin: 16px 0; }
+.fig .fcap { font-size: 12.5px; color: var(--ink-3); text-align: center; margin-top: 10px; }
+.frow { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.fbox { border: 1.5px solid #9fb0d8; border-radius: 9px; background: #fff; padding: 10px 12px; flex: 1; min-width: 130px; }
+.fbox .ft { font-weight: 700; font-size: 12.8px; color: var(--primary-deep); margin-bottom: 4px; }
+.fbox .fd { font-size: 11.8px; color: var(--ink-2); line-height: 1.6; }
+.fbox.b { border-color: #0f766e; } .fbox.b .ft{ color:#0b5f57; }
+.fbox.p { border-color: #6d28d9; } .fbox.p .ft{ color:#5b21b6; }
+.fbox.o { border-color: #c2620d; } .fbox.o .ft{ color:#9a4d10; }
+.fbox.r { border-color: #be3a34; } .fbox.r .ft{ color:#992720; }
+.farrow { display:flex; align-items:center; color: #8a94ad; font-size: 18px; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.checklist li { list-style: none; margin-left: 0; }
+.checklist label { display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--ink-2); padding:5px 0; cursor:pointer; }
+.checklist input { margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">PERMISSION HANDBOOK · 第二册（共 5 册）</div>
+  <h1>方案一：若依（RuoYi）自研权限体系</h1>
+  <div class="sub">
+    若依是国内 Java 后台管理框架的事实标准，也是你面试里"自己写一套权限"最该对标的参照。本册讲透它的<b>真实表结构、菜单权限点合一、权限码 code-first、行级 data_scope、字段级 Jackson 扩展，以及权限的生命周期</b>。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="pct">第 2 / 5 册 · 重点：sys_menu 双重身份、@DataScope 五档、字段级怎么"零新表"扩展</div>
+</div>
+
+<nav class="mod-nav">
+  <a class="home" href="index.html">总目录</a>
+  <a href="01-foundations.html">① 地基</a>
+  <span class="cur">② 若依</span>
+  <a href="03-casbin.html">③ Casbin</a>
+  <a href="04-opa.html">④ OPA</a>
+  <a href="05-comparison-interview.html">⑤ 对比与收口</a>
+</nav>
+
+<div class="wrap">
+  <aside class="toc">
+    <div class="toc-title">本册目录</div>
+    <a href="#s1">01 表结构全览</a>
+    <a href="#s2">02 sys_menu 双重身份</a>
+    <a href="#s3">03 M/C/F/I 菜单类型</a>
+    <a href="#s4">04 权限码与 @PreAuthorize</a>
+    <a href="#s5">05 code-first 与代码生成器</a>
+    <a href="#s6">06 行级 data_scope 五档</a>
+    <a href="#s7">07 字段级权限扩展</a>
+    <a href="#s8">08 权限生命周期</a>
+    <a href="#s9">09 小结与自测</a>
+  </aside>
+
+  <main>
+  <!-- ============ §1 表结构 ============ -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><div class="sec-no">01</div><h2>若依表结构全览 <span class="stars">★★★★★</span></h2></div>
+    <p>若依权限体系的第一个关键认知：<b>它没有独立的"权限表"，菜单和权限点是同一张 sys_menu 表</b>。下面是真实表清单（以 RuoYi-Vue 为例）。</p>
+
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#0f766e">
+          <div class="ft">主体表（5 张）</div>
+          <div class="fd">
+            <code>sys_user</code> 用户<br>
+            <code>sys_role</code> 角色<br>
+            <code>sys_menu</code> 菜单/目录/按钮/权限点（<b>合一</b>）<br>
+            <code>sys_dept</code> 部门（树形，parent_id 自关联）<br>
+            <code>sys_post</code> 岗位
+          </div>
+        </div>
+        <div class="fbox p">
+          <div class="ft">中间表（4 张）</div>
+          <div class="fd">
+            <code>sys_user_role</code> 用户-角色<br>
+            <code>sys_role_menu</code> 角色-菜单/权限点<br>
+            <code>sys_role_dept</code> 角色-自定义数据范围部门<br>
+            <code>sys_user_post</code> 用户-岗位
+          </div>
+        </div>
+        <div class="fbox o">
+          <div class="ft">数据权限扩展（若依无原生）</div>
+          <div class="fd">
+            <code>resource_owner</code>（需自建，第一册的通用 ACL 表）<br>
+            若依原生行级只用 data_scope 规则，不做实例级分享
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 2-1　若依权限相关表：主体 5 + 中间 4；没有独立权限表，权限点寄生在 sys_menu</div>
+    </div>
+
+    <table class="ftl">
+      <colgroup><col style="width:24%"><col style="width:16%"><col style="width:60%"></colgroup>
+      <tr><th>表</th><th>类型</th><th>关键作用</th></tr>
+      <tr><td><code>sys_menu</code></td><td>主体</td><td>既存前端导航树（menu_type/path/component/icon），又存后端权限点（perms），是全册最关键的表</td></tr>
+      <tr><td><code>sys_role</code></td><td>主体</td><td>含 <code>data_scope</code> 字段（1全部/2自定义/3本部门/4本部门及以下/5仅本人），决定行级范围</td></tr>
+      <tr><td><code>sys_dept</code></td><td>主体</td><td>部门树，<code>parent_id</code> 自关联；业务表冗余 <code>dept_id</code> 用于行级过滤</td></tr>
+      <tr><td><code>sys_user_role</code></td><td>中间</td><td>用户-角色多对多</td></tr>
+      <tr><td><code>sys_role_menu</code></td><td>中间</td><td>角色-权限点多对多（字段权限复用后也走这张表）</td></tr>
+      <tr><td><code>sys_role_dept</code></td><td>中间</td><td>仅 data_scope=2（自定义）时用，挂该角色能看的部门</td></tr>
+    </table>
+
+    <div class="oneliner">
+      <div class="ol-tag">对比你最初的 8~9 张表</div>
+      <p>若依没有独立的 group（用户组），横向数据归属用"部门 dept"代替；也没有独立 permission 表，权限点并进 sys_menu。表少了，但 sys_menu 一身二任，理解它就理解了若依的功能权限。</p>
+    </div>
+  </section>
+
+  <!-- ============ §2 sys_menu 双重身份 ============ -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><div class="sec-no">02</div><h2>sys_menu 的双重身份：UI 路由 + 后端鉴权 <span class="badge b-high">高频</span></h2></div>
+    <p>同一张 sys_menu，<b>两类字段分别服务两个完全不同的消费者</b>：</p>
+
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#3b4f8a">
+          <div class="ft">身份一 · 服务前端 UI（导航/路由）</div>
+          <div class="fd">
+            <code>menu_name</code> 显示名<br>
+            <code>menu_type</code> 目录/菜单/按钮<br>
+            <code>path / component / icon / visible</code><br>
+            前端用它生成左侧菜单树、路由表、按钮显隐
+          </div>
+        </div>
+        <div class="fbox b">
+          <div class="ft">身份二 · 服务后端鉴权</div>
+          <div class="fd">
+            <code>perms</code> 权限码，如 <code>material:list:add</code><br>
+            后端 <code>@PreAuthorize("@ss.hasPermi('...')")</code> 运行时与当前用户权限集合比对
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 2-2　sys_menu 一行记录，前端读它的路由字段、后端读它的 perms 字段，互不相干又共用一表</div>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>sys_menu 关键字段（一条"新增素材"按钮记录）</div>
+<pre><code>menu_id   = 1102
+menu_name = <span class="tok-str">'素材新增'</span>
+parent_id = 1100               <span class="tok-com">-- 挂在"素材列表"菜单下</span>
+menu_type = <span class="tok-str">'F'</span>                <span class="tok-com">-- 按钮（Function）</span>
+perms     = <span class="tok-str">'material:list:add'</span>   <span class="tok-com">-- 后端鉴权只认这个</span>
+path/component/icon = NULL    <span class="tok-com">-- 按钮没有路由，UI 字段为空</span></code></pre>
+    </div>
+
+    <div class="tipbox tb-py">
+      <div class="tb-title">为什么字段权限也能复用这张表？</div>
+      <p>登录时聚合权限码的 SQL <b>不按 menu_type 过滤</b>——只要角色勾了这条记录，它的 perms 就进权限集合。所以新增一条 <code>menu_type='I'</code>、<code>perms='field:user:phone'</code> 的记录，既不生成路由（不参与前端导航），又能让后端拿到字段权限码，<b>零新表、零新链路</b>（第 7 章详讲）。</p>
+    </div>
+  </section>
+  <!-- ============ §3 M/C/F/I ============ -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><div class="sec-no">03</div><h2>菜单类型 M / C / F / I 与"目录"是什么</h2></div>
+    <p>若依菜单管理里的类型常量，是面试常问的细节：</p>
+    <table class="ftl">
+      <colgroup><col style="width:12%"><col style="width:20%"><col style="width:40%"><col style="width:28%"></colgroup>
+      <tr><th>类型</th><th>常量/含义</th><th>是什么</th><th>在页面上的表现</th></tr>
+      <tr><td><b>M</b></td><td><code>TYPE_DIR='M'</code><br>Directory 目录</td><td><b>导航分组容器</b>，点击只展开/收起，<b>本身不跳转、没有页面</b></td><td>左侧导航里"系统管理""素材中心"这种可展开的分组标题</td></tr>
+      <tr><td><b>C</b></td><td><code>TYPE_MENU='C'</code><br>Menu 菜单页面</td><td>一个真实 Web 页面，有路由 <code>component</code>，点击跳转</td><td>"素材列表"页面、"用户管理"页面</td></tr>
+      <tr><td><b>F</b></td><td><code>TYPE_BUTTON='F'</code><br>Function 按钮</td><td>挂在页面下的操作点（按钮/链接），无路由，只有 perms</td><td>页面上的"新增""导出""删除"按钮</td></tr>
+      <tr><td><b>I</b></td><td><b>扩展约定</b>：字段（Item/Field）</td><td>若依<b>原生没有</b>，是为字段级权限扩展的类型：不参与路由，只挂 perms</td><td>不出现在导航，只产出权限码 <code>field:user:phone</code></td></tr>
+    </table>
+
+    <div class="fig">
+      <div style="font-size:13px; color:var(--ink-2); line-height:2;">
+        <div style="padding-left:8px;">
+          <div>▼ <b>素材中心</b> <span style="color:#0f766e">[M 目录，点一下展开，不跳转]</span></div>
+          <div style="padding-left:26px;">▸ <b>素材列表</b> <span style="color:#0f766e">[C 菜单页面，点击进入 /material/list]</span>
+            <div style="padding-left:26px;">
+              · 新增按钮 <span style="color:#6d28d9">[F → material:list:add]</span><br>
+              · 导出按钮 <span style="color:#6d28d9">[F → material:list:export]</span><br>
+              · 手机号列 <span style="color:#c2620d">[I 字段 → field:user:phone，不可见]</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 2-3　M 是"抽屉"（无页面），C 是"页面"，F 是页面上的"按钮"，I 是我们扩展的"字段权限点"</div>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">回答你的提问"目录是什么 / C 是什么英文"</div>
+      <p>目录（M）就是左侧导航里的<b>分组文件夹</b>，作用是收纳菜单，本身不对应任何页面；F 官方含义是 Function（功能/按钮）；C 是约定码，可理解为 Content/Menu（菜单页）。</p>
+    </div>
+  </section>
+
+  <!-- ============ §4 权限码与 @PreAuthorize ============ -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><div class="sec-no">04</div><h2>权限码与 @PreAuthorize：后端如何校验</h2></div>
+
+    <h3 class="kp">4.1 注解写在接口上</h3>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>MaterialController.java</div>
+<pre><code><span class="tok-anno">@RestController</span>
+<span class="tok-anno">@RequestMapping</span>(<span class="tok-str">"/material"</span>)
+<span class="tok-kw">public class</span> MaterialController {
+
+    <span class="tok-anno">@PreAuthorize</span>(<span class="tok-str">"@ss.hasPermi('material:list:query')"</span>)
+    <span class="tok-anno">@GetMapping</span>(<span class="tok-str">"/list"</span>)
+    <span class="tok-kw">public</span> TableDataInfo list(Material m) { ... }
+
+    <span class="tok-anno">@PreAuthorize</span>(<span class="tok-str">"@ss.hasPermi('material:list:add')"</span>)
+    <span class="tok-anno">@PostMapping</span>
+    <span class="tok-kw">public</span> AjaxResult add(<span class="tok-anno">@RequestBody</span> Material m) { ... }
+}</code></pre>
+    </div>
+    <ul>
+      <li><code>@ss</code> 是 Spring 容器里名为 <code>ss</code> 的 <code>PermissionService</code> Bean；</li>
+      <li><code>@ss.hasPermi("xxx")</code> 在方法执行前调用，本质是从当前登录用户的权限 <code>Set&lt;String&gt;</code> 里做 <code>contains</code>；</li>
+      <li>超级管理员拥有 <code>*:*:*</code>，匹配时直接放行（通配）。</li>
+    </ul>
+
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>PermissionService（@ss 的本质，简化版）</div>
+<pre><code><span class="tok-kw">public class</span> PermissionService {
+    <span class="tok-kw">public boolean</span> hasPermi(String permission) {
+        LoginUser user = SecurityUtils.getLoginUser();
+        <span class="tok-kw">if</span> (user.getUser().isAdmin()) <span class="tok-kw">return true</span>;   <span class="tok-com">// *:*:* 超管</span>
+        <span class="tok-kw">return</span> user.getPermissions().contains(permission); <span class="tok-com">// Set.contains，O(1)</span>
+    }
+    <span class="tok-kw">public boolean</span> hasRole(String role) { ... }
+}</code></pre>
+    </div>
+
+    <div class="tipbox tb-bad">
+      <div class="tb-title">高频误区：注解会在启动时扫描入库吗？——不会</div>
+      <p><code>@PreAuthorize</code> 只是一个<b>运行时校验锚点</b>，若依没有任何机制在启动时扫描它、把权限码写进 sys_menu。注解里的字符串和 sys_menu.perms 字段，<b>靠人工约定保持完全一致</b>。你写了注解但菜单表里没配 perms，这个权限就永远不会被授予任何人（超管除外）。</p>
+    </div>
+  </section>
+
+  <!-- ============ §5 code-first ============ -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><div class="sec-no">05</div><h2>权限码与代码的先后顺序（code-first）+ 代码生成器</h2></div>
+
+    <h3 class="kp">5.1 标准流程：先定权限码，再发版配菜单</h3>
+    <p>回答你"先有代码还是先在菜单里选"的问题——<b>权限码是开发先设计好的约定，走 code-first</b>：</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">① 设计权限码</div><div class="fd">确定命名 material:list:add</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">② 写代码</div><div class="fd">接口加 @PreAuthorize，前端按钮加 v-hasPermi</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">③ 菜单 SQL</div><div class="fd">menu.sql 随版本发版（Flyway 执行），写入 sys_menu</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox p"><div class="ft">④ 角色授权</div><div class="fd">管理员在后台勾选角色，写 sys_role_menu</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox o"><div class="ft">⑤ 登录生效</div><div class="fd">用户重新登录聚合到新权限码</div></div>
+      </div>
+      <div class="fcap">图 2-4　code-first：权限码随代码版本发布；"给角色关联"是上线后管理员的人工动作（最小权限）</div>
+    </div>
+
+    <details class="qa">
+      <summary>新增一个接口，能不能自动给相关角色关联权限，不用管理员手动加？</summary>
+      <div class="qa-body">
+        <p><b>正确的安全默认是"不自动"</b>：新权限默认无人拥有（最小权限原则），必须管理员显式授权。如果"新增接口自动授予所有相关角色"，一旦新接口是高危操作（如批量删除），就会被无意中放开。可接受的自动化仅限：开发环境自动给超管角色；或发布单里附带一条"申请给 XX 角色开通 XX 权限"的审批流。</p>
+      </div>
+    </details>
+
+    <h3 class="kp">5.2 若依代码生成器（纠正"建菜单生成代码"的理解）</h3>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">方向是反的：建表 → 生成代码和菜单，而不是建菜单 → 生成代码</div>
+      <p><code>ruoyi-generator</code> 是<b>表驱动</b>：① 先在数据库建好业务表（如 material）；② 在代码生成器里导入这张表、配置字段与生成选项；③ 生成<b>前后端 CRUD 代码 + 一份 menu.sql</b>（含列表页 C、增删改查 F 按钮和对应权限码）；④ 执行 menu.sql、把生成的代码放进工程；⑤ 给角色授权。</p>
+    </div>
+    <p>所以"创建菜单时自动生成 CRUD、权限也设计好"的准确表述是：<b>以业务表为输入，一次性产出 CRUD 代码和菜单权限 SQL</b>；之后你做的确实是菜单分配（给角色授权）。</p>
+
+    <h3 class="kp">5.3 "权限组"概念有意义吗？</h3>
+    <p>页面由多个接口/按钮组成（查询、新增、导出…），这些权限点在若依里天然<b>通过菜单树的父子结构聚合</b>：C 菜单是父节点，F 按钮是子节点，"某页全部权限"就是这棵子树。<b>不需要再单独建一张"权限组"表</b>——角色勾选父菜单时可级联勾选子按钮，这就是权限聚合。</p>
+  </section>
+  <!-- ============ §6 行级 data_scope ============ -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><div class="sec-no">06</div><h2>行级权限：data_scope 五档 + @DataScope <span class="badge b-high">高频</span></h2></div>
+    <div class="tipbox tb-bad">
+      <div class="tb-title">先纠正一个口误：不存在 "dashscope 表"</div>
+      <p>DashScope 是阿里大模型平台，与权限无关。若依的行级数据权限由 <b>sys_role 表的 <code>data_scope</code> 字段 + sys_role_dept 表 + sys_dept 部门树</b> 实现，配合业务表的 <code>dept_id / create_by</code> 字段。</p>
+    </div>
+
+    <h3 class="kp">6.1 五档数据范围（sys_role.data_scope）</h3>
+    <table class="ftl">
+      <colgroup><col style="width:10%"><col style="width:24%"><col style="width:66%"></colgroup>
+      <tr><th>值</th><th>档位</th><th>拼出的 WHERE 条件（示意）</th></tr>
+      <tr><td>1</td><td>全部数据</td><td>不加限制（管理员）</td></tr>
+      <tr><td>2</td><td>自定义数据</td><td><code>dept_id IN (sys_role_dept 里勾选的部门)</code></td></tr>
+      <tr><td>3</td><td>本部门数据</td><td><code>dept_id = 当前用户部门</code></td></tr>
+      <tr><td>4</td><td>本部门及以下</td><td><code>dept_id IN (本部门 + 子孙部门)</code>，沿 sys_dept 树向下展开</td></tr>
+      <tr><td>5</td><td>仅本人数据</td><td><code>create_by = 当前用户</code> ← 这就是"只看自己投放的素材"</td></tr>
+    </table>
+
+    <h3 class="kp">6.2 运行机制：@DataScope AOP 拼 WHERE</h3>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">① Mapper 方法</div><div class="fd">加 @DataScope(deptAlias="d", userAlias="u")</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox b"><div class="ft">② 切面拦截</div><div class="fd">DataScopeAspect 读当前用户角色的 data_scope</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox p"><div class="ft">③ 生成 SQL 片段</div><div class="fd">按五档拼出 WHERE 字符串，塞进 BaseEntity.params.dataScope</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox o"><div class="ft">④ XML 拼接</div><div class="fd">SQL 末尾 ${params.dataScope}，下推数据库</div></div>
+      </div>
+      <div class="fcap">图 2-5　data_scope 是"规则型"行级权限：不存逐条关系，每次查询把角色档位翻译成 WHERE</div>
+    </div>
+
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>切面拼出的 SQL（本部门及以下，第 4 档）</div>
+<pre><code><span class="tok-kw">SELECT</span> m.*, d.dept_id, d.ancestors
+<span class="tok-kw">FROM</span> material m
+<span class="tok-kw">LEFT JOIN</span> sys_dept d <span class="tok-kw">ON</span> m.dept_id = d.dept_id
+<span class="tok-com">-- 下面这段由 @DataScope 自动拼接，开发者不用手写：</span>
+<span class="tok-kw">WHERE</span> (
+    d.dept_id = 8                         <span class="tok-com">-- 本部门</span>
+    <span class="tok-kw">OR</span> d.dept_id <span class="tok-kw">IN</span> (<span class="tok-kw">SELECT</span> dept_id <span class="tok-kw">FROM</span> sys_dept
+                           <span class="tok-kw">WHERE</span> find_in_set(8, ancestors)) <span class="tok-com">-- 所有子孙部门</span>
+);</code></pre>
+    </div>
+
+    <div class="oneliner">
+      <div class="ol-tag">关键定性</div>
+      <p>data_scope 是 <b>ABAC 的简化版（规则型）</b>，不是 ACL 实例表：它只能表达"本人/本部门/自定义部门"这几种预设范围，无法表达"把素材 M100 单独分享给 G5 组"。后者需要第一册的 resource_owner，两者可 OR 合并。</p>
+    </div>
+  </section>
+
+  <!-- ============ §7 字段级 ============ -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><div class="sec-no">07</div><h2>字段级权限：若依原生没有，怎么扩展</h2></div>
+    <p>先厘清：若依的 <code>@Sensitive</code> 是<b>数据脱敏</b>（手机号固定显示成 138****1234，按角色区分度有限），<b>不是字段级鉴权</b>。字段级"无权限就整个不返回"需要自己扩展。</p>
+
+    <h3 class="kp">7.1 权限码存储：两个方案</h3>
+    <table class="ftl">
+      <colgroup><col style="width:22%"><col style="width:45%"><col style="width:33%"></colgroup>
+      <tr><th>方案</th><th>做法</th><th>评价</th></tr>
+      <tr><td><b>方案一（推荐）</b><br>复用 sys_menu</td><td>新增一条 <code>menu_type='I'</code> 的记录，<code>perms='field:user:phone'</code>，角色勾选后照常走 <code>sys_role_menu</code></td><td><b>零新表、零新链路</b>：登录聚合权限 Set 时自动带上，后端 @ss.hasPermi 直接判</td></tr>
+      <tr><td>方案二<br>独立字段表</td><td>建 <code>sys_field</code> + <code>sys_role_field</code> 两张表</td><td>语义清晰但要新增表、CRUD、聚合 SQL，维护成本高</td></tr>
+    </table>
+    <div class="tipbox tb-py">
+      <div class="tb-title">为什么"复用 sys_menu"能成立（你自己想通的那一步）</div>
+      <p>角色勾选 type=I 记录后，<b>用户登录聚合出的权限 Set 里就有了 <code>field:user:phone</code></b>；聚合 SQL 不看 menu_type，所以字段权限和按钮权限走完全相同的链路，区别只是它不生成路由、不出现在导航。</p>
+    </div>
+
+    <h3 class="kp">7.2 实现：Jackson 序列化时裁字段（注册一次，全局生效）</h3>
+    <p>字段级判断<b>不能在每个字段上手写 enforce</b>，正确做法是注册一个 Jackson 序列化修饰器，在 VO 转 JSON 时统一处理：</p>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>① VO 字段上打自定义注解</div>
+<pre><code><span class="tok-kw">public class</span> UserVO {
+    <span class="tok-kw">private</span> Long id;
+    <span class="tok-kw">private</span> String name;
+
+    <span class="tok-anno">@FieldPerm</span>(<span class="tok-str">"field:user:phone"</span>)   <span class="tok-com">// 无此权限码，该字段不序列化</span>
+    <span class="tok-kw">private</span> String phone;
+
+    <span class="tok-anno">@FieldPerm</span>(<span class="tok-str">"field:user:cost"</span>)
+    <span class="tok-kw">private</span> BigDecimal cost;
+}</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>② 全局 BeanSerializerModifier（一次性注册）</div>
+<pre><code><span class="tok-kw">public class</span> FieldPermSerializerModifier <span class="tok-kw">extends</span> BeanSerializerModifier {
+    <span class="tok-anno">@Override</span>
+    <span class="tok-kw">public</span> List&lt;BeanPropertyWriter&gt; changeProperties(
+            SerializationConfig config, BeanDescription bd,
+            List&lt;BeanPropertyWriter&gt; props) {
+        Set&lt;String&gt; perms = SecurityUtils.getPermissions();   <span class="tok-com">// 当前用户权限 Set</span>
+        List&lt;BeanPropertyWriter&gt; kept = <span class="tok-kw">new</span> ArrayList&lt;&gt;();
+        <span class="tok-kw">for</span> (BeanPropertyWriter w : props) {
+            FieldPerm fp = w.getAnnotation(FieldPerm.class);
+            <span class="tok-kw">if</span> (fp == <span class="tok-kw">null</span> || perms.contains(fp.value())) {
+                kept.add(w);                          <span class="tok-com">// 无注解 或 有权限 → 保留</span>
+            }                                            <span class="tok-com">// 无权限 → 直接丢弃（不序列化）</span>
+        }
+        <span class="tok-kw">return</span> kept;
+    }
+}</code></pre>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">性能要点（呼应第四册批量决策）</div>
+      <p>权限 Set 在<b>每个请求开始时取一次</b>，序列化 n 行数据时每行只是对几个字段做 <code>Set.contains</code>（O(1)），不会逐字段查库或调权限引擎。裁列的 O(n·k) 是序列化输出本身的成本，不是权限成本。</p>
+    </div>
+  </section>
+
+  <!-- ============ §8 生命周期 ============ -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><div class="sec-no">08</div><h2>权限生命周期：落库、新增、删除、应急</h2></div>
+
+    <h3 class="kp">8.1 装饰器（注解）拿到权限后，还需不需要落库？</h3>
+    <p><b>需要。</b>注解是代码里的"校验点"，但授权管理页面需要列出"系统里有哪些权限可分配"，角色-权限关系（sys_role_menu）也必须有外键目标。权限元数据落库（sys_menu）后，管理后台才能勾选、权限才能被授予。注解解决"校验"，库解决"授权"，二者靠权限码字符串约定一致。</p>
+
+    <h3 class="kp">8.2 新增权限的完整动作</h3>
+    <ol>
+      <li>开发定权限码、写注解、写 menu.sql（随版本发版，落 sys_menu）；</li>
+      <li>上线后新权限<b>默认无人拥有</b>（最小权限）；</li>
+      <li>管理员在角色管理里勾选，写 sys_role_menu；</li>
+      <li>用户下次登录（或删其权限缓存后）聚合到新权限。</li>
+    </ol>
+
+    <h3 class="kp">8.3 修改 / 删除权限与级联</h3>
+    <div class="tipbox tb-py">
+      <div class="tb-title">推荐顺序（你说的基本正确，补充软删）</div>
+      <p><b>正常下线：</b>先下代码（去掉注解/接口）→ 再删关联（sys_role_menu 等中间表，按 menu_id 级联）→ 最后处理菜单记录（推荐 <code>del_flag</code> 软删而非物理删，保留审计）。涉及多表写操作放在一个事务里。</p>
+    </div>
+    <ul>
+      <li><b>改权限码：</b>等同"删旧 + 增新"，旧角色关联迁移到新码；</li>
+      <li><b>级联清理：</b>删 sys_menu 记录时同步删 sys_role_menu 中引用（外键 ON DELETE CASCADE 或显式 delete）；</li>
+      <li><b>为什么软删：</b>保留历史授权记录用于审计，且避免误删导致线上用户大面积丢权限。</li>
+    </ul>
+
+    <h3 class="kp">8.4 应急场景：代码不能改，要立刻关掉某接口</h3>
+    <p>你设想的"逻辑删除权限、防止别人访问"是真实场景（接口出 bug/漏洞，紧急止血）。但要注意两个漏洞：</p>
+    <div class="tipbox tb-bad">
+      <div class="tb-title">只删权限码挡不住两类人</div>
+      <ul>
+        <li><b>超级管理员</b>（<code>*:*:*</code> 通配）不受权限码控制；</li>
+        <li>已经在白名单 / 内部调用链里的请求。</li>
+      </ul>
+      <p style="margin-top:6px">生产级止血要在权限码体系之外加一道 <b>deny 优先的功能黑名单 / Feature Flag（开关）</b>：网关或 AOP 里维护"已禁用接口清单"，<b>deny 优先于 allow，对超管也生效</b>，配置中心可秒级下发。</p>
+    </div>
+  </section>
+
+  <!-- ============ §9 小结 ============ -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><div class="sec-no">09</div><h2>本册小结与自测</h2></div>
+    <h3 class="kp">9.1 必须带走的 7 句话</h3>
+    <ol>
+      <li>若依没有独立权限表：<b>菜单与权限点合一为 sys_menu</b>，前端读路由字段、后端读 perms。</li>
+      <li>菜单类型 <b>M 目录（无页面）/ C 菜单页面 / F 按钮</b>，扩展 I 字段。</li>
+      <li>后端 <code>@PreAuthorize("@ss.hasPermi('x')")</code> 本质是权限 Set 的 O(1) contains，超管 *:*:*。</li>
+      <li><b>注解不会自动扫描入库</b>，code-first：定码→写注解→menu.sql 发版→人工授权。</li>
+      <li>代码生成器是<b>表驱动</b>：建表→生成 CRUD+menu.sql，不是建菜单生成代码。</li>
+      <li>行级用 <code>data_scope</code> 五档 + @DataScope 拼 WHERE（规则型，非 ACL），不是 dashscope 表。</li>
+      <li>字段级复用 sys_menu（type=I）+ Jackson 全局修饰器裁字段；若依原生只有 @Sensitive 脱敏。</li>
+    </ol>
+
+    <h3 class="kp">9.2 自测清单</h3>
+    <ul class="checklist" id="checklist-c2">
+      <li><label><input type="checkbox" data-q="c2q1">能默画若依 5 张主体表 + 4 张中间表，并说出 sys_menu 的双重身份。</label></li>
+      <li><label><input type="checkbox" data-q="c2q2">能说清 M/C/F/I 各自含义，以及"目录"为什么没有页面。</label></li>
+      <li><label><input type="checkbox" data-q="c2q3">能写 @PreAuthorize 并讲清 @ss.hasPermi 的 O(1) 原理。</label></li>
+      <li><label><input type="checkbox" data-q="c2q4">能解释为什么注解不自动入库、权限码与代码的先后顺序。</label></li>
+      <li><label><input type="checkbox" data-q="c2q5">能纠正"建菜单生成代码"，说清代码生成器是表驱动。</label></li>
+      <li><label><input type="checkbox" data-q="c2q6">能背 data_scope 五档及各自拼出的 WHERE。</label></li>
+      <li><label><input type="checkbox" data-q="c2q7">能讲清 @DataScope 从切面到 SQL 的完整链路。</label></li>
+      <li><label><input type="checkbox" data-q="c2q8">能说清字段级如何零新表复用 sys_menu，以及 Jackson 如何裁字段。</label></li>
+      <li><label><input type="checkbox" data-q="c2q9">能说清权限删除顺序、软删、以及为什么应急要 deny 黑名单。</label></li>
+    </ul>
+
+    <div class="pagenav" style="margin-top:26px;">
+      <a href="01-foundations.html">← 第一册 · 地基</a>
+      <a href="03-casbin.html">第三册 · Casbin →</a>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var KEY='rbac-handbook-checks';
+  try{
+    var saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    document.querySelectorAll('.checklist input[data-q]').forEach(function(cb){
+      if(saved[cb.dataset.q]) cb.checked=true;
+      cb.addEventListener('change',function(){
+        var s=JSON.parse(localStorage.getItem(KEY)||'{}');
+        s[cb.dataset.q]=cb.checked; localStorage.setItem(KEY,JSON.stringify(s));
+      });
+    });
+  }catch(e){}
+})();
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

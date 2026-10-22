@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限体系・第五册：三方案对比与面试收口</title>
+<style>
+:root {
+  --bg: #f5f6f9; --card: #ffffff; --ink: #1b2430; --ink-2: #455161; --ink-3: #6b7688;
+  --line: #e4e7ee; --primary: #be3a34; --primary-soft: #fdf0ef; --primary-deep: #992720;
+  --high: #be3a34; --high-bg: #fdf0ef; --hard: #6d28d9; --hard-bg: #f4f0fe;
+  --trap: #c2620d; --trap-bg: #fef6ec; --py: #0f766e; --py-bg: #ecfaf7;
+  --blue: #3b4f8a; --blue-bg: #eceff8;
+  --code-bg: #141c2e; --code-ink: #c6d0e4;
+  --radius: 12px; --shadow: 0 1px 3px rgba(20,30,55,.06), 0 1px 2px rgba(20,30,55,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+.hero { background: linear-gradient(135deg,#ffffff 0%,#fdeeee 60%,#fadcd8 100%); border-bottom: 1px solid #f1cfcb; padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 29px; font-weight: 800; color: #3d1412; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #39435a; max-width: 820px; }
+.hero .sub b { color: #3d1412; }
+.progress-track { margin-top: 20px; height: 8px; background: #eec3be; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg,#be3a34,#e06a64); border-radius: 4px; }
+.hero .pct { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #455161; text-decoration: none; border: 1px solid #cbd3e4; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav .home { border-style: dashed; }
+.wrap { max-width: 1260px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 250px 1fr; gap: 34px; }
+main { min-width: 0; max-width: 100%; }
+.codebox { min-width: 0; max-width: 100%; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } table { display: block; overflow-x: auto; } .codebox { max-width: 100%; } }
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #f0c6c2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fde9a8; padding: 0 3px; border-radius: 3px; }
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #f3c4c1; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddcdf8; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #f6d8ae; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #9de2d6; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.4px; background: #fff; }
+th { background: #fceaea; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fefcfc; }
+td code, li code, p code { background: #fae4e2; padding: 1px 6px; border-radius: 5px; font-size: 12.8px; color: #992720; }
+table.ftl { table-layout: fixed; }
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1c2740; color: #b9c6e0; font-size: 12px; padding: 7px 14px; display: flex; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.72; min-width: 0; max-width: 100%; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #b79df0; } .tok-str { color: #b6e09a; } .tok-com { color: #7685a8; font-style: italic; }
+.tok-num { color: #f0a27f; } .tok-anno { color: #ffcb6b; }
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; }
+.tb-mem { background: var(--high-bg); border-color: #f3c4c1; color: var(--primary-deep); }
+.tb-warn { background: var(--trap-bg); border-color: #f6d8ae; color: #9a4d10; }
+.tb-py { background: var(--py-bg); border-color: #9de2d6; color: #0b5f57; }
+.tb-hard { background: var(--hard-bg); border-color: #ddcdf8; color: #5b21b6; }
+.tb-bad { background: var(--high-bg); border-color: #f3c4c1; color: #992720; }
+.tb-blue { background: var(--blue-bg); border-color: #c7d1f0; color: #2b3a66; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+.fig { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; padding: 16px; margin: 16px 0; }
+.fig .fcap { font-size: 12.5px; color: var(--ink-3); text-align: center; margin-top: 10px; }
+.frow { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.fbox { border: 1.5px solid #ef8f89; border-radius: 9px; background: #fff; padding: 10px 12px; flex: 1; min-width: 130px; }
+.fbox .ft { font-weight: 700; font-size: 12.8px; color: var(--primary-deep); margin-bottom: 4px; }
+.fbox .fd { font-size: 11.8px; color: var(--ink-2); line-height: 1.6; }
+.fbox.b { border-color: #0f766e; } .fbox.b .ft{ color:#0b5f57; }
+.fbox.p { border-color: #6d28d9; } .fbox.p .ft{ color:#5b21b6; }
+.fbox.o { border-color: #c2620d; } .fbox.o .ft{ color:#9a4d10; }
+.fbox.d { border-color: #3b4f8a; } .fbox.d .ft{ color:#2b3a66; }
+.farrow { display:flex; align-items:center; color: #8a94ad; font-size: 18px; }
+.speech { border: 1px solid #f1cfcb; border-radius: 10px; background: #fffbfb; padding: 16px 20px; margin: 14px 0; }
+.speech .sp-tag { display:inline-block; font-size:12px; font-weight:800; color:#fff; background:var(--primary); padding:2px 10px; border-radius:999px; margin-bottom:8px; }
+.speech p { color: #3a2a28; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.checklist li { list-style: none; margin-left: 0; }
+.checklist label { display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--ink-2); padding:5px 0; cursor:pointer; }
+.checklist input { margin-top: 5px; }
+.term-group { margin-bottom: 18px; }
+.term-group h4 { background: #fceaea; padding: 6px 12px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">PERMISSION HANDBOOK · 第五册（共 5 册）</div>
+  <h1>三方案对比 · 术语表 · 面试收口</h1>
+  <div class="sub">
+    本册把<b>若依自研、Casbin、OPA</b> 放在一张表上做全维度对比，补全 Redis 缓存与性能专题，给出<b>完整术语表、选型决策树、可直接背诵的口述稿</b>，以及全书 30 问自检。读完这一册，你就可以从容回答 Q4 并接住所有追问。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="pct">第 5 / 5 册 · 重点：对比表、术语表、决策树、30 秒 / 3 分钟口述稿</div>
+</div>
+
+<nav class="mod-nav">
+  <a class="home" href="index.html">总目录</a>
+  <a href="01-foundations.html">① 地基</a>
+  <a href="02-ruoyi.html">② 若依</a>
+  <a href="03-casbin.html">③ Casbin</a>
+  <a href="04-opa.html">④ OPA</a>
+  <span class="cur">⑤ 对比收口</span>
+</nav>
+
+<div class="wrap">
+  <aside class="toc">
+    <div class="toc-title">本册目录</div>
+    <a href="#s1">01 全维度对比表</a>
+    <a href="#s2">02 三层权限横向对照</a>
+    <a href="#s3">03 Redis 缓存与性能</a>
+    <a href="#s4">04 完整术语表</a>
+    <a href="#s5">05 选型决策树</a>
+    <a href="#s6">06 面试口述稿</a>
+    <a href="#s7">07 常见追问弹药</a>
+    <a href="#s8">08 全书 30 问自检</a>
+  </aside>
+
+  <main>
+  <!-- ============ §1 全维度对比 ============ -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><div class="sec-no">01</div><h2>三方案全维度对比表 <span class="stars">★★★★★</span></h2></div>
+    <table class="ftl">
+      <colgroup><col style="width:14%"><col style="width:29%"><col style="width:28%"><col style="width:29%"></colgroup>
+      <tr><th>维度</th><th>若依式自研</th><th>Casbin</th><th>OPA</th></tr>
+      <tr><td>形态</td><td>框架内表 + 代码</td><td>进程内库（SDK/jar）</td><td>独立守护进程/服务</td></tr>
+      <tr><td>调用</td><td>@ss.hasPermi</td><td>enforce() 函数</td><td>HTTP/gRPC（8181）</td></tr>
+      <tr><td>策略表达</td><td>SQL + 注解 + 权限码</td><td>model.conf + policy</td><td>Rego 语言</td></tr>
+      <tr><td>模型</td><td>RBAC + data_scope</td><td>RBAC/ABAC/域等可换</td><td>任意策略，能力最强</td></tr>
+      <tr><td>功能权限</td><td>sys_menu + sys_role_menu</td><td>p 策略</td><td>role_permissions 映射</td></tr>
+      <tr><td>行级权限</td><td>data_scope 五档拼 WHERE</td><td>实例策略 / ABAC matcher</td><td>部分求值生成 SQL / 塞 input</td></tr>
+      <tr><td>字段权限</td><td>复用 sys_menu(type=I)+Jackson</td><td>obj=字段码 + 批量取集合</td><td>visible_fields 集合输出</td></tr>
+      <tr><td>持久化</td><td>业务库多张表</td><td>Adapter（casbin_rule EAV）</td><td>无状态，Bundle 发布物</td></tr>
+      <tr><td>多实例同步</td><td>删 Redis 缓存（pull）</td><td>Watcher 广播（push）</td><td>Bundle 轮询（pull）</td></tr>
+      <tr><td>角色继承</td><td>无（扁平）</td><td>有（RoleManager 图）</td><td>由 Rego 自行定义</td></tr>
+      <tr><td>决策开销</td><td>Redis 命中 ~毫秒</td><td>内存纳秒</td><td>本地 Sidecar ~毫秒</td></tr>
+      <tr><td>多语言/审计</td><td>仅 Java，弱</td><td>多语言 SDK，中</td><td>语言无关、签名审计强</td></tr>
+      <tr><td>学习成本</td><td>低（SQL 即可）</td><td>中</td><td>高（需会 Rego）</td></tr>
+      <tr><td>典型场景</td><td>单体 Java 后台</td><td>单体/微服务应用权限</td><td>多语言微服务/Mesh/K8s</td></tr>
+    </table>
+  </section>
+
+  <!-- ============ §2 三层对照 ============ -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><div class="sec-no">02</div><h2>三层权限在三套方案里的横向对照</h2></div>
+    <table class="ftl">
+      <colgroup><col style="width:12%"><col style="width:29%"><col style="width:29%"><col style="width:30%"></colgroup>
+      <tr><th>层级</th><th>若依</th><th>Casbin</th><th>OPA</th></tr>
+      <tr><td><b>功能层</b><br>能点哪个页/按钮</td><td>权限码 material:list:add + @PreAuthorize</td><td>p, role, res, act + enforce</td><td>input.perm ∈ data.role_permissions[role]</td></tr>
+      <tr><td><b>行级</b><br>能看到哪些行</td><td>data_scope 规则拼 WHERE（本人/部门/自定义）</td><td>① 实例策略 ACL ② ABAC 比属性</td><td>部分求值→SQL WHERE / 塞资源对象判 bool</td></tr>
+      <tr><td><b>字段级</b><br>能看到哪些列</td><td>type=I 权限码 + Jackson 裁字段</td><td>字段码 + 一次取权限 Set 给 Jackson</td><td>visible_fields 集合一次返回</td></tr>
+      <tr><td><b>非常规分享</b><br>把 M100 给 G5</td><td>自建 resource_owner 表</td><td>实例策略（g5, material:M100, view）</td><td>data.resource_owners（小规模）或业务库</td></tr>
+    </table>
+    <div class="oneliner">
+      <div class="ol-tag">贯穿全书的主线</div>
+      <p>功能权限三套都成熟；<b>行级是难点</b>，分"规则型（data_scope / ABAC matcher / 部分求值）"和"关系型（resource_owner / 实例策略）"两派；字段级统一靠"序列化时按权限集合裁列"。</p>
+    </div>
+  </section>
+
+  <!-- ============ §3 Redis 缓存 ============ -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><div class="sec-no">03</div><h2>Redis 缓存与性能专题（你的问题 3/5）</h2></div>
+    <p>你提到"用 Redis 缓存登录用户权限/组信息"、"合并让我想到 Redis Set"——方向完全正确，这正是生产标准做法。</p>
+    <h3 class="kp">3.1 用 Redis Set 存权限，天然契合</h3>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>权限/组用 Redis Set 存储</div>
+<pre><code><span class="tok-com"># 登录时把用户的角色、权限码、组分别写入 Set</span>
+SADD perm:u101 material:list:query material:list:add field:user:phone
+SADD group:u101 g5 g9
+
+<span class="tok-com"># 鉴权：SISMEMBER 是 O(1)，等价于 Set.contains</span>
+SISMEMBER perm:u101 material:list:add      <span class="tok-com"># 1=有权限</span>
+
+<span class="tok-com"># 多角色权限合并（多对多的并集）：SUNION 由 Redis 算好</span>
+SINTER/SUNION perm:role:publisher perm:role:admin</code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">回答"合并多个字段权限是不是想到 Redis Set"</div>
+      <p>对。一个用户有多个角色、每个角色有多条权限，聚合是"多个集合的并集"，<b>Redis 的 Set + SUNION/SINTER 正是为集合的并交差设计的</b>，SISMEMBER 判断是 O(1)。可以在登录时一次性聚合到一个用户权限 Set，之后所有判断都查它。</p>
+    </div>
+
+    <h3 class="kp">3.2 缓存什么、不缓存什么</h3>
+    <table class="ftl">
+      <colgroup><col style="width:30%"><col style="width:26%"><col style="width:44%"></colgroup>
+      <tr><th>数据</th><th>是否缓存</th><th>原因</th></tr>
+      <tr><td>用户的角色/权限码/组</td><td><b>缓存 Redis</b>（或本地内存）</td><td>读多写少、变更低频，命中率极高</td></tr>
+      <tr><td>行级数据归属（百万素材）</td><td><b>一般不缓存</b>，走业务库/索引</td><td>海量、实时变化、命中率低，缓存反而不一致</td></tr>
+      <tr><td>字段权限集合</td><td>随权限码一起缓存</td><td>低频，和功能权限同生命周期</td></tr>
+    </table>
+
+    <h3 class="kp">3.3 授权变更后的缓存一致性</h3>
+    <ul>
+      <li><b>管理员改了某角色权限</b>：删除该角色下所有用户的权限 key（或用统一版本号 key 使其失效），下次请求回源重建；</li>
+      <li>三种传播范式：<b>失效拉取（删 key 让其重查）/ 主动推送（Watcher 广播）/ 周期轮询（TTL/轮询）</b>；</li>
+      <li>关键止血操作可短暂绕过缓存直查库，保证权限即时收紧。</li>
+    </ul>
+  </section>
+
+  <!-- ============ §4 术语表 ============ -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><div class="sec-no">04</div><h2>完整专业术语表（面试能听懂、说得对）</h2></div>
+
+    <div class="term-group">
+      <h4>一、通用权限模型</h4>
+      <table class="ftl">
+        <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+        <tr><th>术语</th><th>含义</th></tr>
+        <tr><td><code>ACL</code></td><td>访问控制列表（Access Control List）：直接记录"主体对某资源有什么权限"，resource_owner 就是一张通用 ACL 表。</td></tr>
+        <tr><td><code>RBAC0~3</code></td><td>基于角色：0 基础（用户-角色-权限）；1 角色继承；2 约束/互斥；3=1+2。</td></tr>
+        <tr><td><code>ABAC</code></td><td>基于属性：用主体/资源/环境属性写规则（如 owner_id==user.id）。data_scope 是其简化版。</td></tr>
+        <tr><td><code>ReBAC</code></td><td>基于关系：用主体-资源关系图判断（Google Zanzibar/OpenFGA）。</td></tr>
+        <tr><td><code>resource_owner</code></td><td>通用资源归属表：resource_type/resource_id/owner_type/owner_id/perm，支持多对多、多层范围。</td></tr>
+        <tr><td><code>功能/行级/字段级</code></td><td>权限三层：能否访问页面按钮 / 看到哪些行 / 看到哪些列。</td></tr>
+      </table>
+    </div>
+
+    <div class="term-group">
+      <h4>二、若依（RuoYi）</h4>
+      <table class="ftl">
+        <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+        <tr><th>术语</th><th>含义</th></tr>
+        <tr><td><code>sys_menu</code></td><td>菜单与权限点合一的表；前端读路由字段，后端读 perms。</td></tr>
+        <tr><td><code>M/C/F</code></td><td>菜单类型：M=目录（无页面）、C=菜单页、F=按钮（Function）；扩展 I=字段。</td></tr>
+        <tr><td><code>perms</code></td><td>权限码字段，三段式如 material:list:add，超管 *:*:*。</td></tr>
+        <tr><td><code>@PreAuthorize("@ss.hasPermi(...)")</code></td><td>Spring Security 注解，调用名为 ss 的 PermissionService 做权限 Set.contains。</td></tr>
+        <tr><td><code>data_scope</code></td><td>sys_role 字段，数据范围五档：1全部/2自定义/3本部门/4本部门及以下/5仅本人。</td></tr>
+        <tr><td><code>@DataScope</code></td><td>AOP 注解，切面按 data_scope 拼 WHERE 片段，注入 BaseEntity.params.dataScope。</td></tr>
+        <tr><td><code>sys_role_dept</code></td><td>仅 data_scope=2 自定义时使用，挂角色能看的部门。</td></tr>
+        <tr><td><code>del_flag</code></td><td>逻辑删除标记（软删），保留审计。</td></tr>
+        <tr><td><code>ruoyi-generator</code></td><td>代码生成器，<b>表驱动</b>：建表→生成 CRUD + menu.sql。</td></tr>
+        <tr><td><code>@Sensitive</code></td><td>数据脱敏（如 138****1234），不是字段级鉴权。</td></tr>
+      </table>
+    </div>
+
+    <div class="term-group">
+      <h4>三、Casbin</h4>
+      <table class="ftl">
+        <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+        <tr><th>术语</th><th>含义</th></tr>
+        <tr><td><code>PERM</code></td><td>元模型：Policy(策略)/Effect(合并)/Request(请求)/Matchers(匹配)。</td></tr>
+        <tr><td><code>model.conf</code></td><td>模型/规则模板：定义 r、p、g、e、m，开发写一次。</td></tr>
+        <tr><td><code>policy</code></td><td>策略数据，一条条授权事实（演示 policy.csv，生产落库）。</td></tr>
+        <tr><td><code>r / p / g / e / m</code></td><td>请求 / 策略 / 角色分组 / 决策合并 / 匹配器（类似 WHERE）。</td></tr>
+        <tr><td><code>Enforcer</code></td><td>执行器，核心方法 enforce()、batchEnforce()、addPolicy()。</td></tr>
+        <tr><td><code>casbin_rule</code></td><td>JDBC Adapter 自动建的 <b>EAV</b> 表：ptype + v0~v5 合并所有关系。</td></tr>
+        <tr><td><code>EAV</code></td><td>Entity-Attribute-Value 实体-属性-值通用表（注意不是 EVA）。</td></tr>
+        <tr><td><code>Adapter</code></td><td>持久化适配器（File/JDBC/Mongo/Redis…），一个 Enforcer 绑一个。</td></tr>
+        <tr><td><code>Watcher</code></td><td>多实例同步器，策略变更经 Redis Pub/Sub 广播，其他实例 reload。</td></tr>
+        <tr><td><code>RoleManager</code></td><td>角色关系内存有向图，鉴权时 BFS 求可达角色，默认深度 10 防环。</td></tr>
+        <tr><td><code>getImplicitPermissionsForUser</code></td><td>取用户含继承/组的全部隐式权限（用于反向查询）。</td></tr>
+      </table>
+    </div>
+
+    <div class="term-group">
+      <h4>四、OPA</h4>
+      <table class="ftl">
+        <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+        <tr><th>术语</th><th>含义</th></tr>
+        <tr><td><code>OPA</code></td><td>Open Policy Agent，CNCF 毕业的独立策略引擎，Go 编写，默认 8181。</td></tr>
+        <tr><td><code>Rego</code></td><td>OPA 的声明式策略语言（Datalog 谱系），import rego.v1 为新语法。</td></tr>
+        <tr><td><code>input</code></td><td>每次请求传入的 JSON（用户、动作、资源）。</td></tr>
+        <tr><td><code>data</code></td><td>OPA 内存中的全局事实（策略 + 配置数据）。</td></tr>
+        <tr><td><code>Bundle</code></td><td>策略发布物：.rego+.json 打成的 .tar.gz（可签名），托管于 HTTP/S3/Git。</td></tr>
+        <tr><td><code>PEP/PDP/PIP/PAP</code></td><td>执行点 / 决策点(OPA) / 信息点(业务库) / 管理点(Git+CI)。</td></tr>
+        <tr><td><code>http.send</code></td><td>Rego 在决策中主动发 HTTP 回调业务服务取实时数据。</td></tr>
+        <tr><td><code>Partial Evaluation</code></td><td>部分求值：把数据集合标 unknown，输出残余查询条件并可翻译成 SQL。</td></tr>
+        <tr><td><code>visible_fields / filters</code></td><td>OPA 一次返回的字段集合 / 行级过滤条件。</td></tr>
+        <tr><td><code>ext_authz</code></td><td>Envoy 外部鉴权接口，把网格请求鉴权外接到 OPA。</td></tr>
+        <tr><td><code>Sidecar</code></td><td>边车部署：每个业务 Pod 旁挂一个 OPA。</td></tr>
+      </table>
+    </div>
+  </section>
+  <!-- ============ §5 决策树 ============ -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><div class="sec-no">05</div><h2>选型决策树</h2></div>
+    <div class="fig">
+      <div style="font-size:13.5px; line-height:2.2; color:var(--ink-2);">
+        <div style="padding:6px 10px; background:#fceaea; border-radius:8px; font-weight:700; color:#992720;">开始：要做权限系统</div>
+        <div style="padding-left:26px;">
+          <div>└─ 是 K8s / Service Mesh / 多语言微服务、要统一策略与合规审计？<br>
+            <span style="padding-left:22px;color:#992720;font-weight:700;">是 → 【OPA】</span>（Sidecar/Envoy ext_authz，Rego 写策略，Bundle 发布）</div>
+          <div>└─ 否，是普通应用服务但想引入成熟库、少造轮子？<br>
+            <span style="padding-left:22px;color:#5b21b6;font-weight:700;">是 → 【Casbin】</span>（引入 SDK，需要行级就用 ABAC matcher 或实例策略）</div>
+          <div>└─ 否，是单体 Java 后台、团队熟悉 SQL、只要常规 CRUD 权限？<br>
+            <span style="padding-left:22px;color:#0b5f57;font-weight:700;">是 → 【若依式自研】</span>（sys_menu + 权限码 + data_scope，必要时加 resource_owner）</div>
+          <div style="margin-top:8px; padding:6px 10px; background:#fef6ec; border-radius:8px;">
+            <b>行级数据无论选哪套</b>：规整归属（本人/本部门/本组）→ 规则型（data_scope / matcher / 部分求值）；不规则逐资源分享 → resource_owner/实例策略；海量数据 → 条件下推到数据库，绝不逐行鉴权。
+          </div>
+        </div>
+      </div>
+      <div class="fcap">图 5-1　按"部署形态、语言、团队、合规"四步选型；行级路线与具体框架解耦</div>
+    </div>
+  </section>
+
+  <!-- ============ §6 口述稿 ============ -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><div class="sec-no">06</div><h2>面试口述稿（可直接背诵）</h2></div>
+
+    <div class="speech">
+      <span class="sp-tag">30 秒电梯版（Q4 原题）</span>
+      <p>"我们做的是<b>页面级 RBAC</b>：用户—角色—权限三层，权限不单独建表，而是以页面/模块的权限码字典形式维护。用户登录后聚合权限放进 Redis Set，访问时在接口上用注解判断权限码是否命中，控制页面显示和按钮操作。权限用 MongoDB 承载是因为这类授权数据写多读少。"</p>
+    </div>
+
+    <div class="speech">
+      <span class="sp-tag">3 分钟完整版（含数据权限）</span>
+      <p>"我把权限分成<b>三层</b>。第一层<b>功能权限</b>是页面、按钮、接口，用 RBAC，权限码三段式，注解 + AOP 校验，登录后权限集合缓存在 Redis。第二层<b>行级数据权限</b>分两种：规则型，像若依的 data_scope，按本人、本部门、部门及以下、自定义、全部在查询时拼 WHERE；关系型，针对'把某个素材分享给某个组'这种不规则授权，用一张通用 resource_owner 表，记录 resource_type、resource_id、owner_type（user/group/dept）、owner_id 和权限，多个组授权就是多条记录，查询时 IN 求并集并去重。第三层<b>字段级</b>，在 JSON 序列化时根据字段权限码决定是否输出该列，比如手机号只对高管可见。</p>
+      <p>如果不想自己造轮子，功能层可以用 <b>Casbin</b>——它是个进程内库，用 model.conf 定义规则、policy 存授权，多实例用 Redis Watcher 同步；更复杂的多语言微服务和 Service Mesh 场景用 <b>OPA</b>，它是独立策略服务，用 Rego 写策略、Bundle 热发布，海量行级数据靠部分求值把规则翻译成 SQL 条件下推到数据库。"</p>
+    </div>
+  </section>
+
+  <!-- ============ §7 追问弹药 ============ -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><div class="sec-no">07</div><h2>高频追问弹药（你当时卡住的点）</h2></div>
+    <details class="qa"><summary>用户必须授权到个人吗？能分组吗？</summary>
+      <div class="qa-body"><p>能分组。角色（role）管功能权限，用户组（group）或部门（dept）管横向数据归属；用户和组/角色都是多对多，用中间表。一个用户可属多个组，授权可以落在组上，组内成员继承。</p></div></details>
+    <details class="qa"><summary>两个组都对同一个游戏有权限怎么办？</summary>
+      <div class="qa-body"><p>在 resource_owner 里为每个组各写一条授权记录；查询时用 <code>owner_id IN (用户所在的所有组)</code> 做并集，DISTINCT 去重即可，天然支持任意多个组。</p></div></details>
+    <details class="qa"><summary>多对多关系怎么用表维护？</summary>
+      <div class="qa-body"><p>经典做法是三张实体表 + 一张中间表（中间表存双方主键，联合主键）。Casbin 把这些中间关系合并进一张 EAV 表（casbin_rule）；OPA 则把关系表达成 Rego 里的 data 映射，海量数据仍放业务库。</p></div></details>
+    <details class="qa"><summary>权限缓存怎么保证改了权限能生效？</summary>
+      <div class="qa-body"><p>授权变更时删除对应用户/角色的 Redis 权限 key，下次请求回源重建（失效拉取）；多实例可用 pub/sub 广播（Casbin Watcher 的 push）或轮询（OPA Bundle 的 pull）。关键操作可临时直查库。</p></div></details>
+    <details class="qa"><summary>行级权限数据量大，怎么避免逐行校验？</summary>
+      <div class="qa-body"><p>不逐行。规则型把条件下推成 SQL WHERE（若依 @DataScope、OPA 部分求值）；关系型用 resource_owner JOIN/IN 一次查询；Casbin ABAC 用属性比对、实例策略用 getImplicitPermissionsForUser 反查。字段级也是一次取权限集合，序列化时 O(1) 判断。</p></div></details>
+    <details class="qa"><summary>Casbin 和 OPA 分别是什么？一句话区别？</summary>
+      <div class="qa-body"><p>Casbin 是进程内的权限库（函数调用 enforce，三元组出 bool）；OPA 是独立的策略服务（HTTP 调用，任意 JSON 输入输出，Rego 写策略，Bundle 热发布）。前者轻、单体友好；后者强、适合多语言微服务和 Service Mesh。</p></div></details>
+  </section>
+
+  <!-- ============ §8 30 问自检 ============ -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><div class="sec-no">08</div><h2>全书 30 问自检（勾选会在本机记住）</h2></div>
+
+    <h3 class="kp">第一册 · 地基</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-q="c5q1">能说清功能/行级/字段三层权限是正交的。</label></li>
+      <li><label><input type="checkbox" data-q="c5q2">能背 ACL→RBAC0-3→ABAC→PBAC/OPA→ReBAC 的演进。</label></li>
+      <li><label><input type="checkbox" data-q="c5q3">能区分 role / group / dept 的定位与基数差异。</label></li>
+      <li><label><input type="checkbox" data-q="c5q4">能默画 resource_owner 并写多组授权的并集 SQL。</label></li>
+      <li><label><input type="checkbox" data-q="c5q5">能列出 8~9 张表全景并解释为什么这样设计。</label></li>
+    </ul>
+    <h3 class="kp">第二册 · 若依</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-q="c5q6">能说清 sys_menu 双重身份与 M/C/F/I。</label></li>
+      <li><label><input type="checkbox" data-q="c5q7">能解释 @ss.hasPermi 为什么是 O(1)。</label></li>
+      <li><label><input type="checkbox" data-q="c5q8">能讲 code-first 流程与代码生成器表驱动。</label></li>
+      <li><label><input type="checkbox" data-q="c5q9">能背 data_scope 五档与 @DataScope 拼 SQL 链路。</label></li>
+      <li><label><input type="checkbox" data-q="c5q10">能写字段级复用 sys_menu + Jackson 的实现。</label></li>
+      <li><label><input type="checkbox" data-q="c5q11">能说清权限删除顺序、软删与应急 deny 黑名单。</label></li>
+    </ul>
+    <h3 class="kp">第三册 · Casbin</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-q="c5q12">能写 model.conf 并解释 r/p/g/e/m。</label></li>
+      <li><label><input type="checkbox" data-q="c5q13">能解释 EAV 表结构与四个代价。</label></li>
+      <li><label><input type="checkbox" data-q="c5q14">能讲角色继承内存图可达性与递归 CTE。</label></li>
+      <li><label><input type="checkbox" data-q="c5q15">能写出行级两路线与字段级用法。</label></li>
+      <li><label><input type="checkbox" data-q="c5q16">能讲清 Adapter、Watcher、内存 vs Redis 取舍。</label></li>
+      <li><label><input type="checkbox" data-q="c5q17">能说出策略来源四模式与孤儿清理。</label></li>
+    </ul>
+    <h3 class="kp">第四册 · OPA</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-q="c5q18">能说清 OPA 与 Casbin 形态/输入输出差异。</label></li>
+      <li><label><input type="checkbox" data-q="c5q19">能写 Rego 实现功能/行级/字段三层。</label></li>
+      <li><label><input type="checkbox" data-q="c5q20">能讲 PEP/PDP/PIP/PAP 与决策日志。</label></li>
+      <li><label><input type="checkbox" data-q="c5q21">能说清数据三通道与 Bundle 热更新。</label></li>
+      <li><label><input type="checkbox" data-q="c5q22">能用数学例子讲清部分求值并转 SQL。</label></li>
+      <li><label><input type="checkbox" data-q="c5q23">能说清列表 filters+visible_fields 与详情 bool。</label></li>
+      <li><label><input type="checkbox" data-q="c5q24">能说出四种部署形态和选型理由。</label></li>
+    </ul>
+    <h3 class="kp">第五册 · 收口</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-q="c5q25">能默背三方案全维度对比表的关键行。</label></li>
+      <li><label><input type="checkbox" data-q="c5q26">能用 Redis Set/SUNION/SISMEMBER 讲权限缓存。</label></li>
+      <li><label><input type="checkbox" data-q="c5q27">能说清三种缓存/多实例传播范式。</label></li>
+      <li><label><input type="checkbox" data-q="c5q28">能讲清 ACL/EAV/PERM/Bundle 等术语含义。</label></li>
+      <li><label><input type="checkbox" data-q="c5q29">能按决策树给出选型并说明理由。</label></li>
+      <li><label><input type="checkbox" data-q="c5q30">能脱稿讲完 30 秒版与 3 分钟版口述稿。</label></li>
+    </ul>
+
+    <div class="tipbox tb-blue">
+      <div class="tb-title">全书写在最后</div>
+      <p>这道题的真实考点不是"记没记住某张表"，而是你能不能把<b>权限按功能/行级/字段三层拆解</b>，再为每一层选择合适的模型与工具（自研 / Casbin / OPA），并讲清楚<b>性能（缓存、条件下推、批量）和一致性（三种传播范式）</b>。把这套骨架内化，无论面试官怎么追问都能接住。</p>
+    </div>
+
+    <div class="pagenav" style="margin-top:26px;">
+      <a href="04-opa.html">← 第四册 · OPA</a>
+      <a href="index.html">返回总目录 ↑</a>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var KEY='rbac-handbook-checks';
+  try{
+    var saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    document.querySelectorAll('.checklist input[data-q]').forEach(function(cb){
+      if(saved[cb.dataset.q]) cb.checked=true;
+      cb.addEventListener('change',function(){
+        var s=JSON.parse(localStorage.getItem(KEY)||'{}');
+        s[cb.dataset.q]=cb.checked; localStorage.setItem(KEY,JSON.stringify(s));
+      });
+    });
+  }catch(e){}
+})();
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

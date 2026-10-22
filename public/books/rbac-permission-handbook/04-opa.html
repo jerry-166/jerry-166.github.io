@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限体系・第四册：OPA 策略引擎</title>
+<style>
+:root {
+  --bg: #f5f6f9; --card: #ffffff; --ink: #1b2430; --ink-2: #455161; --ink-3: #6b7688;
+  --line: #e4e7ee; --primary: #c2620d; --primary-soft: #fef6ec; --primary-deep: #9a4d10;
+  --high: #be3a34; --high-bg: #fdf0ef; --hard: #6d28d9; --hard-bg: #f4f0fe;
+  --trap: #c2620d; --trap-bg: #fef6ec; --py: #0f766e; --py-bg: #ecfaf7;
+  --code-bg: #141c2e; --code-ink: #c6d0e4;
+  --radius: 12px; --shadow: 0 1px 3px rgba(20,30,55,.06), 0 1px 2px rgba(20,30,55,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+.hero { background: linear-gradient(135deg,#ffffff 0%,#fdf0e2 60%,#fbe6cf 100%); border-bottom: 1px solid #f3d9bd; padding: 36px 40px 30px; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.hero h1 { font-size: 29px; font-weight: 800; color: #3a2410; }
+.hero .sub { margin-top: 12px; font-size: 14.5px; color: #39435a; max-width: 820px; }
+.hero .sub b { color: #3a2410; }
+.progress-track { margin-top: 20px; height: 8px; background: #f1d3b2; border-radius: 4px; overflow: hidden; max-width: 520px; }
+.progress-fill { height: 100%; width: 80%; background: linear-gradient(90deg,#c2620d,#ea9344); border-radius: 4px; }
+.hero .pct { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+.mod-nav { display: flex; gap: 8px; padding: 12px 40px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; align-items: center; }
+.mod-nav a { white-space: nowrap; font-size: 12.5px; padding: 5px 13px; border-radius: 999px; color: #455161; text-decoration: none; border: 1px solid #cbd3e4; background: #f8fafc; }
+.mod-nav .cur { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+.mod-nav .home { border-style: dashed; }
+.wrap { max-width: 1260px; margin: 0 auto; padding: 28px 40px 80px; display: grid; grid-template-columns: 250px 1fr; gap: 34px; }
+main { min-width: 0; max-width: 100%; }
+.codebox { min-width: 0; max-width: 100%; }
+@media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } .toc { display: none; } .hero, .mod-nav, .wrap { padding-left: 18px; padding-right: 18px; } .mod-nav { flex-wrap: wrap; } table { display: block; overflow-x: auto; } .codebox { max-width: 100%; } }
+.toc { position: sticky; top: 20px; align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; }
+.toc .toc-title { font-size: 12px; letter-spacing: 2px; color: var(--ink-3); font-weight: 700; margin-bottom: 10px; padding-left: 12px; }
+.toc a { display: block; padding: 6px 12px; border-left: 3px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; border-radius: 0 6px 6px 0; margin-bottom: 2px; }
+.toc a:hover { background: var(--primary-soft); color: var(--primary); }
+section.sec { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px 36px; margin-bottom: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; }
+.sec-no { font-size: 34px; font-weight: 800; color: #f1d3b2; line-height: 1; }
+.sec-head h2 { font-size: 21px; font-weight: 700; }
+h3.kp { font-size: 17px; font-weight: 700; margin: 28px 0 10px; padding-left: 12px; border-left: 4px solid var(--primary); line-height: 1.5; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+p { margin-bottom: 10px; color: var(--ink-2); }
+ul, ol { margin: 6px 0 12px 22px; color: var(--ink-2); }
+li { margin-bottom: 5px; }
+b, strong { color: var(--ink); }
+mark { background: #fde9a8; padding: 0 3px; border-radius: 3px; }
+.badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; letter-spacing: .5px; }
+.b-high { background: var(--high-bg); color: var(--high); border: 1px solid #f3c4c1; }
+.b-hard { background: var(--hard-bg); color: var(--hard); border: 1px solid #ddcdf8; }
+.b-trap { background: var(--trap-bg); color: var(--trap); border: 1px solid #f6d8ae; }
+.b-py { background: var(--py-bg); color: var(--py); border: 1px solid #9de2d6; }
+.stars { color: #d97706; font-size: 13px; letter-spacing: 1px; margin-left: 6px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13.6px; background: #fff; }
+th { background: #fbeede; text-align: left; padding: 9px 12px; font-weight: 700; color: #334155; border: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+tr:nth-child(even) td { background: #fefcf9; }
+td code, li code, p code { background: #f8e8d4; padding: 1px 6px; border-radius: 5px; font-size: 13px; color: #9a4d10; }
+table.ftl { table-layout: fixed; }
+.codebox { margin: 14px 0 18px; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.codebox .bar { background: #1c2740; color: #b9c6e0; font-size: 12px; padding: 7px 14px; display: flex; align-items: center; }
+.codebox .bar .dots { display: inline-flex; gap: 6px; margin-right: 10px; }
+.codebox .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-r { background: #f87171; } .d-y { background: #fbbf24; } .d-g { background: #34d399; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.72; min-width: 0; max-width: 100%; }
+pre code { background: none; padding: 0; color: inherit; }
+.tok-kw { color: #b79df0; } .tok-str { color: #b6e09a; } .tok-com { color: #7685a8; font-style: italic; }
+.tok-num { color: #f0a27f; } .tok-anno { color: #ffcb6b; }
+.tipbox { border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+.tipbox .tb-title { font-weight: 700; margin-bottom: 4px; }
+.tb-mem { background: var(--trap-bg); border-color: #f6d8ae; color: var(--primary-deep); }
+.tb-warn { background: var(--trap-bg); border-color: #f6d8ae; color: #9a4d10; }
+.tb-py { background: var(--py-bg); border-color: #9de2d6; color: #0b5f57; }
+.tb-hard { background: var(--hard-bg); border-color: #ddcdf8; color: #5b21b6; }
+.tb-bad { background: var(--high-bg); border-color: #f3c4c1; color: #992720; }
+.tipbox p, .tipbox li { color: inherit; margin-bottom: 4px; }
+.oneliner { border-left: 4px solid #d97706; background: #fffbeb; border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; }
+.oneliner .ol-tag { font-size: 11.5px; font-weight: 800; color: #b45309; letter-spacing: 1px; margin-bottom: 3px; }
+.oneliner p { color: #78350f; margin: 0; font-weight: 600; }
+details.qa { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: #fff; overflow: hidden; }
+details.qa summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; align-items: baseline; gap: 10px; background: #fafbfe; user-select: none; }
+details.qa summary::-webkit-details-marker { display: none; }
+details.qa summary::before { content: "Q"; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+details.qa[open] summary { border-bottom: 1px solid var(--line); background: var(--primary-soft); }
+details.qa .qa-body { padding: 14px 18px 16px 46px; font-size: 14px; color: var(--ink-2); }
+details.qa .qa-body p { margin-bottom: 8px; }
+.fig { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; padding: 16px; margin: 16px 0; }
+.fig .fcap { font-size: 12.5px; color: var(--ink-3); text-align: center; margin-top: 10px; }
+.frow { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.fbox { border: 1.5px solid #e8a760; border-radius: 9px; background: #fff; padding: 10px 12px; flex: 1; min-width: 130px; }
+.fbox .ft { font-weight: 700; font-size: 12.8px; color: var(--primary-deep); margin-bottom: 4px; }
+.fbox .fd { font-size: 11.8px; color: var(--ink-2); line-height: 1.6; }
+.fbox.b { border-color: #0f766e; } .fbox.b .ft{ color:#0b5f57; }
+.fbox.p { border-color: #6d28d9; } .fbox.p .ft{ color:#5b21b6; }
+.fbox.r { border-color: #be3a34; } .fbox.r .ft{ color:#992720; }
+.farrow { display:flex; align-items:center; color: #8a94ad; font-size: 18px; }
+.pagenav { display: flex; justify-content: space-between; margin-top: 6px; }
+.pagenav a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; background: #fff; border: 1px solid var(--line); padding: 10px 18px; border-radius: 10px; }
+.checklist li { list-style: none; margin-left: 0; }
+.checklist label { display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--ink-2); padding:5px 0; cursor:pointer; }
+.checklist input { margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">PERMISSION HANDBOOK · 第四册（共 5 册）</div>
+  <h1>方案三：OPA 策略引擎</h1>
+  <div class="sub">
+    OPA（Open Policy Agent）是一个<b>独立的通用策略守护进程</b>（CNCF 毕业项目，默认 8181 端口）。策略用声明式语言 <b>Rego</b> 编写，打成 <b>Bundle</b> 热加载，输入任意 JSON、输出任意 JSON；海量行级数据靠<b>部分求值</b>下推 SQL。
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="pct">第 4 / 5 册 · 重点：Rego 模型、PEP/PDP/PIP/PAP、Bundle 热更新、数据三通道、部分求值</div>
+</div>
+
+<nav class="mod-nav">
+  <a class="home" href="index.html">总目录</a>
+  <a href="01-foundations.html">① 地基</a>
+  <a href="02-ruoyi.html">② 若依</a>
+  <a href="03-casbin.html">③ Casbin</a>
+  <span class="cur">④ OPA</span>
+  <a href="05-comparison-interview.html">⑤ 对比与收口</a>
+</nav>
+
+<div class="wrap">
+  <aside class="toc">
+    <div class="toc-title">本册目录</div>
+    <a href="#s1">01 定位：独立策略服务</a>
+    <a href="#s2">02 Rego 模型 input/data</a>
+    <a href="#s3">03 完整素材平台示例</a>
+    <a href="#s4">04 PEP/PDP/PIP/PAP 架构</a>
+    <a href="#s5">05 数据三通道</a>
+    <a href="#s6">06 PIP 取数两方式</a>
+    <a href="#s7">07 持久化：Bundle</a>
+    <a href="#s8">08 同步与热更新</a>
+    <a href="#s9">09 部分求值 SQL 下推</a>
+    <a href="#s10">10 列表决策 filters+字段</a>
+    <a href="#s11">11 批量决策 vs 逐条</a>
+    <a href="#s12">12 部署形态</a>
+    <a href="#s13">13 选型与决策日志</a>
+    <a href="#s14">14 小结与自测</a>
+  </aside>
+
+  <main>
+  <!-- ============ §1 定位 ============ -->
+  <section class="sec" id="s1">
+    <div class="sec-head"><div class="sec-no">01</div><h2>定位：一个独立的策略守护进程 <span class="stars">★★★★★</span></h2></div>
+    <table class="ftl">
+      <colgroup><col style="width:22%"><col style="width:39%"><col style="width:39%"></colgroup>
+      <tr><th></th><th>Casbin</th><th>OPA</th></tr>
+      <tr><td>形态</td><td>库（jar/SDK，在应用进程内）</td><td><b>独立进程 / 服务</b>（默认 8181，Go 写的也可内嵌）</td></tr>
+      <tr><td>调用方式</td><td>函数调用 enforce()</td><td>HTTP/gRPC 请求（或 Go 库内嵌）</td></tr>
+      <tr><td>策略语言</td><td>model.conf 表达式</td><td><b>Rego</b>，一门完整声明式逻辑语言</td></tr>
+      <tr><td>输入/输出</td><td>三元组 → bool</td><td><b>任意 JSON 输入 → 任意 JSON 输出</b>（allow+字段+过滤条件）</td></tr>
+      <tr><td>典型场景</td><td>单体/微服务里的应用权限</td><td>多语言微服务、K8s 准入、Service Mesh、统一合规</td></tr>
+    </table>
+    <div class="oneliner">
+      <div class="ol-tag">一句话</div>
+      <p>Casbin 是"你调用的一个函数"，OPA 是"你咨询的一个决策服务"。它把策略从每个业务服务里抽出来，集中到一个语言无关的引擎。</p>
+    </div>
+  </section>
+
+  <!-- ============ §2 Rego 模型 ============ -->
+  <section class="sec" id="s2">
+    <div class="sec-head"><div class="sec-no">02</div><h2>权限模型：input + data + Rego → 决策</h2></div>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">input（每请求变化）</div><div class="fd">本次请求上下文：当前用户、动作、资源。随每个 HTTP 请求传入。</div></div>
+        <div class="fbox p"><div class="ft">data（内存全局）</div><div class="fd">策略 + 事实：角色权限映射、资源归属。随 Bundle 加载进内存。</div></div>
+        <div class="fbox b"><div class="ft">Rego 规则</div><div class="fd">声明"什么条件下 allow 成立"，引擎自己求解（Datalog 谱系）。</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox r"><div class="ft">decision 决策</div><div class="fd">任意 JSON：allow、visible_fields、filters…</div></div>
+      </div>
+      <div class="fcap">图 4-1　OPA 四要素：input 是变量、data 是事实、Rego 是规则、输出是任意结构化决策</div>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">Rego 的两个语法直觉（import rego.v1 新语法）</div>
+      <ul>
+        <li><b>声明式</b>：只写"满足什么条件就成立"，不写怎么循环查找；</li>
+        <li><b>同名规则 = OR</b>（规则有多段定义，满足任一段即成立）；<b>同一个大括号内换行 = AND</b>（每行条件都要满足）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ §3 完整示例 ============ -->
+  <section class="sec" id="s3">
+    <div class="sec-head"><div class="sec-no">03</div><h2>完整示例：一个素材平台的三层权限 Rego</h2></div>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>authz.rego（功能权限 + 行级 + 字段级一体）</div>
+<pre><code><span class="tok-kw">package</span> material.authz
+<span class="tok-kw">import</span> rego.v1
+
+<span class="tok-kw">default</span> allow := <span class="tok-kw">false</span>
+
+<span class="tok-com"># ① 功能权限：角色 → 权限码（映射在 data.role_permissions）</span>
+allow <span class="tok-kw">if</span> {
+    some role <span class="tok-kw">in</span> input.user.roles
+    input.perm <span class="tok-kw">in</span> data.role_permissions[role]
+}
+
+<span class="tok-com"># ② 行级权限：查看素材</span>
+allow <span class="tok-kw">if</span> {
+    input.action == <span class="tok-str">"view"</span>
+    input.resource.kind == <span class="tok-str">"material"</span>
+    can_view
+}
+can_view <span class="tok-kw">if</span> { input.resource.owner_id == input.user.id }      <span class="tok-com"># 本人</span>
+can_view <span class="tok-kw">if</span> {                                                       <span class="tok-com"># 分享给我所在组</span>
+    some group <span class="tok-kw">in</span> input.user.groups
+    data.resource_owners[input.resource.id][group]
+}
+can_view <span class="tok-kw">if</span> { <span class="tok-str">"admin"</span> <span class="tok-kw">in</span> input.user.roles }              <span class="tok-com"># 超管</span>
+
+<span class="tok-com"># ③ 字段级：输出可见列集合（基础列人人可见）</span>
+<span class="tok-kw">default</span> visible_fields := {<span class="tok-str">"id"</span>, <span class="tok-str">"name"</span>, <span class="tok-str">"create_time"</span>}
+visible_fields contains <span class="tok-str">"phone"</span> <span class="tok-kw">if</span> { <span class="tok-str">"admin"</span> <span class="tok-kw">in</span> input.user.roles }
+visible_fields contains <span class="tok-str">"cost"</span>  <span class="tok-kw">if</span> { <span class="tok-str">"finance"</span> <span class="tok-kw">in</span> input.user.roles }</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>data.json（全局事实：角色权限映射 + 资源归属）</div>
+<pre><code>{
+  "role_permissions": {
+    "publisher": ["material:list:query", "material:list:add"],
+    "admin":     ["material:list:query", "material:list:export"]
+  },
+  "resource_owners": {
+    "M100": { "u101": "manage", "g5": "view" },
+    "M101": { "u102": "manage" }
+  }
+}</code></pre>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>调用（package material.authz 对应 URL /v1/data/material/authz）</div>
+<pre><code>curl -X POST http://localhost:8181/v1/data/material/authz \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "input": {
+      "user":     {"id":"u101","roles":["publisher"],"groups":["g5"]},
+      "perm":     "material:list:query",
+      "action":   "view",
+      "resource": {"kind":"material","id":"M100","owner_id":"u102"}
+    }
+  }'
+<span class="tok-com"># 输出（不止 bool，一次返回字段集合）：
+# { "result": { "allow": true, "visible_fields": ["id","name","create_time"] } }</span></code></pre>
+    </div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">关键差异：决策输出是任意 JSON</div>
+      <p>Casbin 一次返回 bool；OPA 可以一次返回 <code>allow</code>、<code>visible_fields</code>（能看哪些列）、甚至 <code>filters</code>（行级 WHERE 条件），一个请求把功能/行级/字段三层的决策结果全拿回来（第 10 章）。</p>
+    </div>
+  </section>
+  <!-- ============ §4 架构 ============ -->
+  <section class="sec" id="s4">
+    <div class="sec-head"><div class="sec-no">04</div><h2>运行架构：PEP / PDP / PIP / PAP</h2></div>
+    <p>这是理解 OPA 的<b>必背四件套</b>（源自 IETF 标准权限模型，不只是 OPA 在用）：</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#be3a34"><div class="ft">PEP 执行点</div><div class="fd">Policy Enforcement Point。业务服务的拦截器/网关/Envoy。负责"拦截请求、问 PDP、按结果放行或拒绝"。</div></div>
+        <div class="farrow">⇄</div>
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">PDP 决策点</div><div class="fd">Policy Decision Point。<b>就是 OPA</b>。收 input、算 Rego、返回决策，本身不读库。</div></div>
+        <div class="farrow">⇄</div>
+        <div class="fbox p"><div class="ft">PIP 信息点</div><div class="fd">Policy Information Point。<b>实时属性来源=业务库</b>。决策需要的实时数据（资源归属、用户组）从这里取。</div></div>
+      </div>
+      <div class="frow" style="margin-top:10px;">
+        <div class="fbox b"><div class="ft">PAP 管理点</div><div class="fd">Policy Administration Point。策略编写/审查/发布：<b>Git + CI + Bundle Server</b>，签名打包。</div></div>
+      </div>
+      <div class="fcap">图 4-2　PEP 执行、PDP 决策、PIP 提供事实、PAP 管理发布；你之前的业务代码主要扮演 PEP</div>
+    </div>
+
+    <h3 class="kp">决策日志（你问的：是不是用来监控越权？）</h3>
+    <p>对。OPA 可把每次决策（input + 结果）记录为<b>决策日志</b>，用途包括：① 安全审计（谁在什么时候访问了什么）；② <b>越权/异常事件告警</b>（大量 deny 可能是攻击或误配）；③ 排障（为什么我被拒了）；④ 合规回放（重放历史决策）。</p>
+  </section>
+
+  <!-- ============ §5 数据三通道 ============ -->
+  <section class="sec" id="s5">
+    <div class="sec-head"><div class="sec-no">05</div><h2>什么数据进 OPA？三个通道</h2></div>
+    <p>这是 OPA 最容易踩的坑：<b>不是所有数据都该塞进 OPA</b>。按"变化频率 + 数据量"分三通道：</p>
+    <table class="ftl">
+      <colgroup><col style="width:16%"><col style="width:30%"><col style="width:26%"><col style="width:28%"></colgroup>
+      <tr><th>数据类型</th><th>举例</th><th>去哪</th><th>怎么更新</th></tr>
+      <tr><td><b>策略/规则</b></td><td>.rego 文件（判断逻辑）</td><td>Bundle（Git）</td><td><b>GitOps</b>：提 PR → review → CI → 签名发布</td></tr>
+      <tr><td><b>低频配置</b></td><td>角色-权限映射、小范围 ACL 分享</td><td>Bundle 的 data.json（小）</td><td>后台变更触发 webhook → CI 重建；或 Bundle Server 发布时<b>现查库生成</b></td></tr>
+      <tr><td><b>海量/实时数据</b></td><td>100 万素材、实时订单、实时归属</td><td><b>不进 Bundle</b></td><td>PEP 查库塞进 input；或 Rego 用 http.send 实时回调</td></tr>
+    </table>
+    <div class="tipbox tb-bad">
+      <div class="tb-title">为什么 100 万素材不能进 Bundle（你问的"打包爆炸"）</div>
+      <p>Bundle 要被 OPA 加载进内存、轮询下载、原子切换。百万行 JSON 会让<b>包体巨大、内存暴涨、每次发布慢、且数据秒级过期</b>。规则：<b>变化慢、体积小的进 Bundle；海量且实时的留在业务库，决策时按请求取</b>。这正是行级 ACL 场景的主流处理方式。</p>
+    </div>
+    <p>回答你"是不是业务侧新增就调 Git API 上传策略"——<b>不是</b>。业务数据（素材、订单）永远不进 Git；只有策略代码进 Git。低频配置数据也不一定要人手工提交，通常由后台变更触发 webhook 自动跑构建，或 Bundle Server 在发布时实时查库生成 data.json。</p>
+  </section>
+
+  <!-- ============ §6 PIP 取数 ============ -->
+  <section class="sec" id="s6">
+    <div class="sec-head"><div class="sec-no">06</div><h2>PIP 实时取数：塞 input 还是 http.send</h2></div>
+    <p>这就是你说"看不懂"的那两个机制，它们解决"决策需要业务库里的实时数据，而 OPA 又不连库"的问题：</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">方式一：PEP 查好塞进 input（推荐）</div><div class="fd">业务服务（PEP）在调 OPA 前，自己先查业务库拿到"这条素材的 owner_id、用户所在组"，放进 input 再发给 OPA。OPA 全程无状态、不主动连库。</div></div>
+        <div class="fbox p"><div class="ft">方式二：Rego 里 http.send 回调</div><div class="fd">Rego 执行到一半，用 http.send() 主动发 HTTP 请求回调业务服务的接口取数（PIP）。OPA 变"有状态依赖"，要处理超时/缓存/性能。</div></div>
+      </div>
+      <div class="fcap">图 4-3　实时数据要么由 PEP 预查塞 input（主流），要么由 OPA 用 http.send 回调取（灵活但复杂）</div>
+    </div>
+    <div class="oneliner">
+      <div class="ol-tag">实践建议</div>
+      <p>绝大多数团队用<b>方式一</b>：业务服务本来就最懂自己的库和缓存，PEP 查好后塞 input，OPA 保持纯函数、快、可离线测试。方式二适合"规则复杂、需要查多个外部服务、且不想让 PEP 拼装"的场景。</p>
+    </div>
+  </section>
+
+  <!-- ============ §7 Bundle ============ -->
+  <section class="sec" id="s7">
+    <div class="sec-head"><div class="sec-no">07</div><h2>持久化：OPA 无数据库，靠 Bundle</h2></div>
+    <p>与 Casbin 落库不同，<b>OPA 本身无状态、不连数据库</b>。策略和数据打成一个 <b>Bundle</b>（本质是 <code>.tar.gz</code> 压缩包，里面是 .rego + .json，可签名校验），放在一个 HTTP 服务器 / S3 / Git 仓库上，OPA 启动时拉取、之后周期性拉取，全部加载进内存。</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox b"><div class="ft">编写</div><div class="fd">Git 仓库里写 .rego / data.json</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox b"><div class="ft">CI</div><div class="fd">校验、测试、签名、打包成 .tar.gz</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">Bundle Server</div><div class="fd">HTTP/S3/Git 静态托管</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox p"><div class="ft">OPA 拉取</div><div class="fd">启动拉 + 周期拉，内存激活</div></div>
+      </div>
+      <div class="fcap">图 4-4　Bundle 是不可变发布物（类似镜像/制品），可版本化、签名、灰度、回滚</div>
+    </div>
+  </section>
+
+  <!-- ============ §8 同步热更新 ============ -->
+  <section class="sec" id="s8">
+    <div class="sec-head"><div class="sec-no">08</div><h2>同步与热更新：策略更新必须重新部署吗？</h2></div>
+    <p><b>不用重启、不用重新部署 OPA 实例</b>。OPA 默认周期性轮询（pull）Bundle 服务器，发现新版本就<b>原子切换</b>（新包整体加载成功才替换，失败继续用旧的）。</p>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>config.yaml（轮询配置）</div>
+<pre><code>services:
+  - name: bundle-server
+    url: https://bundles.example.com/bundles
+bundles:
+  authz:
+    service: bundle-server
+    resource: /authz.tar.gz
+    polling:
+      min_delay_seconds: 30        <span class="tok-com"># 随机化轮询间隔</span>
+      max_delay_seconds: 60
+    <span class="tok-com"># 也可设 trigger: manual，不主动轮询，</span>
+    <span class="tok-com"># 由外部 POST /v1/bundles/authz 立即触发拉取（秒级）</span></code></pre>
+    </div>
+    <table class="ftl">
+      <colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup>
+      <tr><th>更新方式</th><th>机制</th><th>用途</th></tr>
+      <tr><td><b>Bundle 轮询（pull）</b></td><td>周期性拉新包，原子热更新</td><td>生产主路径</td></tr>
+      <tr><td><b>manual trigger</b></td><td>配置 trigger:manual 后 POST 立即拉</td><td>发布后想立刻生效，不等下个周期</td></tr>
+      <tr><td><b>Policy API PUT</b></td><td>直接 PUT 一条策略到运行中的 OPA</td><td><b>仅调试/实验</b>，不用于生产（无版本管理、重启即丢）</td></tr>
+    </table>
+    <div class="tipbox tb-warn">
+      <div class="tb-title">回答"OPA 策略是不是不会更新 / 更新就得重新部署"</div>
+      <p>OPA 实例不用重启，但<b>策略是"不可变发布物"，变更必须走 Git→CI→构建→发布 Bundle 的流程</b>，不是在 OPA 里改一行就立即生效。这是刻意的权衡：牺牲一点即时性，换来<b>版本化、代码评审、签名、灰度、秒级回滚</b>。对比 Casbin 的 Watcher 是 addPolicy 后<b>主动 push 广播</b>，OPA 是<b>周期 pull</b>。</p>
+    </div>
+  </section>
+  <!-- ============ §9 部分求值 ============ -->
+  <section class="sec" id="s9">
+    <div class="sec-head"><div class="sec-no">09</div><h2>部分求值：OPA 的"杀手锏"（自动生成 SQL）</h2></div>
+    <p>这是 OPA 处理<b>海量行级数据</b>的核心机制，也是面试最能体现深度的点。</p>
+    <h3 class="kp">9.1 数学直觉（先懂这个）</h3>
+    <p>完整求值好比 <code>f(x,y)=2x+y</code>，你把 x=3、y=4 都给我，我算出 10（一个 bool）。<b>部分求值</b>是你只给我 x=3、y 暂未知（标成 unknown），我把式子化简为 <code>f=6+y</code>——<b>输出一个"残余条件"，等以后 y 已知时再算</b>。</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#0f766e"><div class="ft">完整求值</div><div class="fd">用户 + 资源对象都给全 → OPA 返回 allow:true/false（适合单条详情，1 次判断）</div></div>
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">部分求值</div><div class="fd">只给用户，把"海量数据集合"标为 unknown → OPA 输出"满足权限的条件"：<code>owner_id='u101' OR group_id IN('g5')</code></div></div>
+      </div>
+      <div class="fcap">图 4-5　不把 100 万行逐行问 OPA，而是让 OPA 算出"过滤条件"，交给数据库一次性筛</div>
+    </div>
+    <div class="codebox">
+      <div class="bar"><span class="dots"><span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span></span>部分求值输出残余条件（概念示意）</div>
+<pre><code><span class="tok-com"># 把 data.materials 标为 unknown：opa eval --partial --unknowns data.materials</span>
+<span class="tok-com"># OPA 不返回 bool，而返回一组"可以直接当 WHERE 的表达式"：</span>
+owner_id = 'u101'  OR  group_id IN ('g5')
+
+<span class="tok-com"># 官方插件（OPA-SQL、PostgreSQL/MySQL/Mongo 集成）把它翻译成：</span>
+SELECT * FROM material
+WHERE owner_id = 'u101' OR group_id IN ('g5');   <span class="tok-com"># 下推给数据库执行</span></code></pre>
+    </div>
+    <div class="oneliner">
+      <div class="ol-tag">一句话定位</div>
+      <p>部分求值 = <b>自动化版本的若依 @DataScope</b>。@DataScope 要你手写 AOP 拼 WHERE；OPA 把"策略规则"自动编译成"针对任意数据库的查询条件"，让数据库在源头过滤，而不是把数据捞出来逐行鉴权。</p>
+    </div>
+  </section>
+
+  <!-- ============ §10 列表决策 ============ -->
+  <section class="sec" id="s10">
+    <div class="sec-head"><div class="sec-no">10</div><h2>海量行级怎么落地：filters + visible_fields</h2></div>
+    <p>你问"海量行级是不是只返回一些字段再去查数据库"——更准确地说，<b>列表和详情是两种决策</b>：</p>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">列表页（多行）</div><div class="fd">
+          OPA 一次返回两份结构化结果：<br>
+          ① <code>filters</code>：行级过滤条件（部分求值 → WHERE），业务拿它拼 SQL<br>
+          ② <code>visible_fields</code>：列裁剪（哪些列返回）
+        </div></div>
+        <div class="farrow">→</div>
+        <div class="fbox b"><div class="ft">业务库</div><div class="fd">WHERE filters 过滤行；SELECT 只取 visible_fields 的列，一次查询完成</div></div>
+      </div>
+      <div class="frow" style="margin-top:10px;">
+        <div class="fbox p"><div class="ft">详情页（单条）</div><div class="fd">PEP 先查出这一条，把完整对象塞进 input，OPA 完整求值返回 bool（+字段集合），false 则 403。</div></div>
+      </div>
+      <div class="fcap">图 4-6　列表走"条件下推"（一次查库），详情走"对象判断"（一次 bool），都不逐行调 OPA</div>
+    </div>
+    <div class="tipbox tb-mem">
+      <div class="tb-title">呼应你最初的 visible_fields 疑问</div>
+      <p><code>visible_fields: ["id","name","create_time","phone"]</code> 由 OPA 一次返回，<b>避免了像 Casbin 那样对每个字段循环 enforce</b>。列表 n 行的序列化本身是 O(n·k)，但权限判断只在<b>每请求一次</b>，把权限成本压到常数。</p>
+    </div>
+  </section>
+
+  <!-- ============ §11 批量 vs 逐条 ============ -->
+  <section class="sec" id="s11">
+    <div class="sec-head"><div class="sec-no">11</div><h2>批量决策 vs 逐条决策（你的问题 1）</h2></div>
+    <table class="ftl">
+      <colgroup><col style="width:20%"><col style="width:40%"><col style="width:40%"></colgroup>
+      <tr><th></th><th>OPA</th><th>Casbin</th></tr>
+      <tr><td>调用形态</td><td>HTTP 网络请求，<b>调用成本高</b>，倒逼"一次返回集合"</td><td>进程内函数，调用成本低，<b>很容易顺手写成 n 次</b></td></tr>
+      <tr><td>批量能力</td><td>一次决策输出 filters + visible_fields（天然面向集合）</td><td>有 <code>batchEnforce([请求...])</code> 批量 API，也能一次取权限 Set</td></tr>
+      <tr><td>正确做法</td><td>列表条件下推、字段一次返回</td><td>列表用 batchEnforce，或取权限 Set 内存判，不逐字段/逐行 enforce</td></tr>
+    </table>
+    <p>所以你说的"OPA 批量 vs Casbin 决策 n 次"是两种框架的<b>默认倾向</b>，不是绝对能力：Casbin 也能批量（batchEnforce/权限 Set），只是写起来容易偷懒成 n 次。<b>无论哪种，都要把"每对象一次远程/函数调用"压成"每请求一次"</b>。</p>
+  </section>
+
+  <!-- ============ §12 部署 ============ -->
+  <section class="sec" id="s12">
+    <div class="sec-head"><div class="sec-no">12</div><h2>四种部署形态</h2></div>
+    <div class="fig">
+      <div class="frow">
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">Sidecar 边车</div><div class="fd">K8s 中每个业务 Pod 旁挂一个 OPA，localhost 调用、无网络跳数（最常见）。</div></div>
+        <div class="fbox" style="border-color:#c2620d"><div class="ft">主机 Daemon</div><div class="fd">每台节点一个 OPA，同主机所有服务共享。</div></div>
+      </div>
+      <div class="frow" style="margin-top:10px;">
+        <div class="fbox p"><div class="ft">中央服务</div><div class="fd">OPA 集群独立部署，所有服务远程调用（集中、但有网络开销与单点压力）。</div></div>
+        <div class="fbox b"><div class="ft">Go 内嵌</div><div class="fd">用 Go 把 OPA 当库编进进程（仅 Go 生态）；其他语言只能用服务形态。</div></div>
+      </div>
+      <div class="fcap">图 4-7　Sidecar / Daemon / 中央 / 内嵌四种；Service Mesh 里常用 Envoy 的 ext_authz 把决策外接到 OPA</div>
+    </div>
+  </section>
+
+  <!-- ============ §13 选型 ============ -->
+  <section class="sec" id="s13">
+    <div class="sec-head"><div class="sec-no">13</div><h2>什么时候用 / 不用 OPA（含三个模型的更新共性）</h2></div>
+    <div class="tipbox tb-py">
+      <div class="tb-title">适合 OPA</div>
+      <ul>
+        <li>多语言微服务（Java/Go/Python/Node 共用一套策略），不想每语言实现一遍；</li>
+        <li>Service Mesh / K8s 准入控制、网关统一鉴权；</li>
+        <li>强审计、合规、需要策略版本化/签名/灰度/回滚的组织。</li>
+      </ul>
+    </div>
+    <div class="tipbox tb-bad">
+      <div class="tb-title">不必上 OPA</div>
+      <p>单体 Java 应用、团队没人会 Rego、只有常规 CRUD 权限——若依式自研或 Casbin 足够，引入 OPA 是过度设计。</p>
+    </div>
+
+    <h3 class="kp">三个模型的"初始化 + 增量更新"其实是同一套范式（你的问题 2）</h3>
+    <table class="ftl">
+      <colgroup><col style="width:16%"><col style="width:42%"><col style="width:42%"></colgroup>
+      <tr><th></th><th>初始化（种子）</th><th>增量更新</th></tr>
+      <tr><td><b>若依</b></td><td>menu.sql 随发版初始化</td><td>后台授权 + 删 Redis 缓存（<b>失效拉取 pull</b>）</td></tr>
+      <tr><td><b>Casbin</b></td><td>policy.csv / 种子 SQL / Adapter 直读</td><td>addPolicy + Watcher 广播（<b>主动推送 push</b>）</td></tr>
+      <tr><td><b>OPA</b></td><td>Git Bundle（含 .rego + data.json）</td><td>重建 Bundle + 周期/手动拉取（<b>周期 pull</b>）</td></tr>
+    </table>
+    <p>记住三种传播范式：<b>失效后拉取（cache-aside）、主动推送（pub/sub）、周期轮询（poll）</b>，所有权限系统的缓存/多实例一致性都逃不出这三种。</p>
+  </section>
+
+  <!-- ============ §14 小结 ============ -->
+  <section class="sec" id="s14">
+    <div class="sec-head"><div class="sec-no">14</div><h2>本册小结与自测</h2></div>
+    <h3 class="kp">14.1 必须带走的 9 句话</h3>
+    <ol>
+      <li>OPA 是<b>独立策略守护进程</b>（默认 8181，CNCF 毕业），语言无关；与 Casbin 是服务/库的根本区别。</li>
+      <li>四要素：input（每请求）、data（全局事实）、Rego 规则、决策（任意 JSON）。</li>
+      <li>架构 <b>PEP 执行 / PDP 决策（OPA）/ PIP 取数（业务库）/ PAP 管理（Git+CI）</b>，决策日志用于审计与越权告警。</li>
+      <li>数据三通道：策略走 GitOps、低频配置走 Bundle data.json、海量实时数据不进 Bundle 而走 input/http.send。</li>
+      <li>实时取数两方式：<b>PEP 查好塞 input（主流）</b> 或 Rego http.send 回调。</li>
+      <li>OPA 无数据库，靠 <b>Bundle</b>（.tar.gz 签名包）持久化，轮询拉取、原子热更新、无需重启。</li>
+      <li>策略更新走构建发布（非即时生效），换来版本化/签名/灰度/回滚；Casbin 是 push、OPA 是 pull。</li>
+      <li><b>部分求值</b>：把数据集合标 unknown，输出残余条件并翻译成 SQL WHERE 下推，等于自动化版 @DataScope。</li>
+      <li>列表返回 filters+visible_fields（一次决策），详情塞对象判 bool；批量而非逐行，部署以 Sidecar 为主。</li>
+    </ol>
+    <h3 class="kp">14.2 自测清单</h3>
+    <ul class="checklist" id="checklist-c4">
+      <li><label><input type="checkbox" data-q="c4q1">能说出 OPA 与 Casbin 的形态、输入输出、调用方式差异。</label></li>
+      <li><label><input type="checkbox" data-q="c4q2">能写一段 Rego 实现功能权限并解释同名规则 OR、花括号 AND。</label></li>
+      <li><label><input type="checkbox" data-q="c4q3">能写出行级 can_view（本人/组/admin）和字段级 visible_fields。</label></li>
+      <li><label><input type="checkbox" data-q="c4q4">能解释 PEP/PDP/PIP/PAP 各自职责，并指出你的代码扮演谁。</label></li>
+      <li><label><input type="checkbox" data-q="c4q5">能说清数据三通道及为什么百万行不能进 Bundle。</label></li>
+      <li><label><input type="checkbox" data-q="c4q6">能讲清塞 input 与 http.send 的区别和推荐。</label></li>
+      <li><label><input type="checkbox" data-q="c4q7">能说清 Bundle 是什么、放哪、如何热更新。</label></li>
+      <li><label><input type="checkbox" data-q="c4q8">能用数学例子讲清部分求值，并说明它如何转成 SQL WHERE。</label></li>
+      <li><label><input type="checkbox" data-q="c4q9">能说清列表 filters+visible_fields 与详情 bool 的两种决策。</label></li>
+      <li><label><input type="checkbox" data-q="c4q10">能说出四种部署形态和 Envoy ext_authz。</label></li>
+      <li><label><input type="checkbox" data-q="c4q11">能给出是否选 OPA 的理由，并说出三种更新传播范式。</label></li>
+    </ul>
+    <div class="pagenav" style="margin-top:26px;">
+      <a href="03-casbin.html">← 第三册 · Casbin</a>
+      <a href="05-comparison-interview.html">第五册 · 对比与收口 →</a>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var KEY='rbac-handbook-checks';
+  try{
+    var saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    document.querySelectorAll('.checklist input[data-q]').forEach(function(cb){
+      if(saved[cb.dataset.q]) cb.checked=true;
+      cb.addEventListener('change',function(){
+        var s=JSON.parse(localStorage.getItem(KEY)||'{}');
+        s[cb.dataset.q]=cb.checked; localStorage.setItem(KEY,JSON.stringify(s));
+      });
+    });
+  }catch(e){}
+})();
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

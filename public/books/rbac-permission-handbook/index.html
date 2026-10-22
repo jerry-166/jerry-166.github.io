@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限体系・从页面级 RBAC 到 Casbin/OPA</title>
+<style>
+:root {
+  --bg: #f5f6f9; --card: #ffffff; --ink: #1b2430; --ink-2: #455161; --ink-3: #6b7688;
+  --line: #e4e7ee; --primary: #3b4f8a; --primary-soft: #eceff8; --primary-deep: #2b3a66;
+  --high: #be3a34; --high-bg: #fdf0ef; --hard: #6d28d9; --hard-bg: #f4f0fe;
+  --trap: #c2620d; --trap-bg: #fef6ec; --py: #0f766e; --py-bg: #ecfaf7;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(20,30,55,.06), 0 1px 2px rgba(20,30,55,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; font-size: 15.5px; }
+code, pre, .mono { font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace; }
+
+.hero { background: linear-gradient(135deg,#ffffff 0%,#eef1f9 60%,#e3e9f7 100%); border-bottom: 1px solid #d6ddef; padding: 46px 22px 40px; text-align: center; }
+.hero .kicker { font-size: 13px; letter-spacing: 3px; color: var(--primary); font-weight: 700; margin-bottom: 10px; }
+.hero h1 { font-size: 31px; font-weight: 800; color: #141c2e; }
+.hero .sub { margin: 14px auto 0; font-size: 14.5px; color: #39435a; max-width: 700px; }
+.hero .sub b { color: var(--primary-deep); }
+.hero .seal { display:inline-block; margin-top:18px; font-size:12.5px; color:var(--primary); border:1px solid var(--primary); border-radius:999px; padding:4px 16px; background:#fff; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 36px 20px 70px; }
+.sec-title { font-size: 20px; font-weight: 800; color: #141c2e; margin: 34px 0 18px; display: flex; align-items: center; gap: 10px; }
+.sec-title::before { content: ""; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+.card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 24px 22px; text-decoration: none; color: var(--ink); box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.c1::before { background: #3b4f8a; } .c2::before { background: #0f766e; } .c3::before { background: #6d28d9; }
+.c4::before { background: #c2620d; } .c5::before { background: #be3a34; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(20,30,55,.10); }
+.card .num { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--primary); margin-bottom: 6px; }
+.card h3 { font-size: 17.5px; font-weight: 700; color: #141c2e; margin-bottom: 9px; }
+.card p { font-size: 13.3px; color: var(--ink-2); }
+.card .tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.card .tag { font-size: 11.5px; padding: 2px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+.card .meta { margin-top: 12px; font-size: 11.8px; color: var(--ink-3); border-top: 1px dashed var(--line); padding-top: 10px; }
+
+.route { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 28px; box-shadow: var(--shadow); }
+.route ol { margin: 4px 0 0 20px; }
+.route li { font-size: 14px; color: var(--ink-2); margin-bottom: 9px; }
+.route li b { color: var(--ink); }
+.route .pill { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-right:6px; }
+.p-base { background:var(--primary-soft); color:var(--primary); }
+.p-ruoyi { background:var(--py-bg); color:var(--py); }
+.p-casbin { background:var(--hard-bg); color:var(--hard); }
+.p-opa { background:var(--trap-bg); color:var(--trap); }
+.p-final { background:var(--high-bg); color:var(--high); }
+
+.guide { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 28px; box-shadow: var(--shadow); }
+.guide h3 { font-size: 16.5px; font-weight: 700; color: #141c2e; margin-bottom: 12px; }
+.guide ol { padding-left: 20px; }
+.guide li { font-size: 14px; color: var(--ink-2); margin-bottom: 8px; }
+.guide li b { color: var(--ink); }
+.guide .note { margin-top: 12px; font-size: 12.5px; color: var(--primary-deep); background: var(--primary-soft); border-radius: 8px; padding: 10px 14px; }
+
+footer { text-align: center; padding: 30px 0 50px; color: var(--ink-3); font-size: 12.5px; }
+footer a { color: var(--primary); text-decoration: none; }
+@media (max-width: 600px){ .grid { grid-template-columns: 1fr; } .hero h1{ font-size:24px; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">PERMISSION SYSTEM HANDBOOK · 后端面试向</div>
+  <h1>权限体系・从页面级 RBAC 到 Casbin/OPA</h1>
+  <p class="sub">
+    一道面试题（MongoDB 页面级 RBAC 被追问到卡壳）讲透 <b>三层权限</b>：功能权限（页面/按钮/接口）、数据权限（行级：哪些行）、字段级权限（列级：哪些列）；
+    并完整对比三套工程实现：<b>若依自研、Casbin、OPA</b>。
+  </p>
+  <div class="seal">5 个分册 · 21 张机制图 · 30+ 段代码 · 术语表与面试口述稿</div>
+</div>
+
+<div class="wrap">
+
+  <div class="sec-title">阅读路线</div>
+  <div class="route">
+    <ol>
+      <li><span class="pill p-base">第一册</span><b>先建坐标系：</b>三层权限全景 + 模型发展史（ACL→RBAC→ABAC→ReBAC）+ 多对多数据权限表 <code>resource_owner</code>。</li>
+      <li><span class="pill p-ruoyi">第二册</span><b>方案一 · 若依：</b>最贴近业务的自研实现——表关系、菜单权限点、行级 data_scope、字段级 Jackson。</li>
+      <li><span class="pill p-casbin">第三册</span><b>方案二 · Casbin：</b>把关系抽成一张 EAV 表、把规则抽成引擎——进程内权限库，含 Adapter/Watcher。</li>
+      <li><span class="pill p-opa">第四册</span><b>方案三 · OPA：</b>把规则抽成独立服务——Rego 策略语言、Bundle 热更新、部分求值 SQL 下推。</li>
+      <li><span class="pill p-final">第五册</span><b>横向收口：</b>三方案对比、策略生命周期、缓存性能、术语表、30 秒口述稿与 30 问自测。</li>
+    </ol>
+  </div>
+
+  <div class="sec-title">分册目录</div>
+  <div class="grid">
+    <a class="card c1" href="01-foundations.html">
+      <div class="num">PART 01 · 地基</div>
+      <h3>三层权限与模型发展史</h3>
+      <p>面试原题复盘、功能/行级/字段三层正交、ACL→RBAC0-3→ABAC→ReBAC、role/group/dept 辨析、数据权限两条路线与 resource_owner 表设计、Redis 权限 Set。</p>
+      <div class="tags"><span class="tag">三层权限</span><span class="tag">RBAC</span><span class="tag">resource_owner</span></div>
+      <div class="meta">覆盖对话轮次 1·2·3·12 ｜ 7 章</div>
+    </a>
+    <a class="card c2" href="02-ruoyi.html">
+      <div class="num">PART 02 · 方案一</div>
+      <h3>若依（RuoYi）自研体系</h3>
+      <p>表结构全览、sys_menu 双重身份、M/C/F/I 菜单类型、@PreAuthorize 权限码、@DataScope 五档行级、Jackson 字段级扩展、权限生命周期与应急封禁。</p>
+      <div class="tags"><span class="tag">RuoYi</span><span class="tag">data_scope</span><span class="tag">Jackson</span></div>
+      <div class="meta">覆盖对话轮次 3·4·5·6·11·12 ｜ 10 章</div>
+    </a>
+    <a class="card c3" href="03-casbin.html">
+      <div class="num">PART 03 · 方案二</div>
+      <h3>Casbin 权限引擎</h3>
+      <p>PERM 元模型、casbin_rule EAV 表、角色继承 RoleManager 可达性、行级两路线、字段级批量、Adapter 持久化、Watcher 多实例同步、策略来源四模式与孤儿清理。</p>
+      <div class="tags"><span class="tag">Casbin</span><span class="tag">EAV</span><span class="tag">Adapter/Watcher</span></div>
+      <div class="meta">覆盖对话轮次 4-11 ｜ 12 章</div>
+    </a>
+    <a class="card c4" href="04-opa.html">
+      <div class="num">PART 04 · 方案三</div>
+      <h3>OPA 策略引擎</h3>
+      <p>Rego 与 input/data、PEP/PDP/PIP/PAP、Bundle 持久化与热更新、数据三通道、部分求值（Partial Evaluation）下推 SQL、批量决策、Sidecar 部署与选型。</p>
+      <div class="tags"><span class="tag">OPA</span><span class="tag">Rego</span><span class="tag">Bundle</span><span class="tag">部分求值</span></div>
+      <div class="meta">覆盖对话轮次 13-16 ｜ 14 章</div>
+    </a>
+    <a class="card c5" href="05-comparison-interview.html">
+      <div class="num">PART 05 · 收口</div>
+      <h3>横向对比、性能与面试收口</h3>
+      <p>三方案全维度对比、策略生命周期（初始化 + 增量 push/pull）、Redis 缓存与一致性、完整术语对照表、30 秒/3 分钟口述稿、高频追问弹药库、30 问自检。</p>
+      <div class="tags"><span class="tag">选型</span><span class="tag">术语表</span><span class="tag">口述稿</span></div>
+      <div class="meta">覆盖轮次 1·2·10·15·16 ｜ 8 章</div>
+    </a>
+  </div>
+
+  <div class="sec-title">划线批注 · 使用说明</div>
+  <div class="guide">
+    <h3>这是你自己的笔记本</h3>
+    <ol>
+      <li><b>划线</b>：用鼠标/手指选中任意文字，浮出工具条，选颜色即划线；写批注支持 <b>Markdown</b> 语法。</li>
+      <li><b>查看</b>：右侧栏（手机端点右下角悬浮按钮）汇总本页全部批注，可逐条展开 / 收起、跳转定位、编辑、删除。</li>
+      <li><b>云端同步</b>：首次保存会提示输入<b>写入口令</b>，输入一次永久记住；换设备 / 换浏览器登录同一页面，批注自动回来。</li>
+      <li><b>离线可用</b>：断网时批注存本地，联网后自动补推。</li>
+    </ol>
+    <div class="note">数据保存在云端 Redis（按页面文件名隔离），本地 localStorage 缓存加速。右下角状态标签：☁ 已同步 / ✎ 仅本机。</div>
+  </div>
+
+  <footer>权限体系・从页面级 RBAC 到 Casbin/OPA · 与 <a href="/">blog</a> 同源部署 · 面试复习活文档</footer>
+</div>
+
+<script src="anno.js"></script>
+</body>
+</html>

@@ -73,6 +73,10 @@ code{font-family:var(--mono);font-size:.86em;background:var(--paper-2);border:1p
 .toc a.sub{font-size:12.5px;padding-left:26px;color:var(--faint)}
 .toc a.sub.active{color:var(--blue)}
 @media(min-width:1420px){.toc{display:block}}
+/* 批注边栏（anno.js）打开时启用挤压布局：body 右侧让位 430px、正文左移。
+   目录是 position:fixed 不随 body 移动，宽屏下会被左移的正文压住 —— 挤压期间隐藏目录，
+   关闭边栏（类名移除）后自动恢复 */
+body.anno-squeeze .toc{display:none}
 
 /* ===== Hero ===== */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:110px 0 230px;background:linear-gradient(180deg,#FAF8F2 0%,var(--paper) 100%)} /* 底部预留 230px 给动画条带，内容永不与其重叠 */

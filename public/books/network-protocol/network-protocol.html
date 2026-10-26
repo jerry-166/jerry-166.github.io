@@ -351,6 +351,10 @@ footer p{font-size:13px;color:var(--faint);font-family:var(--mono)}
   <a href="#compare">06 · 对比与总结</a>
 </aside>
 
+<!-- 正文主体：包一层 <main>，批注脚本（anno.js）按约定将 main 探测为可划线容器；
+     若不包裹，兜底逻辑会选中文字最多的单个章节，导致其余章节无法划线 -->
+<main>
+
 <!-- ===== Hero ===== -->
 <header class="hero">
   <canvas id="heroCanvas" aria-hidden="true"></canvas>
@@ -1426,6 +1430,8 @@ footer p{font-size:13px;color:var(--faint);font-family:var(--mono)}
     <p style="margin-top:8px">HTTP / HTTPS / SSE / WebSocket / MCP · 依据 RFC 与 MCP 官方规范（2025-03-26）整理 · MCP 问答素材参考：面试鸭（mianshiya.com）</p>
   </div>
 </footer>
+
+</main>
 
 <!-- 回到顶部 -->
 <button id="toTop" aria-label="回到顶部">↑</button>

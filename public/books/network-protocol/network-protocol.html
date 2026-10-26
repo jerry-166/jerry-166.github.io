@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>连接的进化 · HTTP → HTTPS → SSE → WebSocket → MCP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F5FA8'/%3E%3Cpath d='M6 16h14M16 10l6 6-6 6' stroke='%23F5F2EB' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='24' cy='16' r='2.6' fill='%23E8C878'/%3E%3C/svg%3E">
+<style>
+/* ==========================================================
+   设计系统：暖纸"技术手册"风
+   - 暖白纸面 + 工程蓝主色 + 五章各自的语义色（--ch）
+   - 衬线大标题（书籍感）+ 无衬线正文 + 等宽字体做标签
+   - 每章通过 --ch 变量驱动小节编号、列表符号、步骤圆点颜色
+   ========================================================== */
+:root{
+  --paper:#F5F2EB; --paper-2:#EDE9DF;
+  --surface:#FFFFFF; --surface-2:#F8F5EE;
+  --line:#E4DFD3; --line-2:#CFC8B6;
+  --ink:#23262E; --muted:#565D6B; --faint:#8B8F9A;
+  --blue:#1F5FA8;  --blue-dim:rgba(31,95,168,.09);
+  --server:#B4540A;--server-dim:rgba(180,84,10,.09);
+  --secure:#177A4C;--secure-dim:rgba(23,122,76,.09);
+  --app:#6638B8;   --app-dim:rgba(102,56,184,.09);
+  --danger:#B93A3A;--danger-dim:rgba(185,58,58,.08);
+  --gold:#8A6D1F;  --gold-dim:rgba(138,109,31,.10);
+  --code-bg:#141821; --code-line:#252C3B; --code-head:#1B2230;
+  --code-f:#7DD3FC; --code-k:#C4B5FD; --code-s:#6EE7B7; --code-n:#FBBF24; --code-w:#F87171; --code-c:#64748B;
+  --mono:"JetBrains Mono","Cascadia Code","SF Mono","Fira Code",Consolas,"Courier New",monospace;
+  --display:Georgia,"Times New Roman","Songti SC","STZhongsong","SimSun",serif;
+  --body:-apple-system,"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+}
+/* 各章节语义色：驱动编号徽标 / 列表符号 / 步骤圆点 */
+#overview{--ch:#5B6472} #http{--ch:var(--blue)} #https{--ch:var(--secure)}
+#sse{--ch:var(--server)} #websocket{--ch:var(--app)} #mcp{--ch:var(--danger)} #compare{--ch:#5B6472}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px} /* 锚点跳转避开固定导航（修复原版被遮挡问题） */
+body{background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(31,95,168,.16)}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+.wrap{max-width:940px;margin:0 auto;padding:0 26px}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--ink)}
+
+/* ===== 顶部阅读进度条（新增 UX） ===== */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:300;background:linear-gradient(90deg,var(--blue),var(--secure),var(--server))}
+
+/* ===== 顶部导航 ===== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,242,235,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1160px;margin:0 auto;padding:0 24px;height:62px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--mono);font-weight:700;font-size:14.5px;letter-spacing:.02em;white-space:nowrap}
+.nav-logo b{color:var(--blue)}
+.nav-links{display:flex;gap:2px;margin-left:auto}
+.nav-links a{color:var(--muted);font-size:13.5px;font-family:var(--mono);padding:6px 11px;border-radius:7px;white-space:nowrap;transition:.18s}
+.nav-links a:hover{color:var(--ink);background:var(--surface-2);text-decoration:none}
+.nav-links a.active{color:var(--blue);background:var(--blue-dim)}
+/* 移动端汉堡菜单（新增：原版移动端完全无法导航） */
+.nav-burger{display:none;margin-left:auto;background:none;border:1px solid var(--line-2);border-radius:8px;width:40px;height:36px;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.nav-burger span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px;transition:.2s}
+.nav-burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-burger.open span:nth-child(2){opacity:0}
+.nav-burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ===== 左侧目录侧栏（≥1420px 显示，新增 UX） ===== */
+.toc{display:none;position:fixed;left:26px;top:104px;bottom:44px;width:200px;overflow-y:auto;z-index:90;padding-right:8px}
+.toc::-webkit-scrollbar{width:4px}
+.toc::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:2px}
+.toc-title{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.22em;margin-bottom:14px}
+.toc a{display:block;font-size:13px;color:var(--muted);padding:5px 0 5px 14px;border-left:2px solid var(--line);transition:.15s;line-height:1.5}
+.toc a:hover{color:var(--ink);text-decoration:none;border-left-color:var(--line-2)}
+.toc a.active{color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.toc a.sub{font-size:12.5px;padding-left:26px;color:var(--faint)}
+.toc a.sub.active{color:var(--blue)}
+@media(min-width:1420px){.toc{display:block}}
+
+/* ===== Hero ===== */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:110px 0 230px;background:linear-gradient(180deg,#FAF8F2 0%,var(--paper) 100%)} /* 底部预留 230px 给动画条带，内容永不与其重叠 */
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:46px 46px;-webkit-mask:radial-gradient(ellipse 80% 60% at 50% 28%,#000 20%,transparent 72%);mask:radial-gradient(ellipse 80% 60% at 50% 28%,#000 20%,transparent 72%)}
+#heroCanvas{position:absolute;left:0;right:0;bottom:0;width:100%;height:190px} /* 动画只占据首屏底部的固定条带，不覆盖正文区域 */
+.hero-inner{position:relative;z-index:2;max-width:940px;margin:0 auto;padding:0 26px;width:100%}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12.5px;color:var(--blue);border:1px solid var(--line-2);background:rgba(255,255,255,.75);padding:6px 14px;border-radius:30px;margin-bottom:26px}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--secure);box-shadow:0 0 10px var(--secure);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-family:var(--display);font-size:clamp(32px,5.4vw,58px);line-height:1.16;font-weight:700;letter-spacing:-.01em;margin-bottom:22px}
+.hero h1 .p1{color:var(--blue)} .hero h1 .p2{color:var(--secure)} .hero h1 .p3{color:var(--server)} .hero h1 .p4{color:var(--app)} .hero h1 .p5{color:var(--danger)}
+.hero h1 .arrow{color:var(--faint);font-weight:400;margin:0 .1em;font-size:.8em}
+.hero p.lead{font-size:clamp(15.5px,1.7vw,18.5px);color:var(--muted);max-width:700px;margin-bottom:36px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--body);font-size:15px;padding:12px 26px;border-radius:10px;border:1px solid var(--line-2);cursor:pointer;transition:.2s;color:var(--ink);background:var(--surface)}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
+.btn-primary:hover{background:#17497F;box-shadow:0 6px 22px rgba(31,95,168,.28);text-decoration:none}
+.btn:hover{border-color:var(--blue);color:var(--blue);text-decoration:none}
+.hero-stats{display:flex;gap:44px;margin-top:54px;flex-wrap:wrap}
+.hero-stat .num{font-family:var(--display);font-size:30px;font-weight:700;color:var(--ink)}
+.hero-stat .num span{color:var(--blue)}
+.hero-stat .lbl{font-size:12.5px;color:var(--faint);font-family:var(--mono)}
+.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;color:var(--faint);font-family:var(--mono);font-size:11.5px;letter-spacing:.15em;animation:bob 2s infinite}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+
+/* ===== 章节通用 ===== */
+section.chapter{padding:96px 0 34px;position:relative}
+.ch-head{margin-bottom:46px;padding-bottom:26px;border-bottom:1px solid var(--line-2)}
+.ch-num{font-family:var(--mono);font-size:13px;letter-spacing:.2em;margin-bottom:14px;color:var(--ch)}
+.ch-title{font-family:var(--display);font-size:clamp(26px,3.4vw,38px);font-weight:700;line-height:1.28;margin-bottom:14px}
+.ch-sub{color:var(--muted);font-size:16.5px;max-width:780px}
+/* 小节标题：编号徽标 + 标题 + 延伸细线 */
+h3.sec{display:flex;align-items:center;gap:12px;font-size:19.5px;font-weight:700;margin:56px 0 18px;line-height:1.4}
+h3.sec .no{font-family:var(--mono);font-size:12px;color:var(--ch);background:var(--paper-2);border:1px solid var(--line-2);padding:2px 8px;border-radius:6px;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+h3.sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent);margin-left:2px;min-width:30px}
+h4.sec2{font-size:16px;font-weight:700;margin:30px 0 10px;color:var(--ink);display:flex;align-items:center;gap:8px}
+h4.sec2::before{content:"";width:7px;height:7px;background:var(--ch);border-radius:2px;transform:rotate(45deg);flex-shrink:0}
+p{margin:12px 0;color:var(--muted)}
+p.note{color:var(--ink)}
+strong{color:var(--ink);font-weight:600}
+.more{color:var(--blue)}
+ul.tight{margin:12px 0 12px 4px;list-style:none}
+ul.tight li{position:relative;padding-left:22px;margin:9px 0;color:var(--muted)}
+ul.tight li::before{content:"";position:absolute;left:3px;top:11px;width:7px;height:7px;border-radius:2px;background:var(--ch);transform:rotate(45deg)}
+ul.tight li.server-i::before{background:var(--server)}
+ul.tight li.secure-i::before{background:var(--secure)}
+ul.tight li.app-i::before{background:var(--app)}
+
+/* MCP 章节顶部速览（钩子地图） */
+.ch-map{display:flex;flex-wrap:wrap;gap:8px;margin:-16px 0 8px}
+.ch-map a{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 12px;transition:.15s}
+.ch-map a:hover{color:var(--danger);border-color:var(--danger);text-decoration:none}
+
+/* OCR 原话引用卡：金色左边线 + 出处标签 */
+.quote{position:relative;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:18px 22px 14px;margin:20px 0}
+.quote .q-tag{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.14em;margin-bottom:8px}
+.quote p{margin:6px 0;font-size:15.5px}
+
+/* 卡片 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:26px 28px;margin:22px 0;box-shadow:0 1px 3px rgba(35,38,46,.04)}
+.card.glow{border-color:var(--line-2);box-shadow:0 2px 12px rgba(35,38,46,.06)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.mini-card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:20px 22px;box-shadow:0 1px 3px rgba(35,38,46,.04)}
+.mini-card .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;margin-bottom:10px}
+.mini-card h5{font-size:16px;margin-bottom:8px;font-weight:700}
+.mini-card p{font-size:14px;margin:0}
+.tag-c{color:var(--blue)} .tag-s{color:var(--server)} .tag-g{color:var(--secure)} .tag-a{color:var(--app)} .tag-r{color:var(--danger)} .tag-y{color:var(--gold)}
+
+/* 代码块：JS 自动包一层头部（标题 + 复制按钮） */
+.codeblock{margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid var(--code-line)}
+.code-head{display:flex;align-items:center;justify-content:space-between;background:var(--code-head);padding:9px 16px;border-bottom:1px solid var(--code-line)}
+.code-title{font-family:var(--mono);font-size:11.5px;color:#8A93A8;letter-spacing:.08em}
+.copy-btn{font-family:var(--mono);font-size:11.5px;color:#AEB6C6;background:transparent;border:1px solid var(--code-line);border-radius:6px;padding:3px 12px;cursor:pointer;transition:.15s}
+.copy-btn:hover{color:#fff;border-color:#3A4358;background:rgba(255,255,255,.06)}
+.code{background:var(--code-bg);color:#CBD5E1;padding:20px 22px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.85;margin:0}
+.code .ln{white-space:pre;display:block}
+.c-k{color:var(--code-k)} .c-s{color:var(--code-s)} .c-c{color:var(--code-c)} .c-f{color:var(--code-f)} .c-n{color:var(--code-n)} .c-w{color:var(--code-w)}
+.code .hl{background:rgba(125,211,252,.1);border-left:2px solid var(--code-f);margin:0 -22px;padding:0 22px 0 20px}
+/* 未被 JS 包装时的兜底圆角 */
+.code:only-child{border-radius:12px}
+.code-label{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin:22px 0 -8px;letter-spacing:.08em}
+
+/* 内联标签 */
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 9px;border-radius:6px;border:1px solid var(--line-2);color:var(--ink);background:var(--surface-2)}
+.pill.c{color:var(--blue);border-color:var(--blue);background:var(--blue-dim)}
+.pill.s{color:var(--server);border-color:var(--server);background:var(--server-dim)}
+.pill.g{color:var(--secure);border-color:var(--secure);background:var(--secure-dim)}
+.pill.a{color:var(--app);border-color:var(--app);background:var(--app-dim)}
+
+/* ===== 交互时序图 ===== */
+.seq-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 18px 16px;margin:26px 0}
+.seq-controls{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.seq-btn{font-family:var(--mono);font-size:12.5px;padding:7px 16px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);cursor:pointer;transition:.18s}
+.seq-btn:hover{border-color:var(--blue);color:var(--blue)}
+.seq-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.seq-step{font-family:var(--mono);font-size:12px;color:var(--faint);margin-left:auto}
+.seq-svg{width:100%;height:auto;display:block}
+.seq-actor{font-weight:700;font-size:14px}
+.seq-actor-sub{font-family:var(--mono);font-size:10.5px;fill:var(--faint)}
+.seq-life{stroke:var(--line-2);stroke-width:1.5;stroke-dasharray:5 5}
+.msg{opacity:0}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-line{stroke-width:2;fill:none}
+.msg-label{font-family:var(--mono);font-size:11.5px;fill:var(--ink)}
+.msg-label-bg{fill:var(--surface)}
+.msg-note{font-family:var(--mono);font-size:11px;fill:var(--faint)}
+.seq-phase-bg{fill:#FBF3DC;stroke:#E3CE8F;rx:6}
+.seq-phase-text{font-family:var(--mono);font-size:11.5px;fill:var(--gold);letter-spacing:.2em}
+
+/* ===== 报文结构（字节块） ===== */
+.frame{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:22px 0;font-family:var(--mono);font-size:13.5px;background:var(--surface)}
+.frame-row{display:grid;grid-template-columns:170px 1fr;align-items:center;border-bottom:1px solid var(--line)}
+.frame-row:last-child{border-bottom:none}
+.frame-row .k{padding:11px 18px;background:var(--surface-2);color:var(--ink);font-weight:500;white-space:nowrap}
+.frame-row .v{padding:11px 18px;color:var(--muted);transition:.15s}
+.frame-row:hover .v{background:var(--surface-2);color:var(--ink)}
+.frame-row .v small{color:var(--faint);font-size:11.5px}
+
+/* 对比表：HTML 内直接包 .cmp-wrap（不再依赖 JS） */
+.cmp-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:24px 0;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+.cmp-wrap::-webkit-scrollbar{height:8px}
+.cmp-wrap::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+table.cmp{width:100%;min-width:560px;border-collapse:collapse;margin:0;font-size:14px}
+table.cmp.wide{min-width:780px}
+table.cmp th,table.cmp td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);color:var(--muted)}
+table.cmp th{background:var(--surface-2);color:var(--ink);font-weight:700;font-size:13.5px}
+table.cmp td:first-child{color:var(--ink);font-weight:500;background:var(--surface-2)}
+table.cmp tr:last-child td{border-bottom:none}
+table.cmp tr:hover td{background:var(--surface-2)}
+table.cmp td code{font-size:12.5px;color:var(--blue)}
+
+/* 演进时间轴 */
+.evo{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:30px 0;position:relative}
+.evo::before{content:"";position:absolute;top:31px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,var(--blue),var(--secure),var(--server),var(--app),var(--danger))}
+.evo-node{text-align:center;position:relative;padding:0 8px}
+.evo-dot{width:62px;height:62px;border-radius:50%;background:var(--surface);border:2px solid var(--line-2);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:14px;position:relative;z-index:2}
+.evo-node:nth-child(1) .evo-dot{border-color:var(--blue);color:var(--blue)}
+.evo-node:nth-child(2) .evo-dot{border-color:var(--secure);color:var(--secure)}
+.evo-node:nth-child(3) .evo-dot{border-color:var(--server);color:var(--server)}
+.evo-node:nth-child(4) .evo-dot{border-color:var(--app);color:var(--app)}
+.evo-node:nth-child(5) .evo-dot{border-color:var(--danger);color:var(--danger)}
+.evo-node h5{font-size:15px;margin-bottom:5px;font-weight:700}
+.evo-node p{font-size:12.5px;line-height:1.6;margin:0}
+
+/* 流程步骤条 */
+.steps{counter-reset:step;display:grid;gap:14px;margin:22px 0}
+.step{display:grid;grid-template-columns:44px 1fr;gap:16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:18px 22px}
+.step::before{counter-increment:step;content:counter(step);width:34px;height:34px;border-radius:50%;background:var(--paper-2);color:var(--ch);border:1px solid var(--line-2);font-family:var(--mono);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;grid-row:1 / span 2;align-self:start}
+.step h5{font-size:15.5px;margin-bottom:4px;font-weight:700}
+.step p{font-size:14px;margin:0}
+.step.server-s::before{background:var(--server-dim);color:var(--server);border-color:transparent}
+.step.secure-s::before{background:var(--secure-dim);color:var(--secure);border-color:transparent}
+.step.app-s::before{background:var(--app-dim);color:var(--app);border-color:transparent}
+
+/* 安全三要素 */
+.triad{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:24px 0}
+.triad .mini-card{text-align:center}
+.triad .ico{width:46px;height:46px;margin:0 auto 12px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.triad h5{justify-content:center}
+
+/* FAQ 折叠问答（details/summary 原生组件，无 JS 依赖） */
+details.faq{background:var(--surface);border:1px solid var(--line);border-radius:11px;margin:14px 0;overflow:hidden}
+details.faq summary{cursor:pointer;padding:15px 20px;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:baseline;gap:12px;color:var(--ink)}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::before{content:"Q";font-family:var(--mono);font-size:12px;color:var(--danger);background:var(--danger-dim);border-radius:6px;padding:1px 8px;flex-shrink:0}
+details.faq summary::after{content:"+";font-family:var(--mono);margin-left:auto;color:var(--faint);transition:.2s}
+details.faq[open] summary::after{transform:rotate(45deg)}
+details.faq[open] summary{border-bottom:1px solid var(--line);background:var(--surface-2)}
+details.faq .faq-body{padding:14px 20px;color:var(--muted);font-size:15px}
+details.faq .faq-body .ans-tag{font-family:var(--mono);font-size:11px;color:var(--secure);letter-spacing:.14em;display:block;margin-bottom:6px}
+
+/* ===== 面试实战：整段话回答（深色重点卡） ===== */
+.interview{background:linear-gradient(140deg,#1D2433 0%,#12151D 100%);border:1px solid #2A3346;border-radius:14px;padding:30px 34px;margin:26px 0;box-shadow:0 10px 34px rgba(18,21,29,.28)}
+.interview .iv-tag{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.interview .iv-badge{font-family:var(--mono);font-size:11.5px;color:#E8C878;letter-spacing:.18em;border:1px solid rgba(232,200,120,.35);border-radius:20px;padding:4px 14px}
+.interview .iv-meta{font-family:var(--mono);font-size:11.5px;color:#6E7789}
+.interview .iv-q{font-family:var(--display);font-size:19px;color:#EDE9DF;margin-bottom:16px}
+.interview .iv-q::before{content:"“";color:#E8C878;margin-right:4px}
+.interview .iv-q::after{content:"”";color:#E8C878;margin-left:4px}
+.interview p.answer{color:#C9CFDB;font-size:15.5px;line-height:2.05;margin:0}
+/* 知识钩子：点击跳转对应模块 */
+a.hook{color:#8FC7F2;border-bottom:1px dashed rgba(143,199,242,.55);transition:.15s}
+a.hook:hover{color:#BFE2FA;border-bottom-style:solid;background:rgba(143,199,242,.1);text-decoration:none}
+.iv-hint{font-size:13px;color:#6E7789;font-family:var(--mono);margin-top:18px;padding-top:14px;border-top:1px solid #2A3346;line-height:1.9}
+
+/* 回到顶部按钮（新增 UX） */
+#toTop{position:fixed;right:26px;bottom:26px;z-index:150;width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--line-2);color:var(--muted);font-size:17px;cursor:pointer;box-shadow:0 4px 14px rgba(35,38,46,.12);opacity:0;pointer-events:none;transform:translateY(10px);transition:.25s}
+#toTop.show{opacity:1;pointer-events:auto;transform:none}
+#toTop:hover{color:var(--blue);border-color:var(--blue)}
+
+/* 页脚 */
+footer{border-top:1px solid var(--line);padding:46px 0 60px;margin-top:70px;text-align:center}
+footer p{font-size:13px;color:var(--faint);font-family:var(--mono)}
+
+/* tabs */
+.tabs{display:flex;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:5px;margin:22px 0 0}
+.tab-btn{flex:1;font-family:var(--body);font-size:14px;padding:9px 12px;border:none;background:transparent;color:var(--muted);border-radius:7px;cursor:pointer;transition:.18s} /* 修复原版 transition:.18px 笔误 */
+.tab-btn.active{background:var(--paper-2);color:var(--ink);font-weight:600}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ===== 响应式 ===== */
+@media(max-width:860px){
+  .grid2,.grid3,.grid4,.triad{grid-template-columns:1fr}
+  .evo{grid-template-columns:1fr;gap:18px}
+  .evo::before{display:none}
+  .frame-row{grid-template-columns:120px 1fr}
+  .frame-row .k{padding:9px 12px;font-size:12px}
+  .frame-row .v{padding:9px 12px;font-size:12px}
+  /* 移动端：顶部链接收进汉堡菜单 */
+  .nav-links{display:none;position:absolute;top:62px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);flex-direction:column;padding:10px 20px 16px;gap:2px;box-shadow:0 14px 28px rgba(35,38,46,.1)}
+  .nav-links.open{display:flex}
+  .nav-burger{display:flex}
+  .interview{padding:22px 20px}
+  h3.sec{font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+/* 打印样式：隐藏交互组件，正文白底黑字 */
+@media print{
+  .nav,.toc,#progress,#toTop,.scroll-hint,#heroCanvas,.seq-controls,.copy-btn,.ch-map{display:none !important}
+  body{background:#fff}
+  .interview{background:#fff;color:var(--ink);border-color:#888}
+  .interview p.answer{color:var(--ink)}
+  a.hook{color:var(--blue)}
+}
+</style>
+</head>
+<body>
+
+<!-- 阅读进度条 -->
+<div id="progress" role="presentation"></div>
+
+<!-- ===== 顶部导航 ===== -->
+<nav class="nav" aria-label="章节导航">
+  <div class="nav-inner">
+    <div class="nav-logo">连接的<b>进化</b></div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-links" id="navLinks">
+      <a href="#overview">总览</a>
+      <a href="#http">HTTP</a>
+      <a href="#https">HTTPS</a>
+      <a href="#sse">SSE</a>
+      <a href="#websocket">WebSocket</a>
+      <a href="#mcp">MCP</a>
+      <a href="#compare">对比</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== 左侧目录（宽屏显示） ===== -->
+<aside class="toc" aria-label="文档目录">
+  <div class="toc-title">目录 · CONTENTS</div>
+  <a href="#overview">00 · 总览</a>
+  <a href="#http">01 · HTTP</a>
+  <a href="#https">02 · HTTPS</a>
+  <a href="#sse">03 · SSE</a>
+  <a href="#websocket">04 · WebSocket</a>
+  <a href="#mcp">05 · MCP</a>
+  <a class="sub" href="#mcp-what">5.1 是什么：USB-C</a>
+  <a class="sub" href="#mcp-arch">5.2 架构三角色</a>
+  <a class="sub" href="#mcp-flow">5.3 完整交互流程</a>
+  <a class="sub" href="#mcp-transport">5.4 传输方式</a>
+  <a class="sub" href="#mcp-jsonrpc">5.5 JSON-RPC 2.0</a>
+  <a class="sub" href="#mcp-lifecycle">5.6 连接生命周期</a>
+  <a class="sub" href="#mcp-primitives">5.7 三大能力原语</a>
+  <a class="sub" href="#mcp-vs-fc">5.8 vs Function Calling</a>
+  <a class="sub" href="#mcp-shell">5.9 为什么不是裸 Shell</a>
+  <a class="sub" href="#mcp-practice">5.10 工程实践</a>
+  <a class="sub" href="#mcp-security">5.11 安全机制</a>
+  <a class="sub" href="#mcp-dev">5.12 三步开发 Server</a>
+  <a class="sub" href="#mcp-interview">5.13 面试实战</a>
+  <a href="#compare">06 · 对比与总结</a>
+</aside>
+
+<!-- ===== Hero ===== -->
+<header class="hero">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="dot"></span>网络协议基础 · 连接建立与通讯结构深度拆解</div>
+    <h1>从 <span class="p1">HTTP</span> <span class="arrow">→</span> <span class="p2">HTTPS</span> <span class="arrow">→</span> <span class="p3">SSE</span> <span class="arrow">→</span> <span class="p4">WebSocket</span> <span class="arrow">→</span> <span class="p5">MCP</span></h1>
+    <p class="lead">一条贯穿 30 年的技术演进线：每一代协议都在解决上一代的某个结构性缺陷——连接复用、传输加密、服务器推送、全双工通信，直到为 AI 应用标准化"工具调用"。本教程聚焦两件事：<strong style="color:var(--ink)">连接如何建立、消息如何流动</strong>。</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#overview">开始阅读</a>
+      <a class="btn" href="#compare">直接看对比表</a>
+      <a class="btn" href="#mcp-interview">直达 MCP 面试题</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">5<span>+</span></div><div class="lbl">代协议演进</div></div>
+      <div class="hero-stat"><div class="num">3<span> 次握手</span></div><div class="lbl">TCP 连接建立</div></div>
+      <div class="hero-stat"><div class="num">1<span> RTT</span></div><div class="lbl">TLS 1.3 握手</div></div>
+      <div class="hero-stat"><div class="num">JSON<span>-RPC</span></div><div class="lbl">MCP 消息格式</div></div>
+    </div>
+  </div>
+  <div class="scroll-hint">SCROLL</div>
+</header>
+
+<!-- ===== 总览 ===== -->
+<section class="chapter" id="overview">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">00 / OVERVIEW</div>
+      <h2 class="ch-title">先看全局：它们到底在解决什么问题</h2>
+      <p class="ch-sub">协议不是凭空发明的。把五个名词放在"连接模型"这一个维度上，演进逻辑会异常清晰。</p>
+    </div>
+
+    <div class="evo">
+      <div class="evo-node">
+        <div class="evo-dot">HTTP</div>
+        <h5>请求-响应</h5>
+        <p>客户端不发，服务器永远不能说话。明文传输，每次请求都要重新建立连接（早期）</p>
+      </div>
+      <div class="evo-node">
+        <div class="evo-dot">HTTPS</div>
+        <h5>加密通道</h5>
+        <p>在 HTTP 与 TCP 之间插入 TLS 层，解决窃听、篡改、冒充三大安全问题</p>
+      </div>
+      <div class="evo-node">
+        <div class="evo-dot">SSE</div>
+        <h5>服务器推送</h5>
+        <p>基于 HTTP 的长连接，服务器可以持续单向推送文本事件，自动重连</p>
+      </div>
+      <div class="evo-node">
+        <div class="evo-dot">WS</div>
+        <h5>全双工</h5>
+        <p>一次 HTTP 握手后升级为独立协议，双方随时互发文本或二进制数据</p>
+      </div>
+      <div class="evo-node">
+        <div class="evo-dot">MCP</div>
+        <h5>语义标准</h5>
+        <p>不发明新传输，而是在 HTTP/SSE/stdio 之上定义 AI 与工具之间的标准消息语义</p>
+      </div>
+    </div>
+
+    <h3 class="sec"><span class="no">0.1</span>一条主线：连接的"自由度"在不断提高</h3>
+    <div class="card">
+      <ul class="tight">
+        <li><strong>HTTP/1.0：</strong>一请求一连接，TCP 握手成本被重复支付。<span class="pill c">短连接</span></li>
+        <li><strong>HTTP/1.1：</strong>Keep-Alive 让连接复用，但请求必须排队，存在<strong>队头阻塞</strong>。<span class="pill c">长连接</span></li>
+        <li><strong>HTTP/2：</strong>二进制分帧 + 多路复用，一个连接上并发跑多个请求，但 TCP 层队头阻塞仍在。<span class="pill c">连接复用</span></li>
+        <li><strong>HTTPS：</strong>以上所有能力不变，只是通道变成加密的。<span class="pill g">安全</span></li>
+        <li><strong>SSE：</strong>在一条 HTTP 长连接上，把"一次响应"变成"源源不断的响应流"。<span class="pill s">单向流</span></li>
+        <li><strong>WebSocket：</strong>彻底摆脱请求-响应模型，连接双方完全平等。<span class="pill a">双向流</span></li>
+        <li><strong>MCP：</strong>传输层已经够用，缺的是"AI 怎么发现工具、调用工具、拿回结果"的统一约定。<span class="pill a">应用层标准</span></li>
+      </ul>
+    </div>
+
+    <div class="code-label">协议栈视角：它们分别处在哪一层</div>
+    <div class="code">
+<span class="ln">┌─────────────────────────────────────────────────────┐</span>
+<span class="ln">│  <span class="c-n">MCP</span>（应用语义：工具/资源/提示词，JSON-RPC 2.0）      │</span>
+<span class="ln">├─────────────────────────────────────────────────────┤</span>
+<span class="ln">│  HTTP / HTTPS / SSE / WebSocket（应用层通信协议）      │</span>
+<span class="ln">├─────────────────────────────────────────────────────┤</span>
+<span class="ln">│  TLS（仅 HTTPS / WSS / Streamable HTTP 需要）          │</span>
+<span class="ln">├─────────────────────────────────────────────────────┤</span>
+<span class="ln">│  TCP（HTTP/HTTPS/SSE/WS）  ·  UDP+QUIC（HTTP/3）      │</span>
+<span class="ln">├─────────────────────────────────────────────────────┤</span>
+<span class="ln">│  IP / 链路层 / 物理层                                  │</span>
+<span class="ln">└─────────────────────────────────────────────────────┘</span></div>
+    <p>注意一个关键事实：<strong>MCP 不是 WebSocket 的替代品，SSE 也不是 HTTP 的对立面</strong>。它们大量复用彼此——MCP 的远程传输就建立在 HTTP 与 SSE 之上。理解这一点，后面的内容会顺很多。</p>
+  </div>
+</section>
+
+<!-- ===== 章节 1：HTTP ===== -->
+<section class="chapter" id="http">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">01 / HTTP</div>
+      <h2 class="ch-title">HTTP：一切的起点，"请求-响应"模型</h2>
+      <p class="ch-sub">HTTP（HyperText Transfer Protocol，超文本传输协议）是浏览器与服务器之间最基础的应用层协议。它的核心模型只有一句话：<strong>客户端发起请求，服务器返回响应，一问一答，服务器从不主动说话</strong>。</p>
+    </div>
+
+    <h3 class="sec"><span class="no">1.1</span>连接是如何建立的：TCP 三次握手</h3>
+    <p>HTTP 本身不负责建立连接，它把这件事交给下层的 TCP。在任何 HTTP 报文发出之前，客户端与服务器必须先通过"<strong>三次握手</strong>"建立一条可靠的 TCP 连接。这也是为什么早期 HTTP 每请求一连接的代价极高——每次都要重新握手。</p>
+    <div class="seq-box" id="seq-tcp"></div>
+    <div class="card">
+      <p class="note"><strong>为什么是三次，不是两次？</strong>核心目的是<strong>确认双方的发送和接收能力都正常</strong>，并同步初始序列号（ISN），防止历史失效的连接请求突然又传到服务器造成错误连接。</p>
+      <ul class="tight">
+        <li><strong>SYN（客户端 → 服务器）：</strong>"我想建立连接，我的初始序列号是 x"</li>
+        <li class="server-i"><strong>SYN+ACK（服务器 → 客户端）：</strong>"收到，我的初始序列号是 y，同时确认你的 x"</li>
+        <li><strong>ACK（客户端 → 服务器）：</strong>"确认你的 y，可以开始传数据了"</li>
+      </ul>
+    </div>
+
+    <h3 class="sec"><span class="no">1.2</span>通讯结构：请求报文与响应报文</h3>
+    <p>TCP 连接建立后，HTTP 报文以纯文本（HTTP/1.x）的形式在连接中流动。报文结构高度规整，这是后面所有协议的基础。</p>
+
+    <div class="tabs">
+      <button class="tab-btn active">请求报文（浏览器发出）</button>
+      <button class="tab-btn">响应报文（服务器返回）</button>
+    </div>
+    <div class="tab-pane active">
+      <div class="code" data-label="HTTP 请求报文">
+<span class="ln"><span class="c-f">GET</span> /api/users?id=42 <span class="c-f">HTTP/1.1</span>          <span class="c-c">// 请求行：方法 + 路径 + 版本</span></span>
+<span class="ln"><span class="c-k">Host:</span> example.com                 <span class="c-c">// 请求头：目标主机（虚拟主机必需）</span></span>
+<span class="ln"><span class="c-k">User-Agent:</span> Mozilla/5.0 ...       <span class="c-c">// 客户端身份</span></span>
+<span class="ln"><span class="c-k">Accept:</span> application/json          <span class="c-c">// 能接受的内容类型</span></span>
+<span class="ln"><span class="c-k">Connection:</span> keep-alive           <span class="c-c">// 希望复用连接</span></span>
+<span class="ln"><span class="c-k">Cookie:</span> session=abc123           <span class="c-c">// 携带状态（HTTP 本身无状态）</span></span>
+<span class="ln">                                    <span class="c-c">// 空行：头部结束的标志</span></span>
+<span class="ln"><span class="c-s">{"name":"yujie"}</span>                  <span class="c-c">// 请求体（GET 通常没有，POST/PUT 才有）</span></span></div>
+    </div>
+    <div class="tab-pane">
+      <div class="code" data-label="HTTP 响应报文">
+<span class="ln"><span class="c-f">HTTP/1.1</span> <span class="c-n">200</span> <span class="c-f">OK</span>                   <span class="c-c">// 状态行：版本 + 状态码 + 原因</span></span>
+<span class="ln"><span class="c-k">Content-Type:</span> application/json    <span class="c-c">// 响应头：内容类型</span></span>
+<span class="ln"><span class="c-k">Content-Length:</span> 23               <span class="c-c">// 内容长度</span></span>
+<span class="ln"><span class="c-k">Set-Cookie:</span> token=xyz; HttpOnly  <span class="c-c">// 下发 Cookie</span></span>
+<span class="ln">                                    <span class="c-c">// 空行</span></span>
+<span class="ln"><span class="c-s">{"id":42,"name":"yujie"}</span>          <span class="c-c">// 响应体：真正的内容</span></span></div>
+    </div>
+
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-c">请求方法</div>
+        <h5>动作语义</h5>
+        <p><code>GET</code> 取数据、<code>POST</code> 提交、<code>PUT</code> 整体更新、<code>DELETE</code> 删除、<code>PATCH</code> 部分更新</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-s">状态码</div>
+        <h5>结果分类</h5>
+        <p><code>2xx</code> 成功、<code>3xx</code> 重定向、<code>4xx</code> 客户端错误、<code>5xx</code> 服务器错误</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-c">无状态</div>
+        <h5>不记你是谁</h5>
+        <p>每个请求相互独立，服务器不保留上下文。状态靠 Cookie / Token 在请求中反复携带</p>
+      </div>
+    </div>
+
+    <h3 class="sec"><span class="no">1.3</span>HTTP 版本演进：连接复用的三级跳</h3>
+    <div class="card">
+      <h4 class="sec2">HTTP/1.0 — 短连接，一次一断</h4>
+      <p>每个请求都要新建 TCP 连接，响应完立即关闭。一个含 40 个资源的网页要握手 40 次，延迟和开销巨大。</p>
+      <h4 class="sec2">HTTP/1.1（1997，至今广泛使用）— 长连接 + 管道化</h4>
+      <ul class="tight">
+        <li><strong>Keep-Alive：</strong>默认在一个 TCP 连接上串行处理多个请求，省去重复握手。<span class="pill c">连接复用</span></li>
+        <li><strong>Pipelining（管道化）：</strong>允许连续发多个请求不等响应，但响应必须按序返回，且默认被浏览器关闭</li>
+        <li><strong>队头阻塞（HOL Blocking）：</strong>前一个请求没处理完，后面的请求全部排队干等——这是 1.1 最核心的结构缺陷</li>
+      </ul>
+      <h4 class="sec2">HTTP/2（2015）— 二进制分帧 + 多路复用</h4>
+      <ul class="tight">
+        <li>把报文拆成带<strong>流 ID</strong>的二进制帧，在<strong>一条 TCP 连接上并发交错传输多个请求/响应</strong>，彻底解决 HTTP 层队头阻塞</li>
+        <li>HPACK 头部压缩（请求头大量重复，压缩后显著省带宽）、服务器可主动推送资源</li>
+        <li>局限：<strong>TCP 层的队头阻塞仍在</strong>——一旦某个 TCP 包丢失，所有流都要等重传</li>
+      </ul>
+      <h4 class="sec2">HTTP/3（2022）— 基于 QUIC，跑在 UDP 上</h4>
+      <ul class="tight">
+        <li>用 QUIC（基于 UDP）替代 TCP，<strong>流之间互不阻塞</strong>，一个流丢包不影响其他流</li>
+        <li>连接迁移：手机在 WiFi 与 4G 间切换，连接不断（靠 Connection ID 而非 IP:端口 标识）</li>
+        <li>QUIC 内置 TLS 1.3，加密是默认而非可选</li>
+      </ul>
+    </div>
+
+    <h3 class="sec"><span class="no">1.4</span>HTTP 的三个结构性缺陷（后续协议的由来）</h3>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-r">安全缺陷</div>
+        <h5>明文传输</h5>
+        <p>数据在网络中"裸奔"，可被窃听、篡改、冒充 → 引出 <strong>HTTPS</strong></p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-r">交互缺陷</div>
+        <h5>服务器不能主动推</h5>
+        <p>实时数据只能靠轮询反复问，浪费请求、延迟高 → 引出 <strong>SSE / WebSocket</strong></p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-r">语义缺陷</div>
+        <h5>缺少应用语义</h5>
+        <p>只定义"怎么传"，不定义"传什么、双方能力如何协商" → 上层标准（如 <strong>MCP</strong>）补齐</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 章节 2：HTTPS ===== -->
+<section class="chapter" id="https">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">02 / HTTPS</div>
+      <h2 class="ch-title">HTTPS：给 HTTP 装上一把"加密锁"</h2>
+      <p class="ch-sub">HTTPS 不是一个新协议，而是 <strong>HTTP + TLS（Transport Layer Security，前身是 SSL）</strong>。它在 HTTP 与 TCP 之间插入了一个安全层：连接建立时先协商出密钥、验证服务器身份，之后所有 HTTP 数据都加密传输。</p>
+    </div>
+
+    <div class="code-label">明文 HTTP 与 HTTPS 的差别</div>
+    <div class="code">
+<span class="ln">HTTP ： <span class="c-w">应用数据</span> ──直接──> TCP ──> 网络（任何人都能抓包看到内容）</span>
+<span class="ln">HTTPS： <span class="c-w">应用数据</span> ──> <span class="c-s">TLS 加密</span> ──> TCP ──> 网络（抓到的只是密文）</span></div>
+
+    <h3 class="sec"><span class="no">2.1</span>连接建立：TLS 握手全过程</h3>
+    <p>TCP 三次握手完成后，并不立刻传 HTTP 数据，而是先进行 TLS 握手：<strong>协商加密套件、验证服务器证书、交换密钥材料，最终生成双方共享的"会话密钥"</strong>。下面以 TLS 1.2 为例（最经典、面试最爱问）。</p>
+    <div class="seq-box" id="seq-tls12"></div>
+
+    <div class="steps">
+      <div class="step">
+        <h5>ClientHello</h5>
+        <p>客户端发起：我支持的 TLS 版本、加密套件列表、一个客户端随机数（Client Random）</p>
+      </div>
+      <div class="step server-s">
+        <h5>ServerHello + 证书</h5>
+        <p>服务器选定加密套件，返回服务器随机数（Server Random）和自己的 CA 证书（含公钥、域名、颁发者、有效期）</p>
+      </div>
+      <div class="step">
+        <h5>验证证书 + 密钥交换</h5>
+        <p>客户端用系统内置的 CA 根证书验证服务器证书真伪；随后生成 Pre-Master Secret，用服务器公钥加密后发回（或用 ECDHE 交换参数）</p>
+      </div>
+      <div class="step secure-s">
+        <h5>生成会话密钥</h5>
+        <p>双方用三个随机数（Client Random + Server Random + Pre-Master Secret）各自算出相同的<strong>会话密钥</strong>，之后通信用对称加密</p>
+      </div>
+      <div class="step">
+        <h5>Finished，开始加密通信</h5>
+        <p>互发 Finished（握手记录的摘要，用会话密钥加密）验证一致性，随后才开始传加密的 HTTP 数据</p>
+      </div>
+    </div>
+
+    <h3 class="sec"><span class="no">2.2</span>TLS 1.3 的关键改进：握手只要 1-RTT</h3>
+    <div class="card">
+      <ul class="tight">
+        <li><strong>砍掉一半往返：</strong>TLS 1.2 要 2 个 RTT，TLS 1.3 把密钥协商提前到 ClientHello 中，<strong>只需 1-RTT</strong>；会话恢复时甚至 0-RTT（首包就能带数据）</li>
+        <li><strong>只保留安全的算法：</strong>移除 RSA 密钥交换（不支持前向保密）、CBC、SHA-1 等，强制使用 ECDHE + AEAD（AES-GCM / ChaCha20-Poly1305）</li>
+        <li><strong>前向保密（Forward Secrecy）：</strong>每次连接用临时密钥协商，即使服务器长期私钥将来泄露，也无法解密历史流量</li>
+      </ul>
+    </div>
+
+    <h3 class="sec"><span class="no">2.3</span>密码学三件套：各自负责什么</h3>
+    <p>为什么握手同时用到非对称加密和对称加密？因为它们各有优劣，TLS 让它们分工协作。</p>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-g">对称加密</div>
+        <h5>加密实际数据</h5>
+        <p>同一把密钥加解密（AES、ChaCha20）。<strong>速度快</strong>，但密钥如何安全地交给对方是难题 → 用于握手后的通信</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-a">非对称加密</div>
+        <h5>安全交换密钥</h5>
+        <p>公钥加密、私钥解密（RSA、ECDHE）。<strong>无需事先共享密钥</strong>，但慢 → 只在握手阶段用它安全地协商出会话密钥</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-c">哈希 / MAC</div>
+        <h5>保证完整性</h5>
+        <p>SHA-256、HMAC 生成指纹，数据被改动一个字节指纹就对不上 → 防止传输中被篡改</p>
+      </div>
+    </div>
+
+    <h3 class="sec"><span class="no">2.4</span>证书体系：凭什么相信对面是真服务器</h3>
+    <p>加密只解决"内容不被看见"，但攻击者可以冒充服务器。身份认证靠 <strong>PKI（公钥基础设施）与 CA（证书颁发机构）</strong>。</p>
+    <div class="code">
+<span class="ln c-c">// 证书链：从根到叶子，逐级签名</span>
+<span class="ln"><span class="c-k">根 CA 证书</span>（DigiCert / GlobalSign，操作系统和浏览器内置，自签名，信任的起点）</span>
+<span class="ln">   └── 签名 ──> <span class="c-k">中间 CA 证书</span>（根 CA 不直接签服务器证书，隔离风险）</span>
+<span class="ln">                 └── 签名 ──> <span class="c-s">服务器证书</span>（含 example.com 与公钥，发给浏览器）</span></div>
+    <ul class="tight">
+      <li class="secure-i">浏览器用内置根 CA 的公钥逐级验证签名：只要链上任何一环对不上、过期、域名不符，浏览器就亮红警告</li>
+      <li class="secure-i">关键机制是<strong>数字签名</strong>：CA 用自己的私钥对证书内容的哈希签名，任何人都能用 CA 公钥验证，而伪造签名需要 CA 私钥</li>
+    </ul>
+
+    <h3 class="sec"><span class="no">2.5</span>HTTPS 如何保证安全：三大目标</h3>
+    <div class="triad">
+      <div class="mini-card">
+        <div class="ico" style="background:var(--secure-dim)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#177A4C" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        </div>
+        <h5>机密性</h5>
+        <p>对称加密，中间人抓到的只是密文</p>
+      </div>
+      <div class="mini-card">
+        <div class="ico" style="background:var(--blue-dim)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F5FA8" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <h5>完整性</h5>
+        <p>MAC/AEAD 校验，数据被改立刻发现</p>
+      </div>
+      <div class="mini-card">
+        <div class="ico" style="background:var(--app-dim)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6638B8" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>
+        </div>
+        <h5>身份认证</h5>
+        <p>CA 证书验证，防止中间人冒充</p>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(185,58,58,.35)">
+      <h4 class="sec2" style="color:var(--danger)">常见攻击与 HTTPS 的应对</h4>
+      <ul class="tight">
+        <li><strong>中间人攻击（MITM）：</strong>攻击者夹在中间转发 → 证书认证 + 密钥协商使其无法冒充</li>
+        <li><strong>降级攻击：</strong>诱导使用旧版弱加密 → 客户端与服务器要求最低版本，TLS 1.3 直接删除弱算法</li>
+        <li><strong>注意：</strong>HTTPS 只保证<strong>传输过程</strong>安全，不保证服务器本身不被攻破，也不隐藏你访问了哪个域名（SNI 可见，ECH 仍在普及）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 章节 3：SSE ===== -->
+<section class="chapter" id="sse">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">03 / SSE</div>
+      <h2 class="ch-title">SSE：让服务器"开口"的第一步</h2>
+      <p class="ch-sub">SSE（Server-Sent Events，服务器发送事件）是 HTML5 标准的一部分。它让服务器能通过<strong>一条普通的 HTTP 长连接，持续地、单向地向客户端推送文本事件</strong>。典型场景：股票行情、新闻推送、AI 生成内容的逐字流式输出。</p>
+    </div>
+
+    <h3 class="sec"><span class="no">3.1</span>为什么需要它：三种"获取实时数据"的方式</h3>
+    <div class="tabs">
+      <button class="tab-btn active">短轮询 Polling</button>
+      <button class="tab-btn">长轮询 Long-Polling</button>
+      <button class="tab-btn">SSE</button>
+    </div>
+    <div class="tab-pane active">
+      <div class="seq-box" id="seq-polling"></div>
+      <p>客户端每隔几秒发一次请求问"有新数据吗"。<strong>实现简单但浪费严重</strong>：大量请求拿到的都是空响应，且数据有延迟（最坏要等一个轮询间隔）。</p>
+    </div>
+    <div class="tab-pane">
+      <div class="seq-box" id="seq-longpoll"></div>
+      <p>服务器收到请求后<strong>不立即响应，而是挂起，直到有新数据才返回</strong>；客户端收到后立刻再发下一个请求。减少了空请求，但每次消息仍要重新建立/完整走一遍 HTTP 响应。</p>
+    </div>
+    <div class="tab-pane">
+      <div class="seq-box" id="seq-sse"></div>
+      <p>一次请求建立连接，<strong>服务器持续不断地往这一条响应里写事件</strong>，连接长期保持。这才是真正的"推送"。</p>
+    </div>
+
+    <h3 class="sec"><span class="no">3.2</span>连接如何建立：它就是一个特殊的 HTTP 响应</h3>
+    <p>SSE 极其巧妙地复用了 HTTP，不需要任何新协议。客户端用浏览器原生 EventSource 发起一个普通 GET，服务器返回时声明特殊的 Content-Type，然后<strong>这个响应永远不结束</strong>。</p>
+    <div class="code-label">客户端（浏览器原生 API，无需任何库）</div>
+    <div class="code">
+<span class="ln"><span class="c-k">const</span> es = <span class="c-k">new</span> <span class="c-f">EventSource</span>(<span class="c-s">'/api/stream'</span>);  <span class="c-c">// 发起 GET，自动保持连接</span></span>
+<span class="ln">es.<span class="c-f">onmessage</span> = (e) => {                 <span class="c-c">// 监听默认消息事件</span></span>
+<span class="ln">  console.log(<span class="c-s">'收到:'</span>, e.data);          <span class="c-c">// e.data 是文本内容</span></span>
+<span class="ln">};</span>
+<span class="ln">es.<span class="c-f">addEventListener</span>(<span class="c-s">'update'</span>, (e) => {   <span class="c-c">// 也可监听自定义事件名</span></span>
+<span class="ln">  render(e.data);</span>
+<span class="ln">};</span></div>
+    <div class="code-label">服务器响应（关键：text/event-stream）</div>
+    <div class="code">
+<span class="ln"><span class="c-k">HTTP/1.1</span> <span class="c-n">200</span> OK</span>
+<span class="ln"><span class="c-k">Content-Type:</span> <span class="c-s">text/event-stream</span>      <span class="c-c">// 关键：事件流类型</span></span>
+<span class="ln"><span class="c-k">Cache-Control:</span> no-cache</span>
+<span class="ln"><span class="c-k">Connection:</span> keep-alive</span></div>
+
+    <h3 class="sec"><span class="no">3.3</span>通讯结构：事件的文本格式</h3>
+    <p>响应体里是一个接一个的纯文本事件，<strong>每个事件以两个换行符 \n\n 结束</strong>。字段非常简单：</p>
+    <div class="frame">
+      <div class="frame-row"><div class="k">data:</div><div class="v">消息内容，可有多行 data <small>唯一必需的字段</small></div></div>
+      <div class="frame-row"><div class="k">event:</div><div class="v">自定义事件类型名 <small>不写则默认 message</small></div></div>
+      <div class="frame-row"><div class="k">id:</div><div class="v">事件 ID，用于断线重连时断点续传 <small>浏览器自动记录</small></div></div>
+      <div class="frame-row"><div class="k">retry:</div><div class="v">重连等待的毫秒数，由服务器指定 <small>如 retry: 3000</small></div></div>
+      <div class="frame-row"><div class="k">: 注释</div><div class="v">以冒号开头的行会被忽略，常用于保活心跳 <small>: keep-alive</small></div></div>
+    </div>
+    <div class="code-label">实际的事件流长这样</div>
+    <div class="code">
+<span class="ln"><span class="c-k">id:</span> 1</span>
+<span class="ln"><span class="c-k">event:</span> update</span>
+<span class="ln"><span class="c-k">data:</span> <span class="c-s">{"price": 102.5, "stock": "AAPL"}</span></span>
+<span class="ln">                                  <span class="c-c">// 空行 → 一个事件结束，推送给客户端</span></span>
+<span class="ln"><span class="c-k">id:</span> 2</span>
+<span class="ln"><span class="c-k">data:</span> <span class="c-s">另一条消息的第一行</span></span>
+<span class="ln"><span class="c-k">data:</span> <span class="c-s">另一条消息的第二行</span>          <span class="c-c">// 多个 data 会用 \n 拼接</span></span>
+<span class="ln">                                  <span class="c-c">// 事件结束</span></span></div>
+
+    <h3 class="sec"><span class="no">3.4</span>自动重连：SSE 被低估的能力</h3>
+    <div class="card">
+      <ul class="tight">
+        <li>网络中断时，<strong>EventSource 会自动重新发起连接</strong>，无需手写重连逻辑（这是它比 WebSocket 省心的地方）</li>
+        <li>重连时浏览器自动带上 <code>Last-Event-ID</code> 请求头，值为最后收到的 id；服务器据此<strong>补发断线期间漏掉的事件</strong>，实现断点续传</li>
+        <li>以冒号开头的注释行充当心跳，防止代理因超时而关闭连接</li>
+      </ul>
+    </div>
+
+    <h3 class="sec"><span class="no">3.5</span>SSE 的能力边界</h3>
+    <div class="grid2">
+      <div class="mini-card">
+        <div class="tag tag-s">优势</div>
+        <h5>简单、自动、走 HTTP</h5>
+        <p>原生 API、自动重连、天然穿透防火墙和代理、基于 HTTPS 即可加密；只做"服务器推送"时比 WebSocket 轻量得多</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-r">局限</div>
+        <h5>单向、纯文本</h5>
+        <p>只能服务器 → 客户端；只能传文本（二进制要自己 Base64）；HTTP/1.1 下浏览器对同域名有 6 个连接数限制</p>
+      </div>
+    </div>
+    <p>如果你需要<strong>双向</strong>实时通信（聊天、协同编辑、在线游戏），SSE 就不够了——这正是 WebSocket 要解决的问题。</p>
+  </div>
+</section>
+
+<!-- ===== 章节 4：WebSocket ===== -->
+<section class="chapter" id="websocket">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">04 / WEBSOCKET</div>
+      <h2 class="ch-title">WebSocket：彻底的全双工通信</h2>
+      <p class="ch-sub">WebSocket 是一个<strong>独立的、基于 TCP 的全双工协议</strong>（RFC 6455，2011）。它先用一次 HTTP 请求"敲门"，服务器同意后连接"升级"，此后双方完全平等，<strong>任何一方都可以随时主动发送文本或二进制数据</strong>，不再有请求与响应的概念。</p>
+    </div>
+
+    <div class="code-label">协议标识：ws:// 与 wss://（加密）</div>
+    <div class="code">
+<span class="ln"><span class="c-w">ws://</span>example.com/chat    <span class="c-c">// 明文，类似 http://</span></span>
+<span class="ln"><span class="c-s">wss://</span>example.com/chat   <span class="c-c">// 走 TLS 加密，类似 https://，生产环境必用</span></span></div>
+
+    <h3 class="sec"><span class="no">4.1</span>连接建立：借 HTTP 完成"升级握手"</h3>
+    <p>WebSocket 复用 HTTP 完成握手，这样可以轻松穿透代理、复用 80/443 端口。握手只需要<strong>一个来回</strong>，服务器返回 101 后，这条 TCP 连接就不再说 HTTP，而是改说 WebSocket。</p>
+    <div class="seq-box" id="seq-ws"></div>
+
+    <div class="code-label">握手请求（本质是一个带 Upgrade 的 HTTP 请求）</div>
+    <div class="code">
+<span class="ln"><span class="c-f">GET</span> /chat <span class="c-f">HTTP/1.1</span></span>
+<span class="ln"><span class="c-k">Host:</span> example.com</span>
+<span class="ln"><span class="c-w">Upgrade:</span> websocket                 <span class="c-c">// 我想升级为 WebSocket</span></span>
+<span class="ln"><span class="c-w">Connection:</span> Upgrade</span>
+<span class="ln"><span class="c-k">Sec-WebSocket-Key:</span> dGhlIHNhbXBsZQ==  <span class="c-c">// 浏览器随机生成的 16 字节 Base64</span></span>
+<span class="ln"><span class="c-k">Sec-WebSocket-Version:</span> 13</span></div>
+    <div class="code-label">握手响应</div>
+    <div class="code">
+<span class="ln"><span class="c-f">HTTP/1.1</span> <span class="c-n">101</span> Switching Protocols  <span class="c-c">// 同意升级，关键状态码</span></span>
+<span class="ln"><span class="c-w">Upgrade:</span> websocket</span>
+<span class="ln"><span class="c-w">Connection:</span> Upgrade</span>
+<span class="ln"><span class="c-k">Sec-WebSocket-Accept:</span> s3pPLMBi...  <span class="c-c">// 对 Key 的计算结果，证明服务器懂 WebSocket</span></span></div>
+    <div class="card">
+      <p class="note"><strong>Sec-WebSocket-Key / Accept 是怎么回事？</strong>浏览器随机生成 Key，服务器把它与一个固定魔串（<code>258EAFA5-E914-47DA-95CA-C5AB0DC85B11</code>）拼接后做 SHA-1 再 Base64，得到 Accept。这不是加密，而是<strong>防止服务器误把普通 HTTP 响应当成 WebSocket 握手</strong>，同时验证对方确实支持该协议。</p>
+    </div>
+
+    <h3 class="sec"><span class="no">4.2</span>通讯结构：数据以"帧"为单位</h3>
+    <p>升级后，双方收发的是 WebSocket 帧（frame）。帧可以是文本、二进制，也可以是控制帧（关闭、心跳）。帧头是二进制的，结构如下：</p>
+    <div class="frame">
+      <div class="frame-row"><div class="k">FIN（1 bit）</div><div class="v">是否为消息的最后一帧 <small>大消息可拆成多帧</small></div></div>
+      <div class="frame-row"><div class="k">Opcode（4 bit）</div><div class="v">帧类型：0x1 文本、0x2 二进制、0x8 关闭、0x9 Ping、0xA Pong</div></div>
+      <div class="frame-row"><div class="k">Mask（1 bit）</div><div class="v">是否掩码。<strong>浏览器发往服务器的帧必须掩码</strong>，用随机密钥异或，防止中间代理缓存投毒</div></div>
+      <div class="frame-row"><div class="k">Payload len</div><div class="v">数据长度，7 bit 起；超长用扩展位（16/64 bit）</div></div>
+      <div class="frame-row"><div class="k">Masking key</div><div class="v">4 字节掩码密钥（仅掩码帧）</div></div>
+      <div class="frame-row"><div class="k">Payload data</div><div class="v">真正的应用数据，文本或二进制</div></div>
+    </div>
+
+    <h3 class="sec"><span class="no">4.3</span>心跳与关闭：保持连接健康</h3>
+    <div class="grid2">
+      <div class="mini-card">
+        <div class="tag tag-a">Ping / Pong</div>
+        <h5>心跳保活</h5>
+        <p>WebSocket 是长连接，可能被 NAT 或代理静默断开。一方发 Ping，对方必须回 Pong，从而探测连接是否存活、维持链路。通常应用层还会定时发心跳</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-r">关闭握手</div>
+        <h5>优雅断开</h5>
+        <p>任一方发 Close 帧（可带状态码和原因），对方回 Close 后再关闭 TCP，比直接断开更可靠，避免数据丢失</p>
+      </div>
+    </div>
+
+    <h3 class="sec"><span class="no">4.4</span>客户端 API 与通信时序</h3>
+    <div class="code" data-label="客户端 API · JavaScript">
+<span class="ln"><span class="c-k">const</span> ws = <span class="c-k">new</span> <span class="c-f">WebSocket</span>(<span class="c-s">'wss://example.com/chat'</span>);</span>
+<span class="ln">ws.<span class="c-f">onopen</span>  = () => ws.<span class="c-f">send</span>(<span class="c-s">'你好'</span>);      <span class="c-c">// 连接建立后可随时发送</span></span>
+<span class="ln">ws.<span class="c-f">onmessage</span> = (e) => console.log(e.data); <span class="c-c">// 随时接收，无需请求</span></span>
+<span class="ln">ws.<span class="c-f">onclose</span> = () => reconnect();           <span class="c-c">// 注意：WebSocket 不自动重连，需自己实现</span></span></div>
+    <div class="seq-box" id="seq-ws-chat"></div>
+
+    <h3 class="sec"><span class="no">4.5</span>WebSocket vs SSE：怎么选</h3>
+    <div class="cmp-wrap"><table class="cmp">
+      <tr><th>维度</th><th>SSE</th><th>WebSocket</th></tr>
+      <tr><td>通信方向</td><td>服务器 → 客户端，单向</td><td>双向，全双工</td></tr>
+      <tr><td>数据类型</td><td>仅文本（UTF-8）</td><td>文本 + 二进制</td></tr>
+      <tr><td>断线重连</td><td>浏览器自动</td><td>需手写</td></tr>
+      <tr><td>协议复杂度</td><td>就是 HTTP，简单</td><td>独立协议 + 帧结构，稍复杂</td></tr>
+      <tr><td>典型场景</td><td>行情、通知、AI 流式输出</td><td>聊天、协同编辑、游戏、实时白板</td></tr>
+    </table></div>
+
+    <h3 class="sec"><span class="no">4.6</span>安全：wss 与应用层防护</h3>
+    <ul class="tight">
+      <li class="secure-i"><strong>生产环境一律用 wss://</strong>：它在 TLS 之上，享有 HTTPS 的全部保护（加密、完整性、身份认证）</li>
+      <li class="secure-i"><strong>校验 Origin 头：</strong>服务器只接受白名单来源的握手，防止恶意网页借用户浏览器发起跨站 WebSocket 连接（类似 CSWSH）</li>
+      <li class="secure-i">握手阶段仍可使用 Cookie/Token 鉴权；帧掩码只防代理投毒，<strong>不是安全措施</strong>，真正的安全靠 TLS 与鉴权</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==========================================================
+     章节 5：MCP（依据 11 张补充图片材料 OCR 整理增强，
+     引用块均为材料原话；知识点结构：概念→架构→流程→传输→
+     消息→生命周期→原语→对比→Shell→实践→安全→开发→面试）
+     ========================================================== -->
+<section class="chapter" id="mcp">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">05 / MCP · MODEL CONTEXT PROTOCOL</div>
+      <h2 class="ch-title">MCP：为 AI 应用定义"连接的标准语言"</h2>
+      <p class="ch-sub">MCP（Model Context Protocol，模型上下文协议）由 Anthropic 于 2024 年 11 月开源。它要解决的问题完全不同：<strong>传输层（HTTP/SSE/WebSocket）已经足够强大，但 AI 应用想接入数据库、文件、第三方工具时，每个集成都要写一套定制对接</strong>。MCP 像"AI 世界的 USB-C 接口"，用一套标准约定让任意 AI 客户端发现并使用任意工具服务器。</p>
+    </div>
+
+    <!-- 章节速览：每个小节都是一个"知识钩子" -->
+    <div class="ch-map" role="navigation" aria-label="MCP 章节速览">
+      <a href="#mcp-what">5.1 USB-C 类比</a>
+      <a href="#mcp-arch">5.2 架构三角色</a>
+      <a href="#mcp-flow">5.3 完整交互流程</a>
+      <a href="#mcp-transport">5.4 传输方式</a>
+      <a href="#mcp-jsonrpc">5.5 JSON-RPC</a>
+      <a href="#mcp-lifecycle">5.6 生命周期</a>
+      <a href="#mcp-primitives">5.7 三大原语</a>
+      <a href="#mcp-vs-fc">5.8 vs Function Calling</a>
+      <a href="#mcp-shell">5.9 为什么不是裸 Shell</a>
+      <a href="#mcp-practice">5.10 工程实践</a>
+      <a href="#mcp-security">5.11 安全机制</a>
+      <a href="#mcp-dev">5.12 三步开发</a>
+      <a href="#mcp-interview">5.13 面试实战</a>
+    </div>
+
+    <!-- 5.1 概念 -->
+    <h3 class="sec" id="mcp-what"><span class="no">5.1</span>MCP 是什么：AI 领域的"USB-C"</h3>
+    <div class="quote">
+      <div class="q-tag">原话 · 概念卡片</div>
+      <p class="note">"MCP 全称 Model Context Protocol，模型上下文协议，是 Anthropic 在 2024 年 11 月发布的开放标准。核心目标是让大模型能够<strong>标准化地连接外部数据源和工具</strong>。MCP 就是 AI 领域的 USB-C，让模型和外部世界的连接变得<strong>即插即用</strong>。"</p>
+    </div>
+    <p>在统一标准出现之前，M 个模型要接 N 个外部系统，就得写 M×N 套定制集成；有了 MCP，模型侧和工具侧各自接一次协议即可，集成成本从 M×N 降到 M+N——而且接入新工具<strong>不用动模型侧的代码</strong>。</p>
+    <div class="code-label">MCP 解决的集成复杂度问题：M×N → M+N</div>
+    <div class="code">
+<span class="ln"><span class="c-c">// 接入之前：每个模型 × 每个工具，都要单独定制对接</span></span>
+<span class="ln">  模型A ──定制──┐              ┌── GitHub</span>
+<span class="ln">  模型B ──定制──┼── 各写各的 ──┼── 数据库</span>
+<span class="ln">  模型C ──定制──┘              └── 文件系统 / ……</span>
+<span class="ln">                                <span class="c-w">// M × N 套胶水代码</span></span>
+<span class="ln"><span class="c-c">// 接入之后：双方各实现一次统一协议</span></span>
+<span class="ln">  模型A ─┐                    ┌─ GitHub</span>
+<span class="ln">  模型B ─┼── <span class="c-s">统一的 MCP 协议</span> ──┼─ 数据库</span>
+<span class="ln">  模型C ─┘                    └─ 文件系统 / ……</span>
+<span class="ln">                                <span class="c-s">// M + N 次接入，即插即用</span></span></div>
+
+    <h4 class="sec2">MCP 带来的三大好处</h4>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-c">好处一</div>
+        <h5>标准化数据接入</h5>
+        <p>外部数据源（Gmail、日历、本地文件、远程服务……）都通过同一套协议接入，不再一源一套代码</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-g">好处二</div>
+        <h5>增强模型实时能力</h5>
+        <p>模型不再只靠训练时的旧知识，可以实时读取最新的数据与上下文</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-s">好处三</div>
+        <h5>降低集成复杂度</h5>
+        <p>工具方只实现一次 Server，就能被所有支持 MCP 的客户端使用，模型侧代码零改动</p>
+      </div>
+    </div>
+
+    <div class="card glow">
+      <p class="note"><strong>关键认知：MCP 不发明新的传输协议。</strong>它是一个<strong>应用层语义协议</strong>，规定消息长什么样、连接如何初始化、能力如何协商；而消息的实际传输，本地用 stdio，远程用 Streamable HTTP（其中可选地用 SSE 做流式）。这正是整条演进线的收口——它站在前面所有协议的肩膀上。</p>
+    </div>
+
+    <!-- 5.2 架构 -->
+    <h3 class="sec" id="mcp-arch"><span class="no">5.2</span>架构：Host、Client、Server 三种角色</h3>
+    <div class="code">
+<span class="ln">┌────────────────────────────────────────────┐</span>
+<span class="ln">│  <span class="c-w">MCP Host</span>（宿主：Claude Desktop / IDE / 你的应用）│</span>
+<span class="ln">│   里面运行着多个 <span class="c-f">MCP Client</span>（每个 Server 对应一个）│</span>
+<span class="ln">└───────┬───────────────────────┬────────────┘</span>
+<span class="ln">        │ 1:1 连接               │ 1:1 连接</span>
+<span class="ln">┌───────▼────────┐      ┌───────▼────────────┐</span>
+<span class="ln">│ <span class="c-s">MCP Server A</span>  │      │ <span class="c-s">MCP Server B</span>       │</span>
+<span class="ln">│  GitHub 工具    │      │  数据库 / 文件系统   │</span>
+<span class="ln">└────────────────┘      └────────────────────┘</span></div>
+    <ul class="tight">
+      <li><strong>Host（宿主）：</strong>运行 AI 模型的应用，负责编排、权限管理、用户交互，出于安全隔离原则，<strong>一个 Server 对应一个独立 Client</strong></li>
+      <li class="server-i"><strong>Client（客户端）：</strong>Host 内部与单个 Server 保持 1:1 会话的连接器</li>
+      <li class="secure-i"><strong>Server（服务器）：</strong>对外暴露工具、资源、提示词，实际去对接 GitHub、数据库、文件系统等</li>
+    </ul>
+
+    <h4 class="sec2">进阶：一个 Client 能同时连多个 Server 吗？怎么管理？</h4>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答</div>
+      <p class="note">"可以，MCP 设计上就支持一个 Client 同时连多个 Server。每个 Server 提供不同能力，Client 会维护一个 Server 列表，每次请求前先聚合所有 Server 的工具列表给模型。模型选择调用哪个工具时，Client 根据工具归属把请求路由到对应的 Server。<strong>Cursor 里配置多个 MCP Server 就是这个原理</strong>。"</p>
+    </div>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-c">① 维护列表</div>
+        <h5>Server 列表</h5>
+        <p>Client 持有所有已连接 Server 的注册信息，每个 Server 提供不同领域能力</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-g">② 聚合能力</div>
+        <h5>工具列表聚合</h5>
+        <p>每次请求前，把所有 Server 的工具列表聚合成一份清单交给模型挑选</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-s">③ 按归属路由</div>
+        <h5>请求路由</h5>
+        <p>模型选定工具后，Client 根据工具归属于哪个 Server，把调用请求转发过去</p>
+      </div>
+    </div>
+
+    <!-- 5.3 完整交互流程 -->
+    <h3 class="sec" id="mcp-flow"><span class="no">5.3</span>完整交互流程：一次查询背后的两个阶段</h3>
+    <p>把<strong>用户、MCP Client、MCP Server、LLM</strong>四个角色放进同一张时序图，MCP 的运行方式一目了然：<strong>初始化阶段</strong>负责建立连接、拿到工具清单；<strong>查询处理阶段</strong>则是一个"LLM 返回工具调用 → Client 执行 → 结果回传 LLM"的循环，直到 LLM 给出最终的文本响应。</p>
+    <div class="seq-box" id="seq-mcp-full"></div>
+    <div class="steps">
+      <div class="step">
+        <h5>初始化阶段：拿到工具清单</h5>
+        <p>用户启动客户端 → Client 连接服务器并确认连接 → 请求可用工具列表 → Server 返回工具列表和描述。工具信息此后缓存在会话内，不用反复发现</p>
+      </div>
+      <div class="step secure-s">
+        <h5>查询处理：把工具信息带给 LLM</h5>
+        <p>用户输入查询后，Client 把<strong>查询和可用工具信息</strong>一起发给 LLM——工具的名称、参数描述就是模型的"菜单"</p>
+      </div>
+      <div class="step app-s">
+        <h5>循环（loop）：工具调用闭环</h5>
+        <p>LLM 返回的是工具调用 → Client 执行工具调用 → Server 返回工具执行结果 → Client 再把<strong>查询和工具结果</strong>一起发给 LLM，让它继续推理</p>
+      </div>
+      <div class="step">
+        <h5>分支（alt）：文本响应即结束</h5>
+        <p>LLM 返回的是文本响应 → Client 显示响应给用户，整个查询处理流程收尾</p>
+      </div>
+    </div>
+    <p>这个"<strong>推理 → 行动 → 观察 → 再推理</strong>"的循环，正是 Agent 系统里经典的 <strong>ReAct 模式</strong>；MCP 在其中扮演的角色，是把"行动"这一步标准化——工具怎么发现、怎么调用、结果怎么回传，都有统一约定。</p>
+
+    <!-- 5.4 传输 -->
+    <h3 class="sec" id="mcp-transport"><span class="no">5.4</span>传输方式：stdio、Streamable HTTP 与已废弃的 HTTP+SSE</h3>
+    <p>MCP 目前官方指定的两种传输是 <strong>stdio</strong> 与 <strong>Streamable HTTP</strong>；历史上还存在过 <strong>HTTP+SSE</strong> 双通道方案（已废弃）。三种方式的定位完全不同：</p>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-c">stdio 传输</div>
+        <h5>本地进程间通信</h5>
+        <p>MCP Client 直接启动 MCP Server 进程，通过标准输入输出交换数据。优点是<strong>零网络开销、部署简单</strong>，适合本地开发和桌面应用场景，Claude Desktop 就是用这种方式</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-a">Streamable HTTP</div>
+        <h5>远程服务，单一端点</h5>
+        <p>Server 独立部署，走网络协议，<strong>支持远程调用和多客户端并发</strong>。单一 HTTP 端点，POST 发 JSON-RPC，响应可直接返回 JSON 或升级为 SSE 流；无状态、可负载均衡。生产环境、微服务架构、需要集中管理的场景用它</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-r">HTTP+SSE（已废弃）</div>
+        <h5>双通道历史方案</h5>
+        <p>早期版本用两条连接：GET 先建立独立的 SSE 通道收消息，POST 另发请求。<strong>长连接阻碍负载均衡和水平扩展</strong>，已被 Streamable HTTP 取代，仅作兼容了解</p>
+      </div>
+    </div>
+    <div class="card">
+      <h4 class="sec2">注意：MCP 传输层的一次重要演进</h4>
+      <ul class="tight">
+        <li>最早版本（2024-11-05）使用"HTTP + 独立 SSE"两条连接的传输，<strong>该独立 SSE 传输已被废弃</strong></li>
+        <li>2025-03-26 版本起由 <strong>Streamable HTTP</strong> 取代：一个端点、按需用 SSE 流式、支持无状态部署、支持 JSON-RPC 批处理，并加入了完整的 OAuth 授权框架</li>
+      </ul>
+    </div>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答（怎么选）</div>
+      <p class="note">"stdio 方式是本地进程间通信，MCP Client 直接启动 MCP Server 进程，通过标准输入输出交换数据。优点是零网络开销、部署简单，适合本地开发和桌面应用场景，Claude Desktop 就是用这种方式。HTTP 方式走网络协议，Server 独立部署，支持远程调用和多客户端并发。生产环境、微服务架构、需要集中管理的场景用 HTTP。<strong>一般本地工具用 stdio，线上服务用 HTTP。</strong>"</p>
+    </div>
+
+    <!-- 5.5 JSON-RPC -->
+    <h3 class="sec" id="mcp-jsonrpc"><span class="no">5.5</span>通讯结构：一切都是 JSON-RPC 2.0</h3>
+    <p>MCP 的消息格式严格遵循 JSON-RPC 2.0，只有三类消息：<strong>请求（有 id，必须回应）、响应（带 result 或 error）、通知（无 id，不回应）</strong>。</p>
+    <div class="code-label">客户端 → 服务器：请求（带 id）</div>
+    <div class="code">
+<span class="ln">{</span>
+<span class="ln">  <span class="c-k">"jsonrpc"</span>: <span class="c-s">"2.0"</span>,</span>
+<span class="ln">  <span class="c-k">"id"</span>: <span class="c-n">1</span>,                          <span class="c-c">// 有 id 才是请求，响应靠它匹配</span></span>
+<span class="ln">  <span class="c-k">"method"</span>: <span class="c-s">"tools/call"</span>,             <span class="c-c">// 要调用的方法</span></span>
+<span class="ln">  <span class="c-k">"params"</span>: { <span class="c-k">"name"</span>: <span class="c-s">"get_weather"</span>, <span class="c-k">"arguments"</span>: {<span class="c-k">"city"</span>: <span class="c-s">"北京"</span>} }</span>
+<span class="ln">}</span></div>
+    <div class="code-label">服务器 → 客户端：成功响应 / 错误响应</div>
+    <div class="code">
+<span class="ln">{ <span class="c-k">"jsonrpc"</span>:<span class="c-s">"2.0"</span>, <span class="c-k">"id"</span>:<span class="c-n">1</span>, <span class="c-k">"result"</span>: { <span class="c-k">"content"</span>:[ {<span class="c-k">"type"</span>:<span class="c-s">"text"</span>,<span class="c-k">"text"</span>:<span class="c-s">"晴 22℃"</span>} ] } }</span>
+<span class="ln">{ <span class="c-k">"jsonrpc"</span>:<span class="c-s">"2.0"</span>, <span class="c-k">"id"</span>:<span class="c-n">1</span>, <span class="c-w">"error"</span>: { <span class="c-k">"code"</span>: -32602, <span class="c-k">"message"</span>: <span class="c-s">"参数错误"</span> } }</span></div>
+    <div class="code-label">通知（无 id，不需要回应，如初始化完成通知）</div>
+    <div class="code">
+<span class="ln">{ <span class="c-k">"jsonrpc"</span>:<span class="c-s">"2.0"</span>, <span class="c-k">"method"</span>:<span class="c-s">"notifications/initialized"</span> }</span></div>
+
+    <!-- 5.6 生命周期 -->
+    <h3 class="sec" id="mcp-lifecycle"><span class="no">5.6</span>连接生命周期：从 initialize 到关闭</h3>
+    <p>建立传输后，必须先完成 <strong>initialize 握手</strong>：协商协议版本、交换双方能力（capabilities），之后才能正常调用。这与 TLS 握手"先协商后通信"的思想一脉相承。</p>
+    <div class="seq-box" id="seq-mcp"></div>
+
+    <div class="steps">
+      <div class="step">
+        <h5>initialize 请求</h5>
+        <p>客户端声明协议版本、自己的能力（是否支持采样、根目录等）、客户端信息</p>
+      </div>
+      <div class="step server-s">
+        <h5>initialize 响应</h5>
+        <p>服务器返回选定的协议版本、自身能力（提供哪些 tools/resources/prompts）、服务器信息</p>
+      </div>
+      <div class="step app-s">
+        <h5>initialized 通知</h5>
+        <p>客户端发无 id 通知，握手完成，会话正式就绪</p>
+      </div>
+      <div class="step">
+        <h5>正常交互</h5>
+        <p>列出工具、调用工具、读取资源；服务器也能反过来请求客户端（如让 LLM 做采样）</p>
+      </div>
+      <div class="step">
+        <h5>shutdown / 断开</h5>
+        <p>HTTP 下可结束会话；stdio 下终止子进程</p>
+      </div>
+    </div>
+
+    <!-- 5.7 原语 -->
+    <h3 class="sec" id="mcp-primitives"><span class="no">5.7</span>三大能力原语：Tools、Resources、Prompts</h3>
+    <div class="grid3">
+      <div class="mini-card">
+        <div class="tag tag-s">Tools 工具</div>
+        <h5>可执行的函数</h5>
+        <p>模型可调用的函数（带 JSON Schema 描述参数），如 <code>search_web</code>、<code>run_query</code>。<strong>会产生副作用</strong>，通常需用户授权</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-c">Resources 资源</div>
+        <h5>可读取的数据</h5>
+        <p>供模型读取的上下文数据，用 URI 标识，如文件、日志、数据库记录，类似 GET</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-a">Prompts 提示词</div>
+        <h5>预制的模板</h5>
+        <p>服务器提供的可复用提示词模板，用户可在交互中选用</p>
+      </div>
+    </div>
+
+    <h4 class="sec2">追问：Tools 和 Resources 有什么本质区别？</h4>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答</div>
+      <p class="note">"Resources 是只读的数据，模型拿来参考用，不会产生副作用；Tools 是可执行的动作，会真正改变外部状态。打个比方，<strong>Resources 像是给模型看的文档，Tools 像是给模型用的遥控器</strong>。Resources 模型可以随时读，Tools 执行前通常要用户确认授权，因为可能会发邮件、删文件这种不可逆操作。"</p>
+    </div>
+
+    <!-- 5.8 vs Function Calling -->
+    <h3 class="sec" id="mcp-vs-fc"><span class="no">5.8</span>MCP vs Function Calling：互补，不是替代</h3>
+    <p>这是 MCP 被问得最多的一组对比。先给结论——两者根本不在一个层次上：</p>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答</div>
+      <p class="note">"不能，两者层次不同。<strong>MCP 是通信协议，解决的是'怎么标准化地和外部系统交互'；Function Calling 是模型能力，解决的是'模型怎么理解并产出工具调用请求'</strong>。没有 Function Calling，模型压根不知道什么时候该调工具、调哪个工具；没有 MCP，每个模型都要单独适配外部系统。<strong>它们是互补关系，不是替代关系。</strong>"</p>
+    </div>
+    <div class="cmp-wrap"><table class="cmp">
+      <tr><th>维度</th><th>MCP</th><th>Function Calling</th></tr>
+      <tr><td>本质</td><td>通信协议（开放标准）</td><td>模型能力（厂商训练出来的）</td></tr>
+      <tr><td>解决的问题</td><td>怎么标准化地和外部系统交互</td><td>模型怎么理解并产出工具调用请求</td></tr>
+      <tr><td>类比</td><td>USB-C 通用接口标准</td><td>厂商私有的充电接口</td></tr>
+      <tr><td>缺失对方会怎样</td><td>没有 FC，模型不知道何时调、调哪个工具</td><td>没有 MCP，每个模型都要单独适配外部系统</td></tr>
+      <tr><td>关系</td><td colspan="2" style="text-align:center;background:var(--surface)">互补关系，不是替代关系</td></tr>
+    </table></div>
+
+    <h4 class="sec2">先搞懂 Function Calling 本身是怎么跑的</h4>
+    <p>以"天气查询 + 时间查询"两个工具为例，一次典型的工具调用流程是这样闭环的：</p>
+    <div class="steps">
+      <div class="step">
+        <h5>用户提问</h5>
+        <p>例如"北京今天多少度？"——问题进入程序（应用层）</p>
+      </div>
+      <div class="step">
+        <h5>程序根据用户问题调用大模型</h5>
+        <p>请求里会带上<strong>工具信息</strong>：天气查询，参数：地点；时间查询，参数：无</p>
+      </div>
+      <div class="step secure-s">
+        <h5>大模型判断是否需要调用工具</h5>
+        <p><strong>否</strong> → 直接给出回复；<strong>是</strong> → 输出工具名称、解析工具入参（结构化的调用意图）</p>
+      </div>
+      <div class="step app-s">
+        <h5>程序根据工具名称、入参调用工具</h5>
+        <p>真正执行的是程序，不是模型；工具输出工具调用结果</p>
+      </div>
+      <div class="step">
+        <h5>带着结果再问一次大模型</h5>
+        <p>程序<strong>根据工具结果、用户问题再次调用大模型</strong>，由模型综合出最终回复，返回给用户</p>
+      </div>
+    </div>
+    <p>工具选择的机制，本质上是<strong>意图识别</strong>：工具 Schema 被注入 System Prompt，由模型来决定调哪个工具、传什么参数——所以<strong>工具描述的质量直接影响选择的准确率</strong>。</p>
+
+    <details class="faq">
+      <summary>如果模型本身不支持 Function Calling，还能用 MCP 吗？</summary>
+      <div class="faq-body">
+        <span class="ans-tag">原话 · 回答</span>
+        "能用，但得换个方式。MCP 只是通信协议，不依赖 Function Calling。没有 Function Calling 能力的模型，可以用 <strong>Prompt 引导</strong>的方式让模型输出结构化的工具调用意图，应用层解析这个意图再走 MCP 协议调用工具。效果会差一些，因为模型输出格式不够稳定，但技术上完全可行。"
+      </div>
+    </details>
+
+    <!-- 5.9 Shell -->
+    <h3 class="sec" id="mcp-shell"><span class="no">5.9</span>灵魂拷问：AI 都能执行 Shell 了，为什么还需要 MCP？</h3>
+    <p>表面上看，让模型生成并执行 Shell 命令几乎"万能"：<code>curl</code> 取数据、<code>jq</code> 解析、<code>mysql -e</code> 查库、<code>rm</code> 删文件，什么都能干。但 Shell 的"万能"恰恰是它的危险所在——<strong>它是一条没有边界、没有契约的通道</strong>。</p>
+
+    <div class="card" style="border-color:rgba(185,58,58,.35)">
+      <h4 class="sec2" style="color:var(--danger)">裸 Shell 方式的五个结构性问题</h4>
+      <ul class="tight">
+        <li><strong>① 没有契约，靠字符串拼命令：</strong>模型在一段自由文本里拼命令、拼参数，一个文件名或变量里带上 <code>; rm -rf ~</code> 就可能造成<strong>命令注入</strong>；返回的是自由文本和退出码，模型要自己解析，格式一变就失败</li>
+        <li><strong>② 权限无边界：</strong>能执行 Shell 就等于拿到当前用户的全部权限——读任意文件、改 <code>.ssh</code>、删家目录、连内网。"查个订单"和"删掉整个数据库"用的是<strong>同一把钥匙</strong></li>
+        <li><strong>③ 依赖环境、不可移植：</strong>机器上有没有 <code>curl/jq/python</code>、shell 是 bash 还是 zsh，行为都不同；Windows 上这些命令根本不存在，同一段操作在不同机器上结果不可预期</li>
+        <li><strong>④ 黑盒、难审计：</strong>命令执行后留下的是零散的系统日志，意图、参数、副作用混在一起，事后很难回答"AI 到底做了什么、改了哪些东西"</li>
+        <li><strong>⑤ 服务保证弱：</strong>没有关于超时、重试、取消、结构化错误的标准约定，失败只是一个非零退出码加一段 stderr，模型只能猜原因</li>
+      </ul>
+    </div>
+
+    <p>MCP 的思路不是"让命令更安全"，而是<strong>把安全边界从系统层上移到"工具契约"层</strong>：不暴露"任意命令"，只暴露一个个语义明确、参数有类型、权限可控制的工具。</p>
+
+    <div class="grid2">
+      <div class="mini-card">
+        <div class="tag tag-c">标准化 · 契约</div>
+        <h5>按 Schema 调用，而非拼命令</h5>
+        <p>每个工具用 JSON Schema 声明参数类型和返回结构，模型填的是结构化字段（<code>order_id 是整数</code>），不存在字符串拼接，命令注入面被从结构上消灭</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-g">权限边界 · 最小权限</div>
+        <h5>只有被显式暴露的操作</h5>
+        <p>模型能做的只有"查询订单""创建 issue"这类窄操作，<strong>根本没有"执行任意命令"这个能力</strong>；删文件、发消息等敏感操作单独授权，天然最小权限</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-s">隔离 · 可审计</div>
+        <h5>独立进程 + 结构化日志</h5>
+        <p>工具在独立进程/沙箱/远端服务运行，模型不直接触达系统；每次调用是一条结构化记录（谁、调了什么、参数、结果），审计清晰可回放</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-a">可组合 · 服务保证</div>
+        <h5>一套协议接任意服务</h5>
+        <p>结构化结果与类型化错误码、超时/取消/进度通知、能力协商；不依赖本地 shell，Server 可用任意语言编写、可远程部署、可水平扩展</p>
+      </div>
+    </div>
+
+    <h4 class="sec2">同一个任务，两种方式的对比：查询订单 #1024</h4>
+    <div class="code-label">方式 A：裸 Shell（无界、脆弱）</div>
+    <div class="code">
+<span class="ln">curl -s <span class="c-s">"https://api.shop.com/orders/$ORDER"</span> | jq .</span>
+<span class="ln c-c"># 风险：ORDER 被污染 → 命令注入；机器上没装 jq/curl；</span>
+<span class="ln c-c"># Token 来源不明；返回格式变了模型解析失败；Windows 上无法运行</span></div>
+    <div class="code-label">方式 B：MCP（有契约、有边界）</div>
+    <div class="code">
+<span class="ln c-c">// 请求：参数被 Schema 约束为整数，注入无门</span>
+<span class="ln">{ <span class="c-k">"method"</span>:<span class="c-s">"tools/call"</span>, <span class="c-k">"params"</span>:{ <span class="c-k">"name"</span>:<span class="c-s">"get_order"</span>,</span>
+<span class="ln">  <span class="c-k">"arguments"</span>:{ <span class="c-k">"order_id"</span>: <span class="c-n">1024</span> } }</span>
+<span class="ln c-c">// 响应：结构化结果，鉴权由 Server 统一管理</span>
+<span class="ln">{ <span class="c-k">"result"</span>:{ <span class="c-k">"content"</span>:[ {<span class="c-k">"type"</span>:<span class="c-s">"text"</span>,<span class="c-k">"text"</span>:<span class="c-s">"订单已发货"</span>} ],</span>
+<span class="ln">  <span class="c-k">"structuredContent"</span>:{ <span class="c-k">"id"</span>:<span class="c-n">1024</span>, <span class="c-k">"status"</span>:<span class="c-s">"shipped"</span> } } }</span></div>
+
+    <h4 class="sec2">MCP vs 裸 Shell：一张表看清差异</h4>
+    <div class="cmp-wrap"><table class="cmp">
+      <tr><th>维度</th><th>裸 Shell</th><th>MCP</th></tr>
+      <tr><td>调用方式</td><td>模型自由拼命令</td><td>按 Schema 选择并调用工具</td></tr>
+      <tr><td>输入</td><td>字符串拼接（易注入）</td><td>结构化 JSON，类型受限</td></tr>
+      <tr><td>输出</td><td>自由文本 + 退出码</td><td>结构化 content + 类型化错误码</td></tr>
+      <tr><td>权限范围</td><td>当前用户的全部权限</td><td>仅被显式暴露的工具</td></tr>
+      <tr><td>命令注入</td><td>高风险</td><td>无字符串拼接，注入面被消灭</td></tr>
+      <tr><td>环境依赖</td><td>依赖 OS 上的命令与 shell</td><td>协议级跨平台，不依赖本地 shell</td></tr>
+      <tr><td>审计</td><td>零散系统日志，难还原</td><td>每条调用结构化留痕</td></tr>
+      <tr><td>运行位置</td><td>直接在目标机器上</td><td>独立进程/沙箱/远端服务</td></tr>
+      <tr><td>安全边界在哪</td><td>靠外挂：系统沙箱 + 命令白名单</td><td>内置：边界做在工具契约层</td></tr>
+    </table></div>
+
+    <div class="card glow">
+      <p class="note"><strong>一句话总结：</strong>Shell 交给 AI 的是"一把万能钥匙"，能开所有门也包括你不想让它开的；MCP 交给 AI 的是"一串只能开特定锁、每次使用都登记、还能随时收回的钥匙"。Shell 并非不能用，而是它的安全要靠应用方自己搭沙箱、配白名单，容易漏；MCP 把这些做成了协议默认。</p>
+    </div>
+
+    <!-- 5.10 工程实践 -->
+    <h3 class="sec" id="mcp-practice"><span class="no">5.10</span>工程实践：容错、规模与工具治理</h3>
+    <h4 class="sec2">如果 MCP Server 挂了或者响应超时，大模型那边会怎么处理？</h4>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答</div>
+      <p class="note">"这个得看 MCP Client 的实现。一般会有<strong>超时机制</strong>，比如 30 秒没响应就返回错误。大模型拿到错误信息后，要么告诉用户工具调用失败了，要么换个方式回答。好的实现会做<strong>重试和熔断</strong>，避免一个工具故障拖垮整个对话。实际开发中建议在 MCP Server 侧做好<strong>健康检查和优雅降级</strong>。"</p>
+    </div>
+    <h4 class="sec2">一个 Server 能注册多少个工具，有上限吗？</h4>
+    <div class="quote">
+      <div class="q-tag">原话 · 高频问答</div>
+      <p class="note">"协议本身没有硬性限制，但工具太多会有问题。大模型需要理解每个工具的描述来决定调用哪个，<strong>工具列表会占用大量 context window</strong>，还可能导致模型选错工具。实践中建议<strong>一个 Server 控制在 10-20 个工具以内</strong>，功能相近的可以合并，差异大的拆成多个 Server 按领域划分。"</p>
+    </div>
+    <h4 class="sec2">高可用部署</h4>
+    <ul class="tight">
+      <li><strong>无状态部署 + 负载均衡：</strong>Streamable HTTP 天然亲和水平扩展，Server 可以多实例后挂网关分流</li>
+      <li><strong>优雅降级：</strong>工具失败时把超时/错误信息交回模型，由模型决定是告知用户失败还是换一种方式回答，而不是让整个会话崩掉</li>
+    </ul>
+
+    <!-- 5.11 安全 -->
+    <h3 class="sec" id="mcp-security"><span class="no">5.11</span>安全机制：MCP 如何防止 AI 被滥用</h3>
+    <p>MCP 让 AI 能操作真实系统，风险远高于读网页，因此它在设计上系统性考虑了安全。三道基础边界如下：</p>
+    <div class="quote">
+      <div class="q-tag">原话 · 安全机制卡片</div>
+      <p class="note">"MCP 在设计上考虑了安全边界：1）<strong>权限隔离</strong>：每个 Server 只能访问自己管辖的资源，一个连数据库的 Server 没法读本地文件；2）<strong>用户确认</strong>：敏感操作需要用户手动授权，模型不能静默执行删库这种高危动作；3）<strong>传输安全</strong>：HTTP+SSE 模式支持 TLS 加密，防止中间人攻击。不过目前 MCP 还没有统一的认证授权标准，跨组织部署时得自己实现 OAuth 或 API Key 校验。"</p>
+    </div>
+    <p><strong>注意知识时效性：</strong>上面"没有统一的认证授权标准"反映的是早期（2024 版）生态的状态；<strong>2025-03-26 版规范已引入基于 OAuth 2.1 的完整授权框架</strong>。面试时建议按"早期靠自建 OAuth/API Key → 新版本协议内置授权"的演进线来答，能体现你跟进了规范更新。</p>
+
+    <div class="card" style="border-color:rgba(185,58,58,.35)">
+      <h4 class="sec2" style="color:var(--danger)">规范层面的完整安全设计</h4>
+      <ul class="tight">
+        <li><strong>传输安全：</strong>远程传输必须走 HTTPS（TLS），防止窃听与篡改；本地 stdio 只在本机通信</li>
+        <li><strong>授权框架：</strong>2025-03-26 版本引入基于 <strong>OAuth 2.1 / 授权码流程</strong>的授权，支持资源服务器（MCP Server）与授权服务器分离，支持 PKCE；用 Token 而非密码访问</li>
+        <li><strong>用户同意与最小权限：</strong>工具调用前由 Host 向用户展示"将要做什么"并请求确认；按能力（scope）最小授权，敏感操作（删文件、发消息、转账）必须显式批准</li>
+        <li><strong>隔离原则：</strong>每个 Server 独立 Client、独立权限，互不串通；不可信的 Server 无法诱导客户端访问其他 Server</li>
+        <li><strong>混淆代理防护（Confused Deputy）：</strong>明确区分"用户身份"与"工具会话"，防止恶意 Server 借 Host 的高权限去访问别的资源</li>
+      </ul>
+    </div>
+
+    <h4 class="sec2">再往深一层：Server 侧的安全清单</h4>
+    <div class="grid4">
+      <div class="mini-card">
+        <div class="tag tag-r">注入防护</div>
+        <h5>Prompt 注入攻击防护</h5>
+        <p>工具返回的内容可能夹带恶意指令，Server 要对输出做净化，Client 要把工具结果当"数据"而非"指令"</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-y">可追溯</div>
+        <h5>日志与审计</h5>
+        <p>每次调用记录谁、调了什么工具、什么参数、什么结果，出事后可回放追责</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-c">租户隔离</div>
+        <h5>多租户场景的隔离</h5>
+        <p>多租户共用 Server 时，数据与权限必须按租户隔离，防止越权读写</p>
+      </div>
+      <div class="mini-card">
+        <div class="tag tag-g">范式差异</div>
+        <h5>与传统 API 安全的区别</h5>
+        <p>传统 API 的调用方是人/程序，MCP 的调用链多了"模型"这一环，授权、审计、注入面都要重新设计</p>
+      </div>
+    </div>
+
+    <h4 class="sec2">三个高频追问</h4>
+    <details class="faq">
+      <summary>如果用户授权了一个工具，后端服务还需要再授权吗？</summary>
+      <div class="faq-body"><strong>要区分两层授权：</strong>用户确认（Host 层）解决的是"AI 可以不可以做这件事"；后端鉴权（OAuth scope / API Key）解决的是"这次请求的身份有没有权限访问该资源"。前者不能替代后者——用户点了"同意"，不代表后端就该放开校验，两者是串联关系。</div>
+    </details>
+    <details class="faq">
+      <summary>MCP Server 被攻破了怎么办？</summary>
+      <div class="faq-body"><strong>思路是最小化爆炸半径：</strong>权限隔离让单个 Server 只能碰自己管辖的资源；审计日志让异常调用可被发现与回放；密钥可轮换、实例可下线重部署。这也是为什么"每个 Server 只授权自己需要的资源"如此重要——被攻破时损失被圈死在一小块。</div>
+    </details>
+    <details class="faq">
+      <summary>stdio 模式下 Client 直接 fork Server，有什么风险？</summary>
+      <div class="faq-body"><strong>子进程继承当前用户的全部权限：</strong>stdio 模式下 Server 以你的身份在本机运行，Server 代码如果不可信，等于把你的账户交了出去（读任意文件、改配置、连内网都做得到）。所以 stdio Server <strong>必须只安装可信来源的实现</strong>，这也呼应了"权限隔离"的设计——能被 fork 的进程，权限边界只能靠来源可信来保证。</div>
+    </details>
+
+    <!-- 5.12 开发 -->
+    <h3 class="sec" id="mcp-dev"><span class="no">5.12</span>动手开发：三步实现一个 MCP Server</h3>
+    <p>自己写一个 Server 并不复杂，标准路径就三步：<strong>能力定义 → 协议层 → 业务逻辑</strong>。官方提供 Python、TypeScript 等 SDK，"继承几个类、实现几个方法"就能跑起来。</p>
+    <div class="steps">
+      <div class="step">
+        <h5>第一步：能力定义</h5>
+        <p>决定 Server 要暴露什么——Resource（只读数据）、Tool（可执行动作）、Prompt（提示词模板），以及各自的名字、参数 Schema、描述文案</p>
+      </div>
+      <div class="step app-s">
+        <h5>第二步：协议层</h5>
+        <p>用官方 SDK 接入 JSON-RPC 2.0 消息循环，initialize 握手、能力协商、tools/list、tools/call 这些协议细节 SDK 已全部封装</p>
+      </div>
+      <div class="step secure-s">
+        <h5>第三步：业务逻辑</h5>
+        <p>在每个工具的回调里写真正干活的部分：查库、调 API、读文件——这是你唯一需要认真写的代码</p>
+      </div>
+    </div>
+    <div class="code-label">示意：用官方 Python SDK（FastMCP）写一个最小的天气 Server</div>
+    <div class="code">
+<span class="ln"><span class="c-k">from</span> mcp.server.fastmcp <span class="c-k">import</span> FastMCP</span>
+<span class="ln"></span>
+<span class="ln">mcp = FastMCP(<span class="c-s">"weather"</span>)                  <span class="c-c"># ① 能力定义：声明 Server 名字</span></span>
+<span class="ln"></span>
+<span class="ln"><span class="c-f">@mcp.tool</span>()</span>
+<span class="ln"><span class="c-k">def</span> <span class="c-f">get_weather</span>(city: str) -> str:         <span class="c-c"># ② 协议层：SDK 自动生成 Schema、处理 JSON-RPC</span></span>
+<span class="ln">    <span class="c-k">return</span> <span class="c-s">f"</span>{city}<span class="c-s"> 晴 22℃"</span>                   <span class="c-c"># ③ 业务逻辑：真正干活的地方</span></span>
+<span class="ln"></span>
+<span class="ln">mcp.run()                                   <span class="c-c"># 默认 stdio 传输，一行启动</span></span></div>
+    <p>把这个文件配置进 Claude Desktop 或 Cursor 的 MCP 设置里，客户端就能发现 <code>get_weather</code> 这个工具，并按 Schema 传参调用——整个接入过程不需要写一行协议代码。</p>
+
+    <!-- 5.13 面试实战 -->
+    <h3 class="sec" id="mcp-interview"><span class="no">5.13</span>面试实战："了解过 MCP 吗？"</h3>
+    <p>这是 MCP 最高频的开场题。面试官期待的<strong>不是背定义</strong>，而是一段 60–90 秒、结构清晰、有层次的回答：是什么 → 怎么跑 → 和 Function Calling 什么关系 → 落地要注意什么，并且每个点都留得住追问的余地。下面这段参考回答覆盖了本章绝大部分知识点，<strong>高亮短语都是可点击的"知识钩子"</strong>——每个钩子链接到本教程的一个模块，钩子背后就是你可以继续深挖、应对追问的一块知识。</p>
+
+    <div class="interview">
+      <div class="iv-tag">
+        <span class="iv-badge">面试参考回答</span>
+        <span class="iv-meta">约 380 字 · 正常语速 90 秒 · 11 个知识钩子</span>
+      </div>
+      <div class="iv-q">了解过 MCP 吗？</div>
+      <p class="answer">了解过。<a class="hook" href="#mcp-what">MCP 全称 Model Context Protocol，模型上下文协议，是 Anthropic 在 2024 年 11 月发布的开放标准</a>，核心目标是让大模型能够标准化地连接外部数据源和工具，常被比作 AI 领域的 USB-C，让模型和外部世界的连接变得即插即用，价值集中在标准化数据接入、增强模型实时能力、降低集成复杂度。<a class="hook" href="#mcp-arch">架构上分为 Host、Client、Server 三种角色，而且一个 Client 可以同时连多个 Server</a>——Client 维护 Server 列表，每次请求前先聚合所有 Server 的工具列表给模型，模型选定工具后再按归属路由到对应 Server，Cursor 配置多个 MCP Server 就是这个原理。<a class="hook" href="#mcp-flow">交互分两个阶段：初始化阶段拿工具清单，查询处理阶段走"工具调用循环"，直到 LLM 给出最终文本响应</a>。<a class="hook" href="#mcp-primitives">Server 对外暴露 Tools、Resources、Prompts 三类能力——Tools 像给模型用的遥控器，执行前要用户确认授权；Resources 像给模型看的文档，只读无副作用</a>。<a class="hook" href="#mcp-jsonrpc">消息格式是 JSON-RPC 2.0</a>，<a class="hook" href="#mcp-lifecycle">连接建立后要先走 initialize 握手协商版本、交换能力</a>。<a class="hook" href="#mcp-transport">传输上本地用 stdio，零网络开销，Claude Desktop 就是这种方式；线上用 Streamable HTTP，无状态、可负载均衡，旧的 HTTP+SSE 双连接模式已被废弃——一句话，本地工具用 stdio，线上服务用 HTTP</a>。<a class="hook" href="#mcp-vs-fc">它和 Function Calling 是互补关系，不是替代关系：MCP 是通信协议，解决怎么标准化地和外部系统交互；Function Calling 是模型能力，解决模型怎么理解并产出工具调用请求；就算模型不支持 Function Calling，也能用 Prompt 引导让它输出结构化的工具调用意图，应用层解析后再走 MCP 调用工具，技术上完全可行</a>。<a class="hook" href="#mcp-practice">工程实践上有两个容易忽略的点：工具列表会占用大量 context window，建议一个 Server 控制在 10-20 个工具以内；Server 挂了或超时要靠 Client 的超时、重试和熔断兜底，Server 侧做好健康检查和优雅降级</a>。<a class="hook" href="#mcp-security">安全上 MCP 设计了权限隔离、用户确认、传输安全三道边界，每个 Server 只能访问自己管辖的资源，敏感操作需要用户手动授权，新版本还引入了 OAuth 2.1 授权框架</a>。<a class="hook" href="#mcp-dev">最后，自己开发一个 Server 只要三步——能力定义、协议层、业务逻辑，用官方 Python 或 TypeScript SDK，继承几个类、实现几个方法就能跑起来</a>。</p>
+      <div class="iv-hint">回答动线：是什么（定位/价值）→ 怎么跑（架构/流程/消息/传输）→ 和 Function Calling 什么关系 → 落地要注意什么（实践/安全）→ 我上手过（开发）。<br>钩子即考点：面试官的下一句追问，大概率就落在你抛出的某个钩子上——每一个都值得点进去再复习一遍。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 章节 6：横向对比与总结 ===== -->
+<section class="chapter" id="compare">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="ch-num">06 / COMPARISON</div>
+      <h2 class="ch-title">横向对比：一张表看清全部</h2>
+      <p class="ch-sub">把"连接建立方式、通信方向、数据格式、安全机制"放在一起，五个协议的定位差异一目了然。</p>
+    </div>
+
+    <div class="cmp-wrap"><table class="cmp wide">
+      <tr>
+        <th>维度</th><th>HTTP</th><th>HTTPS</th><th>SSE</th><th>WebSocket</th><th>MCP</th>
+      </tr>
+      <tr>
+        <td>协议层级</td><td>应用层</td><td>HTTP + TLS</td><td>应用层（基于 HTTP）</td><td>独立应用层协议</td><td>应用层语义标准</td>
+      </tr>
+      <tr>
+        <td>连接建立</td><td>TCP 三次握手</td><td>TCP + TLS 握手</td><td>普通 GET，长连接</td><td>HTTP Upgrade 后 101</td><td>stdio 或 Streamable HTTP + initialize</td>
+      </tr>
+      <tr>
+        <td>通信方向</td><td>请求→响应（单向）</td><td>同 HTTP</td><td>服务器→客户端</td><td>全双工</td><td>双向（Client↔Server）</td>
+      </tr>
+      <tr>
+        <td>数据格式</td><td>文本/任意</td><td>加密的文本/任意</td><td>UTF-8 文本事件</td><td>文本 + 二进制帧</td><td>JSON-RPC 2.0</td>
+      </tr>
+      <tr>
+        <td>连接模型</td><td>短连接→长连接</td><td>同 HTTP</td><td>一条持续响应流</td><td>持久双向连接</td><td>会话（初始化→交互→关闭）</td>
+      </tr>
+      <tr>
+        <td>断线重连</td><td>重新发请求</td><td>同 HTTP</td><td>自动 + 断点续传</td><td>需手写</td><td>靠传输层，可重新 initialize</td>
+      </tr>
+      <tr>
+        <td>安全机制</td><td>无（明文）</td><td>TLS：加密/完整/认证</td><td>可走 HTTPS</td><td>wss + Origin 校验</td><td>TLS + OAuth 2.1 + 用户同意</td>
+      </tr>
+      <tr>
+        <td>默认端口</td><td><code>80</code></td><td><code>443</code></td><td>同 HTTP/HTTPS</td><td><code>80/443</code></td><td>同 HTTP / 本地进程</td>
+      </tr>
+      <tr>
+        <td>典型场景</td><td>网页、API</td><td>一切生产流量</td><td>行情、通知、AI 流式</td><td>聊天、协同、游戏</td><td>AI 调用工具/读数据</td>
+      </tr>
+    </table></div>
+
+    <h3 class="sec"><span class="no">6.1</span>选型决策：什么场景该用谁</h3>
+    <div class="card">
+      <ul class="tight">
+        <li><strong>普通接口、网页资源：</strong>HTTP/1.1 或 HTTP/2，<strong>生产环境一律 HTTPS</strong></li>
+        <li><strong>只需要服务器推送、客户端不回话：</strong>优先 SSE（自动重连、简单），如 AI 逐字输出、行情</li>
+        <li><strong>需要双向高频实时交互：</strong>WebSocket（wss），如聊天、协同编辑、多人游戏</li>
+        <li><strong>AI 应用要接入外部工具/数据源：</strong>直接用 MCP，别再造私有对接协议；本地用 stdio，远程用 Streamable HTTP</li>
+      </ul>
+    </div>
+
+    <h3 class="sec"><span class="no">6.2</span>贯穿全文的一条演进主线</h3>
+    <div class="steps">
+      <div class="step">
+        <h5>第一步：让连接可复用（HTTP 版本演进）</h5>
+        <p>短连接 → Keep-Alive → 多路复用 → QUIC，解决"连接开销与队头阻塞"</p>
+      </div>
+      <div class="step secure-s">
+        <h5>第二步：让通道安全（HTTPS）</h5>
+        <p>插入 TLS 层，用非对称加密协商密钥、对称加密传数据、CA 证书认证身份</p>
+      </div>
+      <div class="step server-s">
+        <h5>第三步：让服务器能主动说话（SSE）</h5>
+        <p>把一次 HTTP 响应变成持续的事件流，单向推送，自动重连</p>
+      </div>
+      <div class="step app-s">
+        <h5>第四步：让双方完全平等（WebSocket）</h5>
+        <p>一次升级握手后全双工，文本与二进制帧随时互发</p>
+      </div>
+      <div class="step">
+        <h5>第五步：让连接有统一语义（MCP）</h5>
+        <p>复用前面所有传输，在其上标准化"能力协商 + 工具调用 + 授权"，连接的进化从"传得更快更安全"走向"传得更有意义"</p>
+      </div>
+    </div>
+
+    <div class="card glow" style="margin-top:34px">
+      <p class="note" style="font-size:16.5px"><strong>一句话记忆：</strong>HTTP 定了"怎么问怎么答"，HTTPS 让问答"只有双方听得懂"，SSE 让服务器"能主动念叨"，WebSocket 让两边"随时畅所欲言"，MCP 则让 AI 与工具之间"用同一套术语对话"。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>网络协议基础 · 连接建立与通讯结构深度教程</p>
+    <p style="margin-top:8px">HTTP / HTTPS / SSE / WebSocket / MCP · 依据 RFC 与 MCP 官方规范（2025-03-26）整理 · MCP 问答素材参考：面试鸭（mianshiya.com）</p>
+  </div>
+</footer>
+
+<!-- 回到顶部 -->
+<button id="toTop" aria-label="回到顶部">↑</button>
+
+<script>
+/* ================= 通用工具 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ================= 阅读进度条 ================= */
+const progressBar = $('#progress');
+function onProgress(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  progressBar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+}
+
+/* ================= 导航高亮 + 侧栏目录高亮 ================= */
+const navLinks = $$('.nav-links a');
+const chapterIds = [...navLinks].map(a => a.getAttribute('href').slice(1));
+const tocLinks = $$('.toc a');
+const tocTargets = [...tocLinks].map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function onScrollNav(){
+  // 章节级：顶部导航高亮
+  let cur = chapterIds[0];
+  chapterIds.forEach(id => {
+    const sec = document.getElementById(id);
+    if (sec && sec.getBoundingClientRect().top < 160) cur = id;
+  });
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+  // 目录级：最后一个滚过阈值的小节高亮（含章节本身）
+  let activeToc = tocTargets[0];
+  tocTargets.forEach(t => { if (t.getBoundingClientRect().top < 170) activeToc = t; });
+  tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + (activeToc && activeToc.id)));
+}
+window.addEventListener('scroll', () => { onProgress(); onScrollNav(); }, { passive: true });
+onProgress(); onScrollNav();
+
+/* ================= 移动端汉堡菜单 ================= */
+const burger = $('#navBurger'), navLinksBox = $('#navLinks');
+burger.addEventListener('click', () => {
+  const open = navLinksBox.classList.toggle('open');
+  burger.classList.toggle('open', open);
+  burger.setAttribute('aria-expanded', open);
+});
+navLinksBox.addEventListener('click', e => {
+  if (e.target.tagName === 'A') { navLinksBox.classList.remove('open'); burger.classList.remove('open'); }
+});
+
+/* ================= 回到顶部 ================= */
+const toTop = $('#toTop');
+toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+window.addEventListener('scroll', () => {
+  toTop.classList.toggle('show', window.scrollY > 700);
+}, { passive: true });
+
+/* ================= Hero Canvas：数据包往返 ================= */
+(function(){
+  const cv = $('#heroCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  let W, H, DPR;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth;   // 画布已是底部固定高度条带，尺寸取自身而非父容器
+    H = cv.clientHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  const COL = { c:'#1F5FA8', s:'#B4540A', g:'#177A4C', line:'#CFC8B6', faint:'#8B8F9A', node:'#FFFFFF' };
+  // 数据包：x 在两端之间往返
+  const packets = [
+    { t:0,   dir:1,  speed:.0062, label:'GET',  color:COL.c },
+    { t:.32, dir:1,  speed:.0051, label:'TLS',  color:COL.g },
+    { t:.58, dir:-1, speed:.0058, label:'200',  color:COL.s },
+    { t:.78, dir:1,  speed:.0047, label:'POST', color:COL.c },
+  ];
+  let frame = 0;
+  function draw(){
+    frame++;
+    ctx.clearRect(0, 0, W, H);
+    const narrow = W < 760;
+    const cy = H * .46;                       // 通道画在条带中部（条带独立于正文，不会再遮挡按钮/统计）
+    const x1 = Math.max(60, W * .10), x2 = Math.min(W - 60, W * .90);
+    ctx.globalAlpha = narrow ? .22 : 1;       // 窄屏降低整体存在感
+    [['CLIENT', x1, COL.c], ['SERVER', x2, COL.s]].forEach(([name, x, col]) => {
+      ctx.beginPath(); ctx.arc(x, cy, 26, 0, 7); ctx.fillStyle = COL.node; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, cy, 7, 0, 7); ctx.fillStyle = col; ctx.fill();
+      ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+      ctx.fillStyle = COL.faint; ctx.textAlign = 'center'; ctx.fillText(name, x, cy + 50);
+    });
+    ctx.setLineDash([6, 7]); ctx.strokeStyle = COL.line; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x1, cy); ctx.lineTo(x2, cy); ctx.stroke(); ctx.setLineDash([]);
+    packets.forEach(p => {
+      let tt = (p.t + frame * p.speed) % 1;
+      const eased = tt < .5 ? 2 * tt * tt : 1 - Math.pow(-2 * tt + 2, 2) / 2;
+      const x = p.dir === 1 ? x1 + (x2 - x1) * eased : x2 - (x2 - x1) * eased;
+      const y = cy + Math.sin(tt * Math.PI) * -14;
+      ctx.globalAlpha = (narrow ? .22 : 1) * (Math.sin(tt * Math.PI) * .6 + .4);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
+      ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = p.color; ctx.fillText(p.label, x, y - 12);
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ================= 代码块增强：统一包头部 + 复制按钮 ================= */
+$$('.code').forEach(code => {
+  // 标题优先级：data-label 属性 > 前面的 .code-label 元素 > 无标题
+  const prevLabel = code.previousElementSibling;
+  const hasPrev = prevLabel && prevLabel.classList.contains('code-label');
+  const title = code.dataset.label || (hasPrev ? prevLabel.textContent : '');
+  if (hasPrev) prevLabel.remove();
+
+  const block = document.createElement('div'); block.className = 'codeblock';
+  const head = document.createElement('div'); head.className = 'code-head';
+  const lab = document.createElement('span'); lab.className = 'code-title'; lab.textContent = title || 'CODE';
+  const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.textContent = '复制';
+  btn.addEventListener('click', async () => {
+    try {
+      await copyText(code.innerText);
+      btn.textContent = '已复制 ✓';
+    } catch (e) { btn.textContent = '复制失败'; }
+    setTimeout(() => btn.textContent = '复制', 1600);
+  });
+  head.append(lab, btn);
+  code.parentNode.insertBefore(block, code);
+  block.append(head, code);
+});
+/* 复制文本（优先 Clipboard API，降级 execCommand） */
+async function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } finally { ta.remove(); }
+}
+
+/* ================= 时序图组件 =================
+   支持：多角色、阶段横幅（phase）、消息箭头、备注、逐步动画 */
+function seqDiagram(el, cfg){
+  const actors = cfg.actors;
+  const W = 800, top = 64, rowH = 54, phaseH = 36;
+  // 先布局：phase 占 phaseH 高，普通消息占 rowH 高
+  let y = top;
+  const items = cfg.messages.map(m => {
+    if (m.phase){ const it = { type:'phase', label:m.phase, y }; y += phaseH; return it; }
+    const it = { type:'msg', m, y }; y += rowH; return it;
+  });
+  const H = y + 24;
+  const xs = actors.map((a, i) => 130 + i * ((W - 260) / (actors.length - 1)));
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.classList.add('seq-svg');
+
+  // 文本宽度估算：中日韩全角按字号，ASCII 按 0.62 倍（修复原版中文标签背景过窄问题）
+  function textW(str, fs){
+    let w = 0;
+    for (const ch of str) w += ch.charCodeAt(0) > 255 ? fs : fs * .62;
+    return w;
+  }
+
+  // 角色框 + 生命线
+  actors.forEach((a, i) => {
+    const x = xs[i];
+    const box = document.createElementNS(svgNS, 'rect');
+    box.setAttribute('x', x - 72); box.setAttribute('y', 12); box.setAttribute('width', 144); box.setAttribute('height', 38);
+    box.setAttribute('rx', 9); box.setAttribute('fill', '#FFFFFF'); box.setAttribute('stroke', a.color);
+    svg.appendChild(box);
+    const t = document.createElementNS(svgNS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', 29); t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('class', 'seq-actor'); t.setAttribute('fill', a.color); t.textContent = a.name;
+    svg.appendChild(t);
+    const st = document.createElementNS(svgNS, 'text');
+    st.setAttribute('x', x); st.setAttribute('y', 44); st.setAttribute('text-anchor', 'middle');
+    st.setAttribute('class', 'seq-actor-sub'); st.textContent = a.sub || '';
+    svg.appendChild(st);
+    const life = document.createElementNS(svgNS, 'line');
+    life.setAttribute('x1', x); life.setAttribute('x2', x); life.setAttribute('y1', 56); life.setAttribute('y2', H - 14);
+    life.setAttribute('class', 'seq-life'); svg.appendChild(life);
+  });
+
+  // 消息与阶段横幅
+  const itemEls = [];
+  items.forEach(it => {
+    const g = document.createElementNS(svgNS, 'g');
+    g.setAttribute('class', 'msg'); g.style.opacity = '0';
+    if (it.type === 'phase'){
+      // 阶段横幅：贯穿全宽的浅金底条
+      const bg = document.createElementNS(svgNS, 'rect');
+      bg.setAttribute('x', 8); bg.setAttribute('y', it.y - 14); bg.setAttribute('width', W - 16); bg.setAttribute('height', 24);
+      bg.setAttribute('rx', 6); bg.setAttribute('class', 'seq-phase-bg');
+      const txt = document.createElementNS(svgNS, 'text');
+      txt.setAttribute('x', W / 2); txt.setAttribute('y', it.y + 2); txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('class', 'seq-phase-text'); txt.textContent = '— ' + it.label + ' —';
+      g.appendChild(bg); g.appendChild(txt);
+    } else {
+      const m = it.m, fi = m.from, ti = m.to;
+      const x1 = xs[fi], x2 = xs[ti];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', it.y); line.setAttribute('y2', it.y);
+      line.setAttribute('class', 'msg-line');
+      line.setAttribute('stroke', m.color || actors[ti].color);
+      if (m.dashed) line.setAttribute('stroke-dasharray', '6 5');
+      // 箭头（指向目标端）
+      const ang = Math.atan2(0, x2 - x1), ah = 9;
+      const ax = x2 - Math.cos(ang) * ah;
+      line.setAttribute('x2', ax);
+      const tri = document.createElementNS(svgNS, 'polygon');
+      tri.setAttribute('points', `${ax},${it.y} ${ax - Math.cos(ang - .45) * ah},${it.y - Math.sin(ang - .45) * ah} ${ax - Math.cos(ang + .45) * ah},${it.y - Math.sin(ang + .45) * ah}`);
+      tri.setAttribute('fill', m.color || actors[ti].color);
+      g.appendChild(line); g.appendChild(tri);
+      // 标签（背景宽度按真实文字宽度估算）
+      const mx = (x1 + x2) / 2;
+      const bg = document.createElementNS(svgNS, 'rect');
+      const tw = textW(m.label, 11.5) + 14;
+      bg.setAttribute('x', mx - tw / 2); bg.setAttribute('y', it.y - 22); bg.setAttribute('width', tw); bg.setAttribute('height', 18);
+      bg.setAttribute('rx', 4); bg.setAttribute('class', 'msg-label-bg');
+      const lab = document.createElementNS(svgNS, 'text');
+      lab.setAttribute('x', mx); lab.setAttribute('y', it.y - 9); lab.setAttribute('text-anchor', 'middle');
+      lab.setAttribute('class', 'msg-label'); lab.textContent = m.label;
+      g.appendChild(bg); g.appendChild(lab);
+      if (m.note){
+        const nt = document.createElementNS(svgNS, 'text');
+        nt.setAttribute('x', mx); nt.setAttribute('y', it.y + 18); nt.setAttribute('text-anchor', 'middle');
+        nt.setAttribute('class', 'msg-note'); nt.textContent = m.note;
+        g.appendChild(nt);
+      }
+    }
+    svg.appendChild(g);
+    itemEls.push(g);
+  });
+
+  // 播放控制条
+  const ctrl = document.createElement('div'); ctrl.className = 'seq-controls';
+  const play = document.createElement('button'); play.className = 'seq-btn primary'; play.textContent = '▶ 逐步演示';
+  const showAll = document.createElement('button'); showAll.className = 'seq-btn'; showAll.textContent = '全部显示';
+  const reset = document.createElement('button'); reset.className = 'seq-btn'; reset.textContent = '重置';
+  const step = document.createElement('div'); step.className = 'seq-step';
+  ctrl.append(play, showAll, reset, step);
+  el.appendChild(ctrl); el.appendChild(svg);
+
+  let cur = 0, timer = null, playing = false;
+  function render(){
+    itemEls.forEach((g, i) => {
+      if (i < cur){ g.style.animation = 'none'; g.style.opacity = '1'; }
+      else if (i === cur && playing){ g.style.opacity = ''; g.style.animation = 'msgIn .45s forwards'; }
+      else { g.style.animation = 'none'; g.style.opacity = '0'; }
+    });
+    step.textContent = cur === 0 ? '就绪 · 点击播放' : `步骤 ${cur} / ${itemEls.length}`;
+  }
+  play.onclick = () => {
+    if (cur >= itemEls.length) cur = 0;
+    playing = true; clearInterval(timer); render();
+    timer = setInterval(() => {
+      cur++;
+      if (cur >= itemEls.length){ clearInterval(timer); playing = false; }
+      render();
+    }, 780);
+  };
+  showAll.onclick = () => { clearInterval(timer); playing = false; cur = itemEls.length; render(); };
+  reset.onclick = () => { clearInterval(timer); playing = false; cur = 0; render(); };
+  render();
+}
+
+/* ================= Tabs ================= */
+$$('.tabs').forEach(tabs => {
+  const btns = tabs.querySelectorAll('.tab-btn');
+  btns.forEach((b, i) => {
+    b.onclick = () => {
+      btns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const panes = tabs.parentElement.querySelectorAll('.tab-pane');
+      panes.forEach((p, j) => p.classList.toggle('active', j === i));
+    };
+  });
+});
+
+/* ================= 时序图挂载 ================= */
+window.__seqTasks = window.__seqTasks || [];
+function mountAllSeqs(){
+  if (!window.__seqData) return;
+  window.__seqData.forEach(d => {
+    const el = document.getElementById(d.id);
+    if (el && !el.dataset.mounted){ el.dataset.mounted = 1; seqDiagram(el, d.cfg); }
+  });
+}
+
+/* ================= 时序图数据 ================= */
+const C_ = '#1F5FA8', S_ = '#B4540A', G_ = '#177A4C', A_ = '#6638B8', R_ = '#B93A3A';
+const A2 = [
+  { name:'客户端', sub:'Client', color:C_ },
+  { name:'服务器', sub:'Server', color:S_ }
+];
+
+window.__seqData = [
+  /* TCP 三次握手 */
+  { id:'seq-tcp', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'SYN（seq=x）', note:'请求建立连接' },
+    { from:1, to:0, label:'SYN+ACK（seq=y, ack=x+1）', dashed:true, note:'确认并同步序列号' },
+    { from:0, to:1, label:'ACK（ack=y+1）', note:'连接建立完成' },
+    { from:0, to:1, label:'HTTP 请求 / 响应……', color:G_ }
+  ]}},
+  /* TLS 1.2 */
+  { id:'seq-tls12', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'ClientHello', note:'TLS版本 + 加密套件 + 随机数①' },
+    { from:1, to:0, label:'ServerHello', dashed:true, note:'选定套件 + 随机数②' },
+    { from:1, to:0, label:'Certificate 证书', dashed:true, note:'含公钥，客户端验证证书链' },
+    { from:0, to:1, label:'ClientKeyExchange', color:A_, note:'用公钥加密的 Pre-Master' },
+    { from:0, to:1, label:'ChangeCipherSpec', color:A_, note:'后续改用会话密钥' },
+    { from:0, to:1, label:'Finished（加密）', color:A_ },
+    { from:1, to:0, label:'ChangeCipherSpec + Finished', dashed:true, color:G_ },
+    { from:0, to:1, label:'加密的 HTTP 数据', color:G_, note:'对称加密，安全通信' }
+  ]}},
+  /* 短轮询 */
+  { id:'seq-polling', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'GET /data' },
+    { from:1, to:0, label:'200（无数据）', dashed:true },
+    { from:0, to:1, label:'GET /data' },
+    { from:1, to:0, label:'200（无数据）', dashed:true },
+    { from:0, to:1, label:'GET /data' },
+    { from:1, to:0, label:'200（有新数据）', dashed:true, color:G_ }
+  ]}},
+  /* 长轮询 */
+  { id:'seq-longpoll', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'GET /data（请求挂起）', note:'服务器等待数据' },
+    { from:1, to:0, label:'200（数据到达才返回）', dashed:true, color:G_ },
+    { from:0, to:1, label:'GET /data（立即再挂起）' },
+    { from:1, to:0, label:'200（有新数据）', dashed:true, color:G_ }
+  ]}},
+  /* SSE */
+  { id:'seq-sse', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'GET /stream（Accept: event-stream）' },
+    { from:1, to:0, label:'200 text/event-stream', dashed:true, note:'响应不关闭' },
+    { from:1, to:0, label:'data: 事件 1', dashed:true, color:S_ },
+    { from:1, to:0, label:'data: 事件 2', dashed:true, color:S_ },
+    { from:1, to:0, label:'data: 事件 3 ……', dashed:true, color:S_, note:'连接持续保持，断线自动重连' }
+  ]}},
+  /* WebSocket 升级 */
+  { id:'seq-ws', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'GET + Upgrade: websocket', note:'携带 Sec-WebSocket-Key' },
+    { from:1, to:0, label:'101 Switching Protocols', dashed:true, color:A_, note:'握手完成，协议升级' },
+    { from:0, to:1, label:'WebSocket 帧', color:A_ },
+    { from:1, to:0, label:'WebSocket 帧', dashed:true, color:A_, note:'此后不再是 HTTP' }
+  ]}},
+  /* WebSocket 双向通信 */
+  { id:'seq-ws-chat', cfg:{ actors:A2, messages:[
+    { from:0, to:1, label:'帧：消息 A', color:A_ },
+    { from:1, to:0, label:'帧：消息 B', dashed:true, color:A_ },
+    { from:1, to:0, label:'帧：服务器主动推送', dashed:true, color:A_ },
+    { from:0, to:1, label:'Ping（心跳）', color:G_ },
+    { from:1, to:0, label:'Pong', dashed:true, color:G_ },
+    { from:0, to:1, label:'Close', color:R_ },
+    { from:1, to:0, label:'Close', dashed:true, color:R_ }
+  ]}},
+  /* MCP 生命周期 */
+  { id:'seq-mcp', cfg:{ actors:[
+    { name:'MCP Client', sub:'Host 内部', color:C_ },
+    { name:'MCP Server', sub:'stdio / HTTP', color:S_ }
+  ], messages:[
+    { from:0, to:1, label:'initialize', note:'协议版本 + 客户端能力' },
+    { from:1, to:0, label:'initialize result', dashed:true, note:'服务器能力 + 信息' },
+    { from:0, to:1, label:'notifications/initialized', color:A_ },
+    { from:0, to:1, label:'tools/list' },
+    { from:1, to:0, label:'工具列表（JSON Schema）', dashed:true },
+    { from:0, to:1, label:'tools/call（用户授权后）', color:A_ },
+    { from:1, to:0, label:'result（可经 SSE 流式）', dashed:true, color:G_ },
+    { from:0, to:1, label:'shutdown / 断开', color:R_ }
+  ]}},
+  /* MCP 完整交互：四角色 + 两阶段（整理自补充材料时序图） */
+  { id:'seq-mcp-full', cfg:{ actors:[
+    { name:'用户', sub:'User', color:'#8B8F9A' },
+    { name:'MCP Client', sub:'Host 内部', color:C_ },
+    { name:'MCP Server', sub:'stdio / HTTP', color:S_ },
+    { name:'LLM', sub:'大模型', color:A_ }
+  ], messages:[
+    { phase:'初始化阶段' },
+    { from:0, to:1, label:'启动客户端' },
+    { from:1, to:2, label:'连接服务器' },
+    { from:2, to:1, label:'确认连接', dashed:true },
+    { from:1, to:2, label:'请求可用工具列表' },
+    { from:2, to:1, label:'返回工具列表和描述', dashed:true },
+    { phase:'查询处理阶段' },
+    { from:0, to:1, label:'输入查询' },
+    { from:1, to:3, label:'发送查询和可用工具信息', note:'工具 Schema 注入上下文' },
+    { from:3, to:1, label:'返回响应（文本或工具调用）', dashed:true, note:'【loop】工具调用循环' },
+    { from:1, to:2, label:'执行工具调用', color:A_, note:'【alt】是工具调用' },
+    { from:2, to:1, label:'返回工具执行结果', dashed:true },
+    { from:1, to:3, label:'发送查询和工具结果', note:'带着结果再次询问 LLM' },
+    { from:1, to:0, label:'显示响应', color:G_, note:'【alt】是文本响应 → 结束' }
+  ]}}
+];
+
+mountAllSeqs();
+window.addEventListener('load', mountAllSeqs);
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

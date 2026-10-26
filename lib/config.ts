@@ -171,6 +171,16 @@ export const tutorialBooks: TutorialBook[] = [
     accent: '#3b4f8a',
     category: 'backend',
   },
+  {
+    title: '连接的进化 · HTTP → HTTPS → SSE → WebSocket → MCP',
+    volume: '后端',
+    description:
+      '以「连接自由度不断提高」为主线串讲五代协议演进：HTTP 请求-响应模型（TCP 三次握手、报文结构、1.0→3.0 版本演进与三大结构缺陷）→ HTTPS 给 HTTP 上锁（TLS 1.2 逐步握手时序、1.3 的 1-RTT 与前向保密、密码学三件套、证书链与常见攻击）→ SSE 让服务器开口（三种轮询对比、text/event-stream 事件格式、自动重连续传）→ WebSocket 全双工（101 升级握手、帧结构、心跳与优雅关闭）→ MCP 为 AI 定义连接的标准语言（Host/Client/Server 架构、JSON-RPC 2.0、stdio 与 Streamable HTTP 选型、Tools/Resources/Prompts 三原语、与 Function Calling 互补不替代、安全边界与工程实践），全程配可逐步播放的交互时序图，附面试实战「了解过 MCP 吗」一整段话回答（11 个知识钩子可点击跳转对应章节）。',
+    href: '/books/network-protocol/network-protocol.html',
+    tags: ['HTTP', 'HTTPS', 'WebSocket', 'MCP', '面试'],
+    accent: '#4a6fa5',
+    category: 'backend',
+  },
 ]
 
 // 玩物志：AI 协作创作的闲趣小件（静态交互页面，部署在 /public/playground 下）

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="margin:0;padding:0;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>epoll 内部存储结构与工作流程图解</title>
+<style>
+  .ep-root{width:100%;box-sizing:border-box;margin:0 auto;padding:18px 16px 40px;font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",Arial,sans-serif;color:#1f2937;background:#f5f7fa;line-height:1.55;}
+  .ep-root *{box-sizing:border-box;}
+  .ep-root h1{font-size:22px;margin:6px 0 14px;color:#0f172a;}
+  .ep-root h2{font-size:18px;margin:26px 0 10px;color:#0f172a;border-left:5px solid #2563eb;padding-left:10px;}
+  .ep-root h3{font-size:15px;margin:14px 0 6px;color:#0f172a;}
+  .ep-root p{font-size:14px;margin:8px 0;}
+  .ep-root .mono{font-family:Consolas,"Courier New",monospace;}
+  .ep-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin:12px 0;box-shadow:0 1px 2px rgba(15,23,42,.05);}
+  .ep-key{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:14px;}
+  .ep-key b{color:#1d4ed8;}
+  .ep-warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:14px;}
+  .ep-svg-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;overflow-x:auto;}
+  .ep-svg-wrap svg{display:block;width:100%;height:auto;min-width:760px;}
+  .ep-cap{font-size:13px;color:#64748b;margin:6px 2px 0;}
+  .ep-legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;margin:8px 2px;}
+  .ep-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .ep-sw{display:inline-block;width:22px;height:0;border-top-width:3px;border-top-style:solid;}
+  /* 交互区 */
+  .ep-lab{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0;}
+  .ep-btn{min-width:44px;min-height:44px;padding:8px 18px;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-size:14px;cursor:pointer;}
+  .ep-btn:disabled{opacity:.4;cursor:default;}
+  .ep-btn.ghost{background:#fff;color:#2563eb;}
+  .ep-seg{display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;}
+  .ep-seg button{min-height:44px;padding:8px 18px;border:0;background:#fff;font-size:14px;cursor:pointer;color:#475569;}
+  .ep-seg button.on{background:#2563eb;color:#fff;}
+  .ep-grid{display:flex;flex-wrap:wrap;gap:12px;}
+  .ep-code{flex:1 1 420px;background:#0f172a;border-radius:10px;padding:12px 12px 12px 0;overflow-x:auto;}
+  .ep-code pre{margin:0;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.55;color:#cbd5e1;white-space:pre;}
+  .ep-code .ln{display:block;padding:0 12px 0 8px;border-left:3px solid transparent;}
+  .ep-code .ln.hl{background:#1e3a5f;border-left-color:#60a5fa;color:#fff;}
+  .ep-code .ln.async{color:#fca5a5;}
+  .ep-canvas{flex:1 1 380px;min-width:320px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px;}
+  .ep-canvas svg{display:block;width:100%;height:auto;}
+  .ep-stepbox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:14px;min-height:64px;}
+  .ep-stepbox .st{font-weight:700;color:#1d4ed8;margin-right:8px;}
+  .ep-prog{font-size:13px;color:#64748b;margin-left:auto;}
+  .ep-two{display:flex;flex-wrap:wrap;gap:12px;}
+  .ep-col{flex:1 1 320px;border-radius:10px;padding:12px 16px;}
+  .ep-lt{background:#f0fdf4;border:1px solid #86efac;}
+  .ep-et{background:#fff7ed;border:1px solid #fdba74;}
+  .ep-col ul{margin:6px 0 0;padding-left:20px;font-size:14px;}
+  .ep-col li{margin:5px 0;}
+  .ep-table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;border-radius:8px;overflow:hidden;}
+  .ep-table th,.ep-table td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;vertical-align:top;}
+  .ep-table th{background:#eff6ff;color:#1e3a8a;}
+  .ep-tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;}
+  .t-green{background:#dcfce7;color:#15803d;}
+  .t-orange{background:#ffedd5;color:#c2410c;}
+  .t-red{background:#fee2e2;color:#b91c1c;}
+  .t-blue{background:#dbeafe;color:#1d4ed8;}
+  .ep-root ol{margin:8px 0;padding-left:24px;font-size:14px;}
+  .ep-root ol li{margin:5px 0;}
+  .ep-root ul.dash{margin:8px 0;padding-left:22px;font-size:14px;}
+  .ep-root ul.dash li{margin:5px 0;}
+  .ep-codeblock{background:#0f172a;border-radius:10px;padding:14px 16px;margin:12px 0;overflow-x:auto;}
+  .ep-codeblock pre{margin:0;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.6;color:#e2e8f0;white-space:pre;}
+  .ep-seq{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px 14px;margin:10px 0;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.75;color:#334155;white-space:pre;overflow-x:auto;}
+  .ep-seq .w{color:#7c3aed;font-weight:700;}
+  .ep-seq .g{color:#15803d;font-weight:700;}
+  .ep-seq .b{color:#dc2626;font-weight:700;}
+  .ep-stack{margin:12px 0 4px;max-width:780px;}
+  .ep-layer{border-radius:10px;padding:11px 16px;font-size:14px;}
+  .ep-layer .lt{font-weight:700;}
+  .l-user{background:#f5f3ff;border:1px solid #a78bfa;}
+  .l-loop{background:#eff6ff;border:1px solid #93c5fd;}
+  .l-kernel{background:#f0fdf4;border:1px solid #86efac;}
+  .ep-arrow{text-align:center;color:#64748b;font-size:13px;line-height:1.4;margin:3px 0;}
+  .ep-term{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:10px 16px;margin:10px 0;font-family:Consolas,'Courier New',monospace;font-size:12.5px;line-height:1.7;white-space:pre;overflow-x:auto;}
+</style>
+</head>
+<body>
+<div class="ep-root">
+
+<h1>epoll 内部存储结构与工作流程图解（Linux 内核 eventpoll）</h1>
+
+<div class="ep-key">
+<b>一句话总览：</b>一个 <span class="mono">epoll</span> 实例 = 一个 <span class="mono">struct eventpoll</span>，内部有三样核心东西：<b>红黑树 rbr</b>（管所有被监听的 fd）、<b>就绪链表 rdllist</b>（管已就绪的 fd）、<b>等待队列 wq</b>（管阻塞在 epoll_wait 的进程）。另外还有<b>第四样容易漏的东西</b>：每个被监听 socket 自己的等待队列 <span class="mono">sk_sleep</span>，上面挂着回调 <span class="mono">ep_poll_callback</span> —— 数据到达时靠它把事件"推"进 rdllist 并唤醒进程。
+</div>
+
+<!-- ============ 图1：数据结构全景 ============ -->
+<h2>图 1　epoll 内部存储结构全景（三个 API 如何操作这些结构）</h2>
+<div class="ep-legend">
+  <span><i class="ep-sw" style="border-color:#2563eb;"></i>create / wait 路径</span>
+  <span><i class="ep-sw" style="border-color:#0891b2;"></i>ctl 注册回调路径</span>
+  <span><i class="ep-sw" style="border-color:#16a34a;"></i>就绪（rdllist）</span>
+  <span><i class="ep-sw" style="border-color:#d97706;"></i>睡眠/唤醒（wq）</span>
+  <span><i class="ep-sw" style="border-color:#dc2626;border-top-style:dashed;"></i>中断/回调路径</span>
+</div>
+<div class="ep-svg-wrap">
+<svg viewBox="0 0 1240 1000" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,'Microsoft YaHei',sans-serif">
+  <defs>
+    <marker id="ab" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#2563eb"/></marker>
+    <marker id="ag" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#16a34a"/></marker>
+    <marker id="ao" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#d97706"/></marker>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#dc2626"/></marker>
+    <marker id="ac" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#0891b2"/></marker>
+    <marker id="ap" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#7c3aed"/></marker>
+  </defs>
+
+  <!-- 用户态 -->
+  <rect x="10" y="12" width="1220" height="64" rx="10" fill="#f5f3ff" stroke="#7c3aed"/>
+  <text x="28" y="50" font-size="15" font-weight="700" fill="#6d28d9">用户态</text>
+  <rect x="130" y="24" width="118" height="40" rx="8" fill="#fff" stroke="#a78bfa"/>
+  <text x="189" y="49" font-size="13" text-anchor="middle" fill="#4c1d95">用户进程</text>
+  <rect x="300" y="24" width="168" height="40" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+  <text x="384" y="42" font-size="12.5" text-anchor="middle" fill="#4c1d95">① epoll_create1()</text>
+  <text x="384" y="58" font-size="10.5" text-anchor="middle" fill="#7c3aed">返回 epfd</text>
+  <rect x="520" y="24" width="168" height="40" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+  <text x="604" y="42" font-size="12.5" text-anchor="middle" fill="#4c1d95">② epoll_ctl()</text>
+  <text x="604" y="58" font-size="10.5" text-anchor="middle" fill="#7c3aed">ADD / MOD / DEL</text>
+  <rect x="740" y="24" width="168" height="40" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+  <text x="824" y="42" font-size="12.5" text-anchor="middle" fill="#4c1d95">③ epoll_wait()</text>
+  <text x="824" y="58" font-size="10.5" text-anchor="middle" fill="#7c3aed">返回就绪数 nfds</text>
+  <text x="1190" y="42" font-size="11" text-anchor="end" fill="#7c3aed">三者都通过系统调用进入内核</text>
+  <text x="1190" y="58" font-size="11" text-anchor="end" fill="#7c3aed">epfd 本质是一个匿名 inode 文件</text>
+
+  <!-- API 入内核箭头 -->
+  <path d="M384,64 L384,152 L120,152 L120,200" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ab)"/>
+  <path d="M604,64 L604,152 L320,152 L320,266" fill="none" stroke="#0891b2" stroke-width="2" marker-end="url(#ac)"/>
+  <path d="M824,64 L824,152 L655,152 L655,244" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ap)"/>
+  <text x="384" y="96" font-size="11" text-anchor="middle" fill="#2563eb">创建并初始化 eventpoll</text>
+  <text x="604" y="96" font-size="11" text-anchor="middle" fill="#0891b2">插入红黑树 + 注册回调</text>
+  <text x="824" y="96" font-size="11" text-anchor="middle" fill="#7c3aed">检查 rdllist / 睡 wq</text>
+
+  <!-- 内核大框 -->
+  <rect x="10" y="140" width="1220" height="840" rx="12" fill="#f8fbff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="1218" y="166" font-size="15" font-weight="700" text-anchor="end" fill="#1d4ed8">内核态（Kernel Space）</text>
+
+  <!-- eventpoll 框 -->
+  <rect x="36" y="200" width="730" height="600" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+  <rect x="36" y="200" width="730" height="36" rx="10" fill="#dbeafe"/>
+  <rect x="36" y="222" width="730" height="14" fill="#dbeafe"/>
+  <text x="52" y="224" font-size="13.5" font-weight="700" fill="#1e3a8a">struct eventpoll　一个 epoll 实例（epfd 指向的文件的 private_data）</text>
+
+  <!-- rbr 红黑树 -->
+  <text x="52" y="264" font-size="13" font-weight="700" fill="#1f2937">rbr（rb_root_cached）：红黑树根 —— 所有被监听的 fd，增删查 O(log n)</text>
+  <!-- 树连线 -->
+  <g stroke="#94a3b8" stroke-width="2">
+    <line x1="300" y1="348" x2="190" y2="392"/>
+    <line x1="300" y1="348" x2="410" y2="392"/>
+    <line x1="190" y1="448" x2="120" y2="492"/>
+    <line x1="190" y1="448" x2="260" y2="492"/>
+  </g>
+  <!-- 树节点 -->
+  <g font-size="12" text-anchor="middle">
+    <circle cx="300" cy="320" r="30" fill="#1f2937"/><text x="300" y="316" fill="#fff" font-weight="700">epi</text><text x="300" y="332" fill="#fff">fd=7</text>
+    <circle cx="190" cy="420" r="30" fill="#dc2626"/><text x="190" y="416" fill="#fff" font-weight="700">epi</text><text x="190" y="432" fill="#fff">fd=5</text>
+    <circle cx="410" cy="420" r="30" fill="#1f2937"/><text x="410" y="416" fill="#fff" font-weight="700">epi</text><text x="410" y="432" fill="#fff">fd=9</text>
+    <circle cx="120" cy="520" r="30" fill="#1f2937"/><text x="120" y="516" fill="#fff" font-weight="700">epi</text><text x="120" y="532" fill="#fff">fd=4</text>
+    <circle cx="260" cy="520" r="30" fill="#1f2937"/><text x="260" y="516" fill="#fff" font-weight="700">epi</text><text x="260" y="532" fill="#fff">fd=6</text>
+  </g>
+  <text x="345" y="304" font-size="10.5" fill="#64748b"></text>
+
+  <!-- epitem 字段卡 -->
+  <rect x="52" y="580" width="470" height="200" rx="8" fill="#faf5ff" stroke="#a78bfa"/>
+  <text x="66" y="604" font-size="12.5" font-weight="700" fill="#6d28d9">struct epitem（每个被监听 fd 一个；红黑树节点就是它）</text>
+  <g font-size="12" font-family="Consolas,monospace" fill="#3f3f46">
+    <text x="66" y="628">struct rb_node        rbn;      <tspan fill="#9333ea" font-family="Microsoft YaHei">// 挂入红黑树 rbr</tspan></text>
+    <text x="66" y="650">struct list_head      rdllink;  <tspan fill="#16a34a" font-family="Microsoft YaHei">// 就绪时挂入 rdllist（同一对象，两处链接）</tspan></text>
+    <text x="66" y="672">struct epoll_filefd   ffd;      <tspan fill="#9333ea" font-family="Microsoft YaHei">// 被监听的 file 指针 + fd</tspan></text>
+    <text x="66" y="694">struct epoll_event    event;    <tspan fill="#9333ea" font-family="Microsoft YaHei">// 关注的事件掩码 + 用户 data</tspan></text>
+    <text x="66" y="716">struct list_head      pwqlist;  <tspan fill="#0891b2" font-family="Microsoft YaHei">// 挂着 eppoll_entry（回调注册链）</tspan></text>
+    <text x="66" y="738">struct eventpoll      *ep;      <tspan fill="#9333ea" font-family="Microsoft YaHei">// 反向指回所属 eventpoll</tspan></text>
+  </g>
+  <text x="66" y="766" font-size="11" fill="#7c3aed">ctl DEL 时才从红黑树摘除；wait 取事件只动 rdllink，不删监听。</text>
+
+  <!-- rdllist 就绪链表 -->
+  <rect x="560" y="244" width="190" height="190" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="655" y="268" font-size="13" font-weight="700" text-anchor="middle" fill="#15803d">rdllist</text>
+  <text x="655" y="286" font-size="10.5" text-anchor="middle" fill="#16a34a">就绪双向链表（list_head）</text>
+  <rect x="570" y="324" width="34" height="30" rx="4" fill="#fff" stroke="#16a34a"/>
+  <text x="587" y="343" font-size="11" text-anchor="middle" fill="#15803d">head</text>
+  <rect x="614" y="320" width="48" height="38" rx="4" fill="#bbf7d0" stroke="#16a34a"/>
+  <text x="638" y="344" font-size="12" text-anchor="middle" fill="#14532d">epi-7</text>
+  <rect x="672" y="320" width="48" height="38" rx="4" fill="#bbf7d0" stroke="#16a34a"/>
+  <text x="696" y="344" font-size="12" text-anchor="middle" fill="#14532d">epi-9</text>
+  <text x="744" y="344" font-size="14" fill="#16a34a">∅</text>
+  <g stroke="#16a34a" stroke-width="1.5"><line x1="604" y1="339" x2="612" y2="339"/><line x1="662" y1="339" x2="670" y2="339"/><line x1="720" y1="339" x2="738" y2="339"/></g>
+  <text x="572" y="372" font-size="11" fill="#166534">只放"已就绪"的 epitem；</text>
+  <text x="572" y="390" font-size="11" fill="#166534">与树中是同一对象，</text>
+  <text x="572" y="408" font-size="11" fill="#166534">靠 rdllink 挂入（见绿虚线）</text>
+  <text x="572" y="426" font-size="11" fill="#166534">wait 只消费它，O(就绪数)</text>
+  <text x="734" y="262" font-size="12" font-weight="700" text-anchor="end" fill="#7c3aed">①</text>
+
+  <!-- 同对象虚线 -->
+  <path d="M330,325 C430,305 520,330 614,335" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <path d="M440,415 C520,405 580,375 672,352" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5 4"/>
+
+  <!-- wq 等待队列 -->
+  <rect x="560" y="472" width="190" height="150" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="655" y="496" font-size="13" font-weight="700" text-anchor="middle" fill="#b45309">wq</text>
+  <text x="655" y="514" font-size="10.5" text-anchor="middle" fill="#d97706">等待队列（wait_queue_head_t）</text>
+  <rect x="570" y="532" width="34" height="30" rx="4" fill="#fff" stroke="#d97706"/>
+  <text x="587" y="551" font-size="11" text-anchor="middle" fill="#b45309">head</text>
+  <rect x="614" y="528" width="122" height="38" rx="4" fill="#fde68a" stroke="#d97706"/>
+  <text x="675" y="545" font-size="11" text-anchor="middle" fill="#78350f">😴 当前进程</text>
+  <text x="675" y="560" font-size="9.5" text-anchor="middle" fill="#78350f">TASK_INTERRUPTIBLE</text>
+  <text x="744" y="551" font-size="14" fill="#d97706">∅</text>
+  <g stroke="#d97706" stroke-width="1.5"><line x1="604" y1="547" x2="612" y2="547"/><line x1="736" y1="547" x2="738" y2="547"/></g>
+  <text x="572" y="590" font-size="11" fill="#92400e">无事件时，调用 wait 的进程</text>
+  <text x="572" y="608" font-size="11" fill="#92400e">睡在这里（schedule_timeout）</text>
+  <text x="734" y="492" font-size="12" font-weight="700" text-anchor="end" fill="#7c3aed">②</text>
+
+  <!-- 回调注册连线 -->
+  <path d="M330,332 L330,457 L786,457 L786,286 L802,286" fill="none" stroke="#0891b2" stroke-width="2" marker-end="url(#ac)"/>
+  <path d="M190,450 L190,560 L540,560 L540,760 L786,760 L786,586 L802,586" fill="none" stroke="#0891b2" stroke-width="2" marker-end="url(#ac)"/>
+  <text x="348" y="443" font-size="11" fill="#0891b2">ctl ADD：注册回调（epi→eppoll_entry→sk_sleep）</text>
+
+  <!-- sockets 区 -->
+  <text x="786" y="180" font-size="13" font-weight="700" fill="#155e75">被监听的文件（以 socket 为例）</text>
+  <!-- fd7 -->
+  <rect x="786" y="200" width="430" height="270" rx="10" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="802" y="226" font-size="13" font-weight="700" fill="#155e75">socket　fd = 7（有数据到达）</text>
+  <rect x="802" y="240" width="398" height="72" rx="6" fill="#fff" stroke="#67e8f9"/>
+  <text x="812" y="260" font-size="11" fill="#0e7490">自己的等待队列 sk_sleep（wait_queue_head_t）</text>
+  <rect x="812" y="268" width="378" height="34" rx="4" fill="#cffafe" stroke="#0891b2"/>
+  <text x="1001" y="289" font-size="11.5" text-anchor="middle" fill="#155e75">eppoll_entry：wait.func = ep_poll_callback</text>
+  <rect x="802" y="324" width="398" height="128" rx="6" fill="#fff" stroke="#67e8f9"/>
+  <text x="812" y="344" font-size="11" fill="#0e7490">接收队列 sk_receive_queue</text>
+  <rect x="812" y="354" width="88" height="40" rx="4" fill="#cffafe" stroke="#0891b2"/>
+  <text x="856" y="379" font-size="11" text-anchor="middle" fill="#155e75">数据包</text>
+  <rect x="910" y="354" width="88" height="40" rx="4" fill="#fecaca" stroke="#dc2626" stroke-width="2"/>
+  <text x="954" y="379" font-size="11" text-anchor="middle" fill="#991b1b" font-weight="700">新数据包</text>
+  <rect x="1008" y="354" width="88" height="40" rx="4" fill="#cffafe" stroke="#0891b2"/>
+  <text x="1052" y="379" font-size="11" text-anchor="middle" fill="#155e75">数据包</text>
+  <rect x="1106" y="354" width="82" height="40" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+  <text x="1147" y="379" font-size="11" text-anchor="middle" fill="#94a3b8">空</text>
+  <text x="812" y="420" font-size="11" fill="#b91c1c">数据入队 → 调 sk_data_ready() → 遍历 sk_sleep 上的等待节点</text>
+  <text x="812" y="440" font-size="11" fill="#b91c1c">→ 调用 ep_poll_callback()（见底部红色路径）</text>
+  <!-- fd5 -->
+  <rect x="786" y="500" width="430" height="220" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="802" y="526" font-size="13" font-weight="700" fill="#475569">socket　fd = 5（暂无数据）</text>
+  <rect x="802" y="540" width="398" height="72" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="812" y="560" font-size="11" fill="#64748b">自己的等待队列 sk_sleep</text>
+  <rect x="812" y="568" width="378" height="34" rx="4" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="1001" y="589" font-size="11.5" text-anchor="middle" fill="#475569">eppoll_entry：wait.func = ep_poll_callback</text>
+  <rect x="802" y="624" width="398" height="78" rx="6" fill="#fff" stroke="#cbd5e1"/>
+  <text x="812" y="646" font-size="11" fill="#64748b">接收队列 sk_receive_queue</text>
+  <rect x="812" y="658" width="378" height="32" rx="4" fill="none" stroke="#cbd5e1" stroke-dasharray="5 4"/>
+  <text x="1001" y="679" font-size="11" text-anchor="middle" fill="#94a3b8">空（无数据 → 不触发回调）</text>
+
+  <!-- 中断时间线 -->
+  <rect x="36" y="828" width="1180" height="126" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="52" y="854" font-size="13" font-weight="700" fill="#b91c1c">数据到达 → 中断处理路径（异步发生，与左边进程"睡在 wq"并行；它负责打破阻塞）</text>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="52" y="870" width="110" height="42" rx="6" fill="#fff" stroke="#dc2626"/><text x="107" y="890">网卡收包</text><text x="107" y="905" font-size="9.5">硬中断 IRQ</text>
+    <rect x="178" y="870" width="118" height="42" rx="6" fill="#fff" stroke="#dc2626"/><text x="237" y="890">硬中断 →</text><text x="237" y="905" font-size="9.5">软中断 NET_RX</text>
+    <rect x="312" y="870" width="138" height="42" rx="6" fill="#fff" stroke="#dc2626"/><text x="381" y="890">TCP 协议栈</text><text x="381" y="905" font-size="9.5">数据放入接收队列</text>
+    <rect x="466" y="870" width="150" height="42" rx="6" fill="#fff" stroke="#dc2626"/><text x="541" y="890">sk_data_ready()</text><text x="541" y="905" font-size="9.5">唤醒该 socket 的等待者</text>
+    <rect x="632" y="870" width="158" height="42" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/><text x="711" y="890" font-weight="700">ep_poll_callback()</text><text x="711" y="905" font-size="9.5">遍历到 eppoll_entry</text>
+  </g>
+  <g stroke="#dc2626" stroke-width="1.5" fill="none">
+    <line x1="162" y1="891" x2="176" y2="891" marker-end="url(#ar)"/>
+    <line x1="296" y1="891" x2="310" y2="891" marker-end="url(#ar)"/>
+    <line x1="450" y1="891" x2="464" y2="891" marker-end="url(#ar)"/>
+    <line x1="616" y1="891" x2="630" y2="891" marker-end="url(#ar)"/>
+  </g>
+  <rect x="812" y="864" width="190" height="32" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="907" y="885" font-size="10.5" text-anchor="middle" fill="#166534">① list_add_tail → rdllist</text>
+  <rect x="1018" y="864" width="182" height="32" rx="6" fill="#fef3c7" stroke="#d97706"/>
+  <text x="1109" y="885" font-size="10.5" text-anchor="middle" fill="#92400e">② wake_up(&amp;ep-&gt;wq)</text>
+  <line x1="790" y1="884" x2="810" y2="880" stroke="#16a34a" stroke-width="1.5" marker-end="url(#ag)"/>
+  <line x1="790" y1="898" x2="1016" y2="896" stroke="#d97706" stroke-width="1.5" marker-end="url(#ao)"/>
+  <text x="52" y="940" font-size="11" fill="#b91c1c">回调做两件事：把就绪 epitem 挂进 rdllist（绿色），再唤醒睡在 wq 的进程（橙色）。被唤醒的进程从 schedule_timeout 处接着跑。</text>
+</svg>
+</div>
+<p class="ep-cap">图 1 为结构示意（省略了 ovflist、锁、引用计数等细节）。注意区分两条等待队列：<b>ep-&gt;wq 上睡的是"进程"</b>，<b>socket 的 sk_sleep 上挂的是"回调节点"</b>。</p>
+
+<!-- ============ 图2：步进交互 ============ -->
+<h2>图 2　epoll_wait 完整流程步进演示（含中断唤醒 / LT / ET）</h2>
+<p>点击"下一步"逐帧观察一次 <span class="mono">epoll_wait</span> 从检查、睡眠、被中断唤醒、拷贝事件到返回的全过程；可随时切换 LT/ET 模式，观察第 10 步之后的差别。</p>
+<div class="ep-lab">
+  <button class="ep-btn ghost" id="epReset">重置</button>
+  <button class="ep-btn ghost" id="epPrev">上一步</button>
+  <button class="ep-btn" id="epNext">下一步</button>
+  <div class="ep-seg" role="group" aria-label="触发模式">
+    <button id="modeLT" class="on">LT 水平触发（默认）</button>
+    <button id="modeET">ET 边缘触发</button>
+  </div>
+  <span class="ep-prog" id="epProg"></span>
+</div>
+<div class="ep-grid">
+  <div class="ep-code">
+    <pre id="epCode"></pre>
+  </div>
+  <div class="ep-canvas">
+    <svg viewBox="0 0 520 560" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,'Microsoft YaHei',sans-serif">
+      <!-- 用户态 events -->
+      <rect x="8" y="8" width="504" height="80" rx="10" fill="#f5f3ff" stroke="#7c3aed"/>
+      <text x="22" y="30" font-size="11.5" font-weight="700" fill="#6d28d9">用户态 events[maxevents]（内核 copy_to_user 填这里）</text>
+      <g id="evSlots">
+        <rect x="22" y="42" width="92" height="34" rx="4" fill="#fff" stroke="#a78bfa"/>
+        <rect x="122" y="42" width="92" height="34" rx="4" fill="#fff" stroke="#c4b5fd"/>
+        <rect x="222" y="42" width="92" height="34" rx="4" fill="#fff" stroke="#c4b5fd"/>
+        <rect x="322" y="42" width="92" height="34" rx="4" fill="#fff" stroke="#c4b5fd"/>
+        <rect x="422" y="42" width="78" height="34" rx="4" fill="#fff" stroke="#c4b5fd"/>
+        <text x="68" y="63" font-size="10.5" text-anchor="middle" fill="#a78bfa">events[0]</text>
+        <text x="168" y="63" font-size="10.5" text-anchor="middle" fill="#a78bfa">events[1]</text>
+        <text x="268" y="63" font-size="10.5" text-anchor="middle" fill="#a78bfa">events[2]</text>
+        <text x="368" y="63" font-size="10.5" text-anchor="middle" fill="#a78bfa">events[3]</text>
+        <text x="461" y="63" font-size="10.5" text-anchor="middle" fill="#a78bfa">…</text>
+      </g>
+      <rect id="ev0fill" x="22" y="42" width="92" height="34" rx="4" fill="#ddd6fe" stroke="#7c3aed" stroke-width="2" opacity="0"/>
+      <text id="ev0txt" x="68" y="63" font-size="10" text-anchor="middle" fill="#4c1d95" opacity="0">fd7 就绪</text>
+
+      <!-- 内核框 -->
+      <rect x="8" y="100" width="504" height="452" rx="10" fill="#f8fbff" stroke="#2563eb"/>
+      <text x="20" y="113" font-size="10" fill="#1d4ed8">内核</text>
+
+      <!-- rdllist -->
+      <rect x="24" y="116" width="472" height="84" rx="8" fill="#f0fdf4" stroke="#16a34a"/>
+      <text x="36" y="136" font-size="11" font-weight="700" fill="#15803d">rdllist 就绪链表</text>
+      <rect x="36" y="150" width="44" height="30" rx="4" fill="#fff" stroke="#16a34a"/>
+      <text x="58" y="169" font-size="10" text-anchor="middle" fill="#15803d">head</text>
+      <rect id="rdl7" x="92" y="146" width="86" height="38" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" opacity="0"/>
+      <text id="rdl7t" x="135" y="169" font-size="11" text-anchor="middle" fill="#14532d" opacity="0">epi-7</text>
+      <text id="rdlEmpty" x="200" y="170" font-size="11" fill="#94a3b8">（空）</text>
+
+      <!-- wq -->
+      <rect x="24" y="214" width="472" height="84" rx="8" fill="#fffbeb" stroke="#d97706"/>
+      <text x="36" y="234" font-size="11" font-weight="700" fill="#b45309">wq 等待队列</text>
+      <rect x="36" y="248" width="44" height="30" rx="4" fill="#fff" stroke="#d97706"/>
+      <text x="58" y="267" font-size="10" text-anchor="middle" fill="#b45309">head</text>
+      <rect id="procWq" x="92" y="244" width="150" height="38" rx="4" fill="#fde68a" stroke="#d97706" opacity="0"/>
+      <text id="procWqt" x="167" y="262" font-size="10.5" text-anchor="middle" fill="#78350f" opacity="0">😴 当前进程</text>
+      <text id="procWqt2" x="167" y="276" font-size="9" text-anchor="middle" fill="#78350f" opacity="0">睡眠 TASK_INTERRUPTIBLE</text>
+
+      <!-- 红树 -->
+      <rect x="24" y="312" width="218" height="228" rx="8" fill="#fff" stroke="#a78bfa"/>
+      <text x="36" y="332" font-size="11" font-weight="700" fill="#6d28d9">红黑树 rbr（监听集合）</text>
+      <g stroke="#c4b5fd" stroke-width="1.5">
+        <line x1="120" y1="390" x2="80" y2="430"/><line x1="120" y1="390" x2="170" y2="430"/>
+      </g>
+      <circle id="tree7" cx="120" cy="366" r="24" fill="#1f2937" stroke="#c4b5fd" stroke-width="1.5"/>
+      <text x="120" y="362" font-size="9.5" text-anchor="middle" fill="#fff">epi</text><text x="120" y="374" font-size="9.5" text-anchor="middle" fill="#fff">fd7</text>
+      <circle cx="80" cy="450" r="20" fill="#dc2626"/><text x="80" y="454" font-size="9" text-anchor="middle" fill="#fff">fd5</text>
+      <circle cx="170" cy="450" r="20" fill="#1f2937"/><text x="170" y="454" font-size="9" text-anchor="middle" fill="#fff">fd9</text>
+      <text x="36" y="500" font-size="10" fill="#7c3aed">wait 不删树节点；</text>
+      <text x="36" y="516" font-size="10" fill="#7c3aed">ctl DEL 才摘除</text>
+
+      <!-- socket fd7 -->
+      <rect x="258" y="312" width="238" height="228" rx="8" fill="#ecfeff" stroke="#0891b2"/>
+      <text x="270" y="332" font-size="11" font-weight="700" fill="#155e75">socket fd7</text>
+      <rect x="270" y="342" width="214" height="44" rx="4" fill="#fff" stroke="#67e8f9"/>
+      <text x="377" y="360" font-size="9" text-anchor="middle" fill="#0e7490">sk_sleep：</text>
+      <text x="377" y="376" font-size="9" text-anchor="middle" fill="#0e7490">ep_poll_callback</text>
+      <text x="270" y="406" font-size="10" fill="#0e7490">接收队列：</text>
+      <rect id="pk1" x="270" y="414" width="64" height="34" rx="4" fill="#fecaca" stroke="#dc2626" stroke-width="2" opacity="0.12"/>
+      <text id="pk1t" x="302" y="435" font-size="9.5" text-anchor="middle" fill="#991b1b" opacity="0.2">新数据</text>
+      <rect x="344" y="414" width="64" height="34" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+      <text x="376" y="435" font-size="9" text-anchor="middle" fill="#94a3b8">空</text>
+      <rect x="418" y="414" width="64" height="34" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+      <text x="450" y="435" font-size="9" text-anchor="middle" fill="#94a3b8">空</text>
+      <text x="270" y="472" font-size="9.5" fill="#b91c1c" id="irqNote">中断回调（第 4–6 步）</text>
+      <text x="270" y="500" font-size="9.5" fill="#94a3b8">ET：数据仍在缓冲区，</text>
+      <text x="270" y="516" font-size="9.5" fill="#94a3b8">只是不再通知</text>
+
+      <!-- 拷贝/返回箭头标注 -->
+      <text id="retNote" x="260" y="96" font-size="10.5" text-anchor="middle" fill="#7c3aed" opacity="0">返回 nfds</text>
+    </svg>
+  </div>
+</div>
+<div class="ep-stepbox"><span class="st" id="epStepTitle"></span><span id="epStepDesc"></span></div>
+
+<!-- ============ 图2补充：wq 上睡的是谁 ============ -->
+<h2>图 2 补充　睡在 wq 上的"进程"是谁？—— 是线程，不是 fd</h2>
+<div class="ep-card">
+<p>fd 事件是"数据/对象"，它不会睡觉；会睡眠的是<b>正在执行代码的线程</b>（一条执行流）。你的线程调用 <span class="mono">epoll_wait</span> 进入内核，内核里用宏 <span class="mono">current</span> 指向它的 <span class="mono">task_struct</span>。没有事件时，内核对它做三件事：</p>
+<ol>
+<li>把状态改成 <span class="mono">TASK_INTERRUPTIBLE</span>（可被唤醒的睡眠）；</li>
+<li>构造等待节点 <span class="mono">wait</span>，令 <span class="mono">wait.private = current</span>（节点里登记的是这个线程），挂进 <span class="mono">ep-&gt;wq</span>；</li>
+<li>调 <span class="mono">schedule_timeout()</span> 让出 CPU，调度器把它从"运行队列"拿走，CPU 去跑别的线程。</li>
+</ol>
+<p>唤醒路径反过来：<span class="mono">wake_up(&amp;ep-&gt;wq)</span> 把节点里的线程状态改回 <span class="mono">TASK_RUNNING</span>、放回运行队列；调度器再次选中它时，它从 <span class="mono">schedule_timeout()</span> 的<b>下一行内核代码接着跑</b>（不是从头跑），最终从 <span class="mono">epoll_wait</span> 返回用户代码。所以 wq 是一张"睡着线程的名单"，不是 fd 名单。</p>
+<table class="ep-table">
+<tr><th style="width:200px;">等待队列</th><th>上面挂着谁</th><th>什么时候动</th></tr>
+<tr><td class="mono">ep-&gt;wq</td><td><b>睡着的线程</b>（wait.private = current，即调用 epoll_wait 的执行流）</td><td>无事件时线程睡入；<span class="mono">wake_up</span> 时唤醒</td></tr>
+<tr><td class="mono">socket 的 sk_sleep</td><td><b>回调节点</b> eppoll_entry（func = ep_poll_callback）</td><td><span class="mono">epoll_ctl(ADD)</span> 时注册；数据到达时被执行</td></tr>
+</table>
+<p style="margin-bottom:2px;"><b>独占（exclusive）：</b>多个线程同时对同一 epfd 调 <span class="mono">epoll_wait</span> 时，名单上有多个线程；事件到来只唤醒<b>一个</b>等待者，避免"惊群"（一群线程都被唤醒、又只有一个能拿到事件）。</p>
+</div>
+
+<!-- ============ 图3：LT vs ET ============ -->
+<h2>图 3　LT 水平触发 vs ET 边缘触发（挂回 rdllist 的差别）</h2>
+<div class="ep-two">
+  <div class="ep-col ep-lt">
+    <h3 style="color:#15803d;margin-top:2px;">LT 水平触发（Level Triggered，默认）</h3>
+    <ul>
+      <li>判据：只要 fd <b>当前仍然处于就绪状态</b>（缓冲区里还有数据），就一直通知。</li>
+      <li>内核动作（ep_send_events 末尾）：拷贝完本批后再 poll 一次，仍就绪 → <span class="mono">list_add_tail()</span> <b>把 epi 重新挂回 rdllist</b>。</li>
+      <li>所以你这次只读了 1 个字节，下次 <span class="mono">epoll_wait</span> <b>立即返回</b>，直到数据被读空、poll 不再就绪，才停止挂回。</li>
+      <li>fd 可以是阻塞的；编程简单，不会漏数据。</li>
+    </ul>
+  </div>
+  <div class="ep-col ep-et">
+    <h3 style="color:#c2410c;margin-top:2px;">ET 边缘触发（Edge Triggered，需 EPOLLET）</h3>
+    <ul>
+      <li>判据：只在状态发生<b>变化</b>（新数据到达、回调被触发）时通知一次。</li>
+      <li>内核动作：拷贝完本批后<b>不挂回</b> rdllist；没有新的中断回调，就不会再出现。</li>
+      <li><b>数据没有丢</b>，还在 socket 接收缓冲区里；但你不再被通知，所以必须：fd 设为非阻塞 + <span class="mono">while(read)</span> 循环读到返回 <span class="mono">EAGAIN</span>，一次掏空。</li>
+      <li>通知次数少、配合 EPOLLONESHOT 常用于高并发；写代码要求高。</li>
+    </ul>
+  </div>
+</div>
+<div class="ep-warn">
+<b>纠正一个常见说法：</b>"ET 模式下没读完的数据就丢了" 是错的。<b>丢掉的是"通知"，不是"数据"</b>。另外，LT 重新挂回发生在 <b>本次 ep_send_events 处理过程中</b>（一边拷贝给用户、一边检查挂回），并不是等你用户态处理完才挂。
+</div>
+
+<!-- ============ ET 用户态代码 ============ -->
+<h2>ET 标准用户态代码：while(read) 读到 EAGAIN 写在哪</h2>
+<p>这段代码在<b>用户态</b>，是 <span class="mono">epoll_wait</span> 返回之后、处理就绪事件的部分；它不在内核 <span class="mono">ep_send_events</span> 里，所以在内核代码里找不到。三步：① fd 设为非阻塞；② 注册时加 <span class="mono">EPOLLET</span>；③ wait 返回后循环 read 到 EAGAIN（监听 fd 上则是循环 accept 到 EAGAIN）。</p>
+<div class="ep-codeblock"><pre>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;sys/epoll.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+
+#define MAXEVENTS 64
+
+// ① 把 fd 设为非阻塞 —— ET 模式必须做
+static int set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL);
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+// ③ ET 收到一次可读通知，就一口气读到 EAGAIN
+static void read_all_et(int fd) {
+    char buf[4096];
+    while (1) {
+        ssize_t r = read(fd, buf, sizeof(buf));
+        if (r &gt; 0) {
+            // 处理这 buf 里的数据（演示中省略）
+        } else if (r == 0) {
+            // 对端关闭连接：close(fd) + epoll_ctl(EPOLL_CTL_DEL)
+            close(fd);
+            return;
+        } else { // r == -1
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return;        // 读空了！本次事件处理完毕（这是正常信号，不是失败）
+            // 其他错误：EINTR 可重试，其余按异常处理
+            return;
+        }
+    }
+}
+
+int main(void) {
+    int epfd = epoll_create1(0);
+
+    // ② 建立监听 socket（bind/listen 略），设非阻塞并以 ET 注册
+    int listen_fd = /* socket(AF_INET,...) + bind + listen */;
+    set_nonblocking(listen_fd);
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET;   // 关键：加 EPOLLET
+    ev.data.fd = listen_fd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, listen_fd, &ev);
+
+    struct epoll_event events[MAXEVENTS];
+    while (1) {
+        int n = epoll_wait(epfd, events, MAXEVENTS, -1);
+        for (int i = 0; i &lt; n; i++) {
+            int fd = events[i].data.fd;
+
+            if (fd == listen_fd) {
+                // 监听 fd：循环 accept，直到 EAGAIN（可能同时来了多个连接）
+                while (1) {
+                    int cfd = accept(listen_fd, NULL, NULL);
+                    if (cfd &lt; 0) {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK)
+                            break;              // 现存连接取空
+                        break;                  // 其他错误
+                    }
+                    set_nonblocking(cfd);
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = cfd;
+                    epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &ev);
+                }
+            } else if (events[i].events &amp; EPOLLIN) {
+                read_all_et(fd);                // 读循环在上面
+            }
+        }
+    }
+}</pre></div>
+<ul class="dash">
+<li><b>为什么要循环读：</b>read 一次最多返回一个 buf（4096 字节），接收缓冲区可能有多个 buf 的数据，一次读不完。</li>
+<li><b>EAGAIN 是什么：</b>非阻塞 fd 在"没有数据可读"时不等待，立刻返回 <span class="mono">-1</span> 并置 <span class="mono">errno=EAGAIN</span>（等价 EWOULDBLOCK）；在 ET 读循环里它是"读空"的正常信号，不是错误。</li>
+<li><b>为什么必须非阻塞：</b>最后一次 read 注定面对空缓冲区，阻塞 fd 此时不会返回 EAGAIN，而是睡死（见下节）。</li>
+<li><b>accept / write 同理：</b>监听 fd 可能同时到达多个连接，要循环 accept 到 EAGAIN；ET 下写也要循环写到 EAGAIN（通常配合 EPOLLOUT 动态开关）。</li>
+</ul>
+
+<!-- ============ 阻塞 fd 对比 ============ -->
+<h2>为什么 LT 可以用阻塞 fd、ET 必须用非阻塞？</h2>
+<div class="ep-card">
+<div class="ep-warn" style="margin-top:0;"><b>先澄清：没数据时不是 del。</b>LT 数据读空后，动作是"<b>不挂回</b> rdllist"——epi 始终在红黑树 rbr 里，监听关系一直存在，下次新数据到达回调照样把它挂进 rdllist；只有 <span class="mono">epoll_ctl(EPOLL_CTL_DEL)</span> 才从红黑树摘除。</div>
+<p>关键不是 LT/ET 本身，而是<b>你调用 read 的那一刻，内核能不能保证缓冲区里有数据</b>。</p>
+<h3>LT 阻塞 fd：每次 read 前都有 epoll_wait 担保"有数据"（缓冲区 10KB，buf=4096）</h3>
+<div class="ep-seq"><span class="w">epoll_wait()</span>  ← 返回：fd7 可读（内核 poll 已确认缓冲区有数据）
+  <span class="r">read(fd7)</span>  → 立即读到 4096，剩 6KB
+<span class="w">epoll_wait()</span>  ← LT 仍就绪，已挂回 rdllist，立即返回
+  <span class="r">read(fd7)</span>  → 立即读到 4096，剩 2KB
+<span class="w">epoll_wait()</span>  ← LT 仍就绪，已挂回 rdllist，立即返回
+  <span class="r">read(fd7)</span>  → 立即读到 2048，剩 0
+<span class="w">epoll_wait()</span>  ← poll 发现不再就绪，不挂回；<span class="g">在此睡眠，不会再调 read</span></div>
+<p>每一次 read 之前都有一次 <span class="mono">epoll_wait</span> 返回了这个 fd（内核已确认缓冲区有数据）；数据被读空时，你不会再调 read，而是进 <span class="mono">epoll_wait</span> 睡觉。<b>永远不会在空缓冲区上发起 read，阻塞语义一次都触发不了。</b>典型写法是"wait 返回一次 → read 一次 → 回 wait"，让 epoll 替你判断还有没有数据。</p>
+<h3>ET 阻塞 fd：最后一次 read 注定面对空缓冲区</h3>
+<div class="ep-seq"><span class="w">epoll_wait()</span>  ← 只通知一次：fd7 可读
+  <span class="r">read(fd7)</span>  → 4096，剩 6KB
+  <span class="r">read(fd7)</span>  → 4096，剩 2KB
+  <span class="r">read(fd7)</span>  → 2048，剩 0
+  <span class="r">read(fd7)</span>  → 非阻塞 fd：立刻返回 -1 / EAGAIN → <span class="g">break，正常结束</span>
+  <span class="r">read(fd7)</span>  → 阻塞 fd：<span class="b">睡死在 fd7 的 sk_sleep 上，只等 fd7 新数据</span></div>
+<p>ET 只通知一次，你必须自己连续读、探测"空"的边界，于是必然发起一次"此刻没有数据"的 read：非阻塞 fd 立刻返回 EAGAIN（绿色），你 break；阻塞 fd 则直接睡在 <b>fd7 自己的 sk_sleep</b> 上（红色）。</p>
+<table class="ep-table">
+<tr><th style="width:130px;"></th><th>睡在 epoll_wait（ep-&gt;wq）</th><th>睡在 read(fd7)（fd7 的 sk_sleep）</th></tr>
+<tr><td>谁能唤醒</td><td><b>任何</b>被监听 fd 就绪都唤醒</td><td>只有 <b>fd7</b> 有数据 / 对端关闭才唤醒</td></tr>
+<tr><td>醒来处理谁</td><td>谁就绪处理谁，fd5 / fd9 都不耽误</td><td>只能处理 fd7，处理完还要回 wait</td></tr>
+<tr><td>性质</td><td>正常的多路复用等待</td><td>事件循环被单路钉死</td></tr>
+</table>
+<p>线程卡在 <span class="mono">read(fd7)</span> 里时，它<b>不在 epoll_wait 里</b>，<span class="mono">ep-&gt;wq</span> 名单是空的。这期间 fd5 就绪，回调照样把 epi-5 挂进 rdllist 并 <span class="mono">wake_up</span>，但名单上没人可唤醒——事件<b>没丢</b>，静静躺在 rdllist 里，等 fd7 来数据、线程从 read 脱身、再次进入 <span class="mono">epoll_wait</span> 时才会被处理；fd7 一直不来数据且对端不关闭，就永久卡死。</p>
+<div class="ep-key">
+<b>快递类比：</b>LT 下快递员每次都喊"你有快递"，你下楼只拿一件就回去，有剩的他继续喊，你永远不会在快递架空时下楼；ET 下快递员只在快递<b>刚到的那一瞬间</b>喊一次，你必须守在架前一件一件拿，直到问"还有吗"、对方答"没了"为止——非阻塞 fd 下对方立刻答"没了"（EAGAIN），你走；阻塞 fd 下对方不回答，你就站在架前死等，这期间别的快递员（fd5、fd9）怎么喊你都听不见。<br><br>
+<b>一句话结论：</b>LT 把"何时该读"的判断交给 <span class="mono">epoll_wait</span>，read 永远在有数据时被调用；ET 把"读空"的判断交给你自己，最后一次 read 必然面对空缓冲区，因此必须用非阻塞 fd 拿 EAGAIN 作为"读空"信号。（业界实践通常建议所有 fd 都设非阻塞，以规避多线程共享 fd 等边缘竞争；但标准单线程模型下 LT 用阻塞 fd 不会卡。）
+</div>
+</div>
+
+<h2>三个 API 各自做什么（速查）</h2>
+<table class="ep-table">
+  <tr><th style="width:130px;">调用</th><th>内核动作</th><th style="width:170px;">返回值</th></tr>
+  <tr>
+    <td class="mono">epoll_create1(flags)</td>
+    <td>建立一个匿名 inode 文件，分配并初始化 <span class="mono">struct eventpoll</span>：初始化红黑树根 rbr、就绪链表 rdllist、等待队列 wq。</td>
+    <td class="mono">epfd（一个文件描述符）</td>
+  </tr>
+  <tr>
+    <td class="mono">epoll_ctl(epfd, op, fd, ev)</td>
+    <td>ADD：分配 <span class="mono">epitem</span> 并按 fd 插入红黑树（O(log n)，自动去重）；再通过 <span class="mono">eppoll_entry</span> 把回调 <span class="mono">ep_poll_callback</span> 注册到该 fd（socket）自己的等待队列上。MOD 改掩码，DEL 从红黑树摘除并撤销回调。</td>
+    <td class="mono">0 成功 / -1 失败</td>
+  </tr>
+  <tr>
+    <td class="mono">epoll_wait(epfd, events, maxevents, timeout)</td>
+    <td>rdllist 非空 → 直接取；空 → 进程睡入 wq。就绪后 <span class="mono">ep_send_events</span>：从 rdllist 摘下 epi、poll 取真实事件、<span class="mono">copy_to_user</span> 拷给用户；LT 下仍就绪则挂回。</td>
+    <td class="mono">nfds（本次就绪事件数）</td>
+  </tr>
+</table>
+
+<h2>关于"是不是死循环"：两层循环，别混在一起</h2>
+<div class="ep-card">
+<p><span class="t-blue t-tag">第一层：内核 ep_poll 的 for(;;)</span>　这是<b>等待循环</b>，不是忙轮询。每轮把自己置为 <span class="mono">TASK_INTERRUPTIBLE</span>，检查"rdllist 非空 / 超时 / 有信号"三个退出条件；都不满足就调 <span class="mono">schedule_timeout()</span> <b>真正睡着、让出 CPU</b>。被中断回调唤醒后再检查一次，条件满足立即 <span class="mono">break</span>，它只负责"等到有事发生"，最多处理一批（maxevents）就返回。</p>
+<p><span class="t-green t-tag">第二层：用户代码的 while(1)</span>　这才是<b>事件循环（Reactor 模式）</b>：<span class="mono">epoll_wait</span> 返回一批 → for 循环处理这一批 → 再次调用 <span class="mono">epoll_wait</span>。你说的"下一次进入函数时发现就绪队列里有值，就直接返回"——正是这一层：LT 下上次没读完的 epi 已被挂回 rdllist（或又来了新事件），所以第二次调用在入口检查处就 <span class="mono">goto fetch_events</span>，不会再睡。</p>
+<p>时序串起来就是：<b>调用 wait → 没事件 → 睡在 wq（不占 CPU）→ 网卡中断 → 回调挂 rdllist + 唤醒 → for 循环检查到非空并 break → 拷贝一批返回（LT 挂回 / ET 不挂回）→ 用户处理 → while(1) 再次 wait</b>。</p>
+<p>两个补充：<span class="mono">timeout=-1</span> 无限等待；<span class="mono">timeout=0</span> 完全不阻塞、立刻返回；睡眠期间收到信号会返回 <span class="mono">-EINTR</span>。还有，epoll 并<b>没有</b>用 mmap 零拷贝，事件仍靠 <span class="mono">copy_to_user</span> 拷贝。</p>
+</div>
+
+<!-- ============ 延伸一：epoll 与协程的关系 ============ -->
+<h2>延伸一　epoll 是"多线程"吗？—— 它是单线程 Reactor 的地基，也是协程的地基</h2>
+<div class="ep-card">
+<p><b>先纠正一个直觉：</b>epoll 不是多线程模型，它恰恰是"一个线程同时盯上万连接"的机制。一个线程调一次 <span class="mono">epoll_wait</span>，就让内核替它盯住所有 fd，哪个就绪处理哪个——这就是经典的 <b>Reactor 单线程模型</b>：Redis（单线程处理命令）、Netty（每个 EventLoop 一个线程 + 一个 epoll）、Nginx（每个 worker 单线程 + epoll）都是这么做的。"多线程 + 阻塞 IO"是另一种模型，epoll 正是为了避免"上万连接 = 上万线程"的内存、切换、锁开销而存在的。</p>
+<p><b>协程和 epoll 不是平行对立，而是上下两层：</b></p>
+<div class="ep-stack">
+  <div class="ep-layer l-user"><span class="lt">用户层：</span>协程 <span class="mono">async def fetch1() / fetch2() / ...</span> —— 在 <span class="mono">await</span> 处暂停、之后可恢复</div>
+  <div class="ep-arrow">▲ 就绪后恢复　/　遇到 await 挂起 ▼</div>
+  <div class="ep-layer l-loop"><span class="lt">用户态调度层：</span>asyncio 事件循环（单线程，维护就绪任务队列，决定"接下来跑哪个协程"）</div>
+  <div class="ep-arrow">▲ 通知哪些 fd 就绪　/　等待 IO 时调用 ▼</div>
+  <div class="ep-layer l-kernel"><span class="lt">内核层：</span><span class="mono">epoll_wait</span>（红黑树 rbr + 就绪链表 rdllist + 等待队列 wq）——告诉事件循环"哪些 fd 就绪"</div>
+  <div class="ep-arrow">▲ 网卡中断 → ep_poll_callback → 挂 rdllist + 唤醒</div>
+</div>
+<p>Python <span class="mono">asyncio</span> 在 Linux 上的事件循环底层 selector 就是 <span class="mono">selectors.EpollSelector</span>：协程 <span class="mono">await</span> 网络 IO → 协程挂起 → 事件循环调 <span class="mono">epoll_wait</span> → 数据到 → 恢复对应协程。可验证：<span class="mono">import selectors; print(selectors.DefaultSelector)</span> 在 Linux 上输出 <span class="mono">&lt;class 'selectors.EpollSelector'&gt;</span>。</p>
+<table class="ep-table">
+<tr><th style="width:150px;"></th><th>多线程 + 阻塞 IO</th><th>单线程 epoll（Reactor）</th><th>单线程协程（asyncio）</th></tr>
+<tr><td>一个连接对应</td><td>一个线程</td><td>一个 fd / 一个 epitem</td><td>一个协程</td></tr>
+<tr><td>等待 IO 时</td><td>线程阻塞，靠内核切换</td><td>线程睡在 epoll 的 wq</td><td>协程挂起，底层睡在 epoll</td></tr>
+<tr><td>上万连接</td><td>上万线程，内存/切换/锁扛不住</td><td>一个线程就行</td><td>一个线程 + 上万协程</td></tr>
+<tr><td>代码形态</td><td>同步、易写但重</td><td>回调（容易回调地狱）</td><td>async/await，看起来同步、实际异步</td></tr>
+<tr><td>用多核</td><td>天然多核</td><td>开多个 Reactor 线程/进程</td><td>多进程（GIL 限制）</td></tr>
+</table>
+<p><b>一句话：</b>epoll 是共同的地基；<b>多线程、Reactor 回调、协程是三种不同的上层用法</b>。协程 = Reactor 事件循环（底层 epoll）+ 用户态任务调度 + async/await 同步写法。epoll 负责把"等待"变成单线程可承受，协程负责把"上万条处理逻辑"变成单线程好维护。</p>
+</div>
+
+<!-- ============ 延伸二：最简 async 例子 ============ -->
+<h2>延伸二　看不懂 async/await？看最简单的例子</h2>
+<div class="ep-card">
+<p>三个概念就够：</p>
+<ul class="dash">
+<li><b>async def</b>：定义协程函数；调用它得到的是"待执行的协程"，不会立即执行，要靠事件循环驱动（<span class="mono">asyncio.run</span> / <span class="mono">await</span> / <span class="mono">gather</span>）。</li>
+<li><b>await x</b>：我在等 x 的结果，等的时候<b>不占线程</b>，事件循环去跑别的协程，x 好了再回来接着跑。</li>
+<li><b>asyncio.gather(...)</b>：把多个协程同时扔出去跑，等全部完成。</li>
+</ul>
+<p>注意 <span class="mono">time.sleep(1)</span> 是<b>整个线程卡住</b> 1 秒；<span class="mono">asyncio.sleep(1)</span> 只是<b>这个协程挂起</b> 1 秒，线程去干别的。</p>
+<div class="ep-codeblock"><pre>import asyncio
+import time
+
+async def say_after(delay, word):
+    await asyncio.sleep(delay)   # "我等 delay 秒，期间事件循环去跑别的"
+    print(word)
+
+# 写法 A：串行（先等 hello，再等 world）
+async def main_serial():
+    start = time.time()
+    await say_after(1, "hello")
+    await say_after(1, "world")
+    print("耗时", round(time.time() - start, 1), "秒")
+
+asyncio.run(main_serial())
+
+# 写法 B：gather 并发（两个同时等）
+async def main_concurrent():
+    start = time.time()
+    await asyncio.gather(say_after(1, "hello"), say_after(1, "world"))
+    print("耗时", round(time.time() - start, 1), "秒")
+
+asyncio.run(main_concurrent())</pre></div>
+<div class="ep-term">写法 A 输出：              写法 B 输出：
+hello                     hello
+world                     world
+耗时 2.0 秒               耗时 1.0 秒</div>
+<p>差别只在：A 是两个 <span class="mono">await</span> 顺序执行（两次等待相加）；B 用 <span class="mono">gather</span> 同时挂起（两次等待重叠）。</p>
+</div>
+
+<!-- ============ 延伸三：回调 vs async 同一任务 ============ -->
+<h2>延伸三　同一个任务：epoll 回调版 vs async 版（单线程并发下载两个网页）</h2>
+<h3>回调版（epoll 风格，用 selectors 手写；Linux 上 selector 就是 epoll）</h3>
+<div class="ep-codeblock"><pre>import socket
+import selectors
+
+sel = selectors.DefaultSelector()
+remaining = 2
+
+def fetch(host):
+    s = socket.socket()
+    s.setblocking(False)
+    try:
+        s.connect((host, 80))      # 非阻塞连接：此刻还没连上
+    except BlockingIOError:
+        pass
+    ctx = {"host": host, "sent": False, "data": b"",
+           "req": b"GET / HTTP/1.0\r\nHost: " + host.encode() + b"\r\n\r\n"}
+    sel.register(s, selectors.EVENT_WRITE, ctx)   # 先等"可写"=连上
+
+def run():
+    global remaining
+    while remaining &gt; 0:
+        for key, mask in sel.select():
+            s, ctx = key.fileobj, key.data
+            try:
+                if not ctx["sent"]:
+                    s.sendall(ctx["req"])          # 连上了，发请求
+                    ctx["sent"] = True
+                    sel.modify(s, selectors.EVENT_READ, ctx)  # 改成等"可读"
+                if mask &amp; selectors.EVENT_READ:
+                    chunk = s.recv(4096)
+                    if chunk:
+                        ctx["data"] += chunk
+                    else:                           # 对端关闭，读完了
+                        sel.unregister(s); s.close()
+                        print(ctx["host"], len(ctx["data"]))
+                        remaining -= 1
+            except OSError:
+                sel.unregister(s); s.close()
+                remaining -= 1
+
+fetch("example.com")
+fetch("example.org")
+run()</pre></div>
+<h3>async 版（同样的事，读起来就是顺序代码）</h3>
+<div class="ep-codeblock"><pre>import asyncio
+
+async def fetch(host):
+    reader, writer = await asyncio.open_connection(host, 80)
+    writer.write(b"GET / HTTP/1.0\r\nHost: " + host.encode() + b"\r\n\r\n")
+    await writer.drain()
+    data = b""
+    while True:
+        chunk = await reader.read(4096)
+        if not chunk:
+            break
+        data += chunk
+    writer.close()
+    await writer.wait_closed()
+    return data
+
+async def main():
+    results = await asyncio.gather(fetch("example.com"), fetch("example.org"))
+    for host, data in zip(("example.com", "example.org"), results):
+        print(host, len(data))
+
+asyncio.run(main())</pre></div>
+<div class="ep-card">
+<p><b>回调绕在哪？</b>逻辑简单时回调确实不难（"看着还行"是对的），痛点在复杂度上来后才显现：</p>
+<ol>
+<li><b>一条线性流程被切碎：</b>"连接 → 发请求 → 读响应 → 结束"本是直线，被拆成"等可写、等可读、关闭"好几段，你要在脑子里拼回来。</li>
+<li><b>状态要自己管：</b>发了吗（<span class="mono">sent</span>）、读了多少（<span class="mono">data</span>）、host 是谁——全得塞进 <span class="mono">ctx</span> 字典在回调间传递；async 里就是普通局部变量。</li>
+<li><b>循环/条件难写：</b>"循环读到完"在回调里要靠多次进出 <span class="mono">select</span> + 状态机；async 里就是一个普通 <span class="mono">while True</span>。</li>
+<li><b>错误处理分散：</b>每个回调都要重复 <span class="mono">try/except</span>；async 里一个 try 包住整段。</li>
+<li><b>复杂逻辑变"回调地狱"：</b>加超时、重连、"读完 A 再请求 B"，就会出现回调里注册回调、回调里再套回调，缩进越来越深。</li>
+</ol>
+<div class="ep-key"><b>一句话：</b>async/await 没让你多做任何事，它只是把"被回调切碎的流程"重新写回你熟悉的同步线性样子；而去 epoll 注册、切换、唤醒的脏活，全由 asyncio 在每一个 <span class="mono">await</span> 背后替你干了。</div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  try{
+    var codeLines=[
+      {t:'// 用户态系统调用',k:'L0'},
+      {t:'epoll_wait(epfd, events, maxevents, timeout);',k:'L0'},
+      {t:'',k:''},
+      {t:'// —— 内核 ep_poll() ——',k:''},
+      {t:'if (!list_empty(&ep->rdllist))',k:'L1'},
+      {t:'    goto fetch_events;        // 有就绪，直接去取',k:'L1'},
+      {t:'init_waitqueue_entry(&wait, current);',k:'L2'},
+      {t:'add_wait_queue_exclusive(&ep->wq, &wait);',k:'L3'},
+      {t:'for (;;) {                          // 等待循环',k:'L4'},
+      {t:'    set_current_state(TASK_INTERRUPTIBLE);',k:'L5'},
+      {t:'    if (!list_empty(&ep->rdllist) || !timeout)',k:'L6'},
+      {t:'        break;',k:'L6'},
+      {t:'    if (signal_pending(current)) {res=-EINTR;break;}',k:'L7'},
+      {t:'    schedule_timeout(timeout);     // 真正睡眠',k:'L8'},
+      {t:'}',k:'L9'},
+      {t:'remove_wait_queue(&ep->wq, &wait);',k:'L10'},
+      {t:'set_current_state(TASK_RUNNING);',k:'L11'},
+      {t:'',k:''},
+      {t:'fetch_events:   // ep_send_events()',k:'L12'},
+      {t:'while (!list_empty(&rdllist) && res<maxevents) {',k:'L13'},
+      {t:'    epi = list_first_entry(...,epitem,rdllink);',k:'L14'},
+      {t:'    list_del_init(&epi->rdllink);  // 从就绪链表摘下',k:'L15'},
+      {t:'    ev.events = f_op->poll(fd,NULL) & epi->event.events;',k:'L16'},
+      {t:'    copy_to_user(uevent, &ev, sizeof(ev));',k:'L17'},
+      {t:'    if (!(epi->event.events & EPOLLET)) { // LT 才执行',k:'L18'},
+      {t:'        if (ep_item_poll(epi, &ev, 1))',k:'L19'},
+      {t:'            list_add_tail(&epi->rdllink,&rdllist); //挂回',k:'L20'},
+      {t:'    }',k:'L18'},
+      {t:'    res++;',k:'L21'},
+      {t:'}',k:'L22'},
+      {t:'return res;   // = nfds，回到用户态',k:'L23'}
+    ];
+    var steps=[
+      {title:'第 0 步：用户调用 epoll_wait',desc:'通过系统调用进入内核 ep_poll()，准备检查就绪链表。',hl:['L0']},
+      {title:'第 1 步：检查 rdllist',desc:'当前没有任何就绪事件，rdllist 为空，不跳转 fetch_events，继续往下走。',hl:['L1']},
+      {title:'第 2 步：把进程挂入 wq',desc:'构造等待队列节点 wait（private=current 当前进程），以独占方式加入 eventpoll 的等待队列 ep->wq。注意：这里睡的是"进程"。',hl:['L2','L3']},
+      {title:'第 3 步：for(;;) 中睡眠',desc:'置为 TASK_INTERRUPTIBLE；再检查：rdllist 仍空、未超时、无信号 → schedule_timeout() 真正睡眠，让出 CPU，不消耗任何 CPU 时间。',hl:['L4','L5','L6','L7','L8','L9']},
+      {title:'第 4 步：【异步】网卡数据到达',desc:'与进程睡眠并行发生：硬中断 → 软中断 NET_RX → TCP 协议栈把新数据放入 fd7 的接收队列，调用 sk_data_ready()。',hl:[],async:true},
+      {title:'第 5 步：回调把 epi 挂入 rdllist',desc:'fd7 的 sk_sleep 上注册的 ep_poll_callback 被调用：epi-7 不在就绪链表，于是 list_add_tail 挂入 rdllist。',hl:[],async:true},
+      {title:'第 6 步：wake_up 唤醒进程',desc:'回调继续执行 wake_up(&ep->wq)，把睡眠进程唤醒（重新进入运行队列，状态变 TASK_RUNNING）。',hl:['L8'],async:true},
+      {title:'第 7 步：for(;;) 再检查 → break',desc:'进程从 schedule_timeout 处接着跑，下一轮检查发现 rdllist 非空，break；然后从 wq 移除自己，恢复 TASK_RUNNING。',hl:['L6','L9','L10','L11']},
+      {title:'第 8 步：从 rdllist 摘下 epi',desc:'ep_send_events 把 rdllist 整体 splice 到临时链表，逐个处理：list_del_init 把 epi-7 从就绪链表摘下。注意 epi-7 仍在红黑树里，监听关系没被删除。',hl:['L12','L13','L14','L15']},
+      {title:'第 9 步：poll 取事件并拷贝给用户',desc:'调用 fd 的 poll 取得此刻真实就绪事件，与注册掩码相与后，copy_to_user 填入用户 events[0]（epoll 没有 mmap，仍是拷贝）。',hl:['L16','L17']},
+      {title:'第 10 步：LT 挂回 / ET 不挂回',desc:'',hl:['L18','L19','L20']},
+      {title:'第 11 步：返回 nfds',desc:'res=1，epoll_wait 返回 1，用户态 for 循环处理 events[0]（读 fd7）。',hl:['L21','L23']},
+      {title:'第 12 步：while(1) 再次调用 epoll_wait',desc:'',hl:['L1']}
+    ];
+    var codeEl=document.getElementById('epCode');
+    if(!codeEl) return;
+    codeEl.innerHTML=codeLines.map(function(l,i){return '<span class="ln'+(l.k===''?' noop':'')+'" data-k="'+l.k+'">'+(l.t===''?' ':l.t)+'</span>';}).join('\n');
+
+    var step=0, mode='LT';
+    function $(id){return document.getElementById(id);}
+    function setOp(el,val){if(el)el.setAttribute('opacity',val?1:0);}
+    function setTxt(id,val){var el=$(id);if(el)el.setAttribute('opacity',val?1:0);}
+    function setVis(id,val){var el=$(id);if(el)el.style.opacity=val?1:0;}
+
+    function render(){
+      var s=step;
+      // 代码高亮
+      var st=steps[s];
+      var ln=codeEl.querySelectorAll('.ln');
+      for(var i=0;i<ln.length;i++){
+        ln[i].classList.remove('hl');
+        if(st.async && ln[i].getAttribute('data-k')==='L8'){ln[i].classList.add('hl');}
+      }
+      if(st.hl && !st.async){
+        for(var j=0;j<ln.length;j++){
+          if(st.hl.indexOf(ln[j].getAttribute('data-k'))>=0) ln[j].classList.add('hl');
+        }
+      }
+      if(st.async){
+        // 异步阶段不高亮代码，右侧高亮
+      }
+
+      // 进程在 wq：第 2 步加入，第 7 步移除；第 12 步 ET 重新睡
+      var inWq = (s>=2 && s<=6);
+      var sleeping = (s>=3 && s<=6);
+      if(s===12 && mode==='ET'){inWq=true;sleeping=true;}
+      setOp($('procWq'),inWq);setOp($('procWqt'),inWq);setOp($('procWqt2'),inWq);
+      if($('procWqt')) $('procWqt').textContent = sleeping ? '😴 当前进程' : '当前进程';
+      if($('procWqt2')) $('procWqt2').textContent = sleeping ? (s===6?'已唤醒…':'睡眠 TASK_INTERRUPTIBLE') : '在 wq 中';
+
+      // 新数据包：第 4 步起（未到达时保留淡占位）
+      if($('pk1')) $('pk1').setAttribute('opacity',s>=4?1:0.12);
+      if($('pk1t')) $('pk1t').setAttribute('opacity',s>=4?1:0.2);
+      // rdllist 中的 epi-7：第 5 步出现，第 8 步摘下，第 10 步 LT 挂回
+      var inRdl = (s>=5 && s<=7);
+      if(s>=10 && mode==='LT') inRdl=true;
+      if(s===12 && mode==='LT') inRdl=true;
+      setOp($('rdl7'),inRdl);setTxt('rdl7t',inRdl);
+      if($('rdlEmpty')) $('rdlEmpty').setAttribute('opacity',inRdl?0:1);
+      // events[0]：第 9 步起填；第 12 步 LT 再次填
+      var evFilled = (s>=9 && s<=11);
+      if(s===12 && mode==='LT') evFilled=true;
+      setVis('ev0fill',evFilled);setVis('ev0txt',evFilled);
+      // 树节点高亮（5-9 步活跃）
+      var tree=$('tree7');
+      if(tree) tree.setAttribute('stroke-width', (s>=5&&s<=10)?3:1.5);
+      // 返回标注
+      setVis('retNote',s===11 || (s===12&&mode==='LT'));
+
+      // 第 10 / 12 步模式化描述
+      var title=st.title, desc=st.desc;
+      if(s===10){
+        if(mode==='LT'){
+          title='第 10 步：LT —— 仍就绪则挂回 rdllist';
+          desc='epi 没有 EPOLLET 标志：ep_item_poll 再查一次，fd7 接收缓冲区还有数据 → list_add_tail 把 epi-7 重新挂回 rdllist（注意绿色块重新出现）。';
+        }else{
+          title='第 10 步：ET —— 不挂回';
+          desc='epi 带 EPOLLET 标志：不检查、不挂回，rdllist 保持空。fd7 里的数据还在缓冲区（没丢），但内核不会再主动通知，必须自己循环读到 EAGAIN。';
+        }
+      }
+      if(s===12){
+        if(mode==='LT'){
+          title='第 12 步：LT —— 再次 wait 立即返回';
+          desc='用户态 while(1) 再次调用 epoll_wait：入口检查发现 rdllist 里有 epi-7（第 10 步挂回的），直接 goto fetch_events，立即返回 events[0]，直到数据读空、poll 不再就绪才停止。';
+        }else{
+          title='第 12 步：ET —— 再次 wait 会睡眠';
+          desc='用户态 while(1) 再次调用 epoll_wait：rdllist 为空，进程再次睡入 wq；只有"下一批新数据到达"触发 ep_poll_callback 时才会被唤醒。';
+        }
+      }
+      $('epStepTitle').textContent=title;
+      $('epStepDesc').textContent=desc;
+      $('epProg').textContent='步骤 '+(s)+' / 12 · 当前模式：'+mode;
+      $('epPrev').disabled=(s===0);
+      $('epNext').disabled=(s===12);
+      $('modeLT').className=(mode==='LT')?'on':'';
+      $('modeET').className=(mode==='ET')?'on':'';
+    }
+
+    $('epNext').addEventListener('click',function(){ if(step<12){step++;render();} });
+    $('epPrev').addEventListener('click',function(){ if(step>0){step--;render();} });
+    $('epReset').addEventListener('click',function(){ step=0;render(); });
+    $('modeLT').addEventListener('click',function(){ mode='LT';render(); });
+    $('modeET').addEventListener('click',function(){ mode='ET';render(); });
+    render();
+  }catch(e){if(window&&window.console)console.error('epoll viz error:',e);}
+})();
+</script>
+<script src="anno.js"></script>
+</body>
+</html>

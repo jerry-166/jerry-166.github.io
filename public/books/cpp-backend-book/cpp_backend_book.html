@@ -1178,6 +1178,10 @@ private:
 <section id="ch9">
 <h2>第 9 章 · 网络编程速览<span class="tag"><span class="p1">P1 中讲</span> · C++ 后端岗位专属高频</span></h2>
 
+<div class="box mechanism"><div class="boxTitle">📐 配套图解（同目录另开一页）</div>
+<p><b><a href="epoll_internals.html" target="_blank">《epoll 内部存储结构与工作流程图解》</a></b>——比本章更细一层：内核 <code>struct eventpoll</code> 三件套（红黑树 rbr / 就绪链表 rdllist / 等待队列 wq）+ 容易漏的第四样（每个 socket 自己的 sk_sleep 等待队列挂着 <code>ep_poll_callback</code>），数据到达时如何把事件「推」进就绪链表并唤醒进程；含 LT/ET 可切换的逐行代码推演。本章 9.1/9.2 的表格和时间线是<b>面试口径</b>，图解页是<b>「追问内核怎么实现」时的弹药库</b>。</p>
+</div>
+
 <h3 id="ch9-1">9.1 select / poll / epoll：一张表打天下</h3>
 <p>问题背景：一个 TCP 服务有 1 万个连接，怎么知道哪些连接来数据了？——IO 多路复用：把「盯连接」这件事外包给内核，一次 syscall 问一批 fd。</p>
 <table>

@@ -152,6 +152,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: 'epoll 内部结构与工作流程图解',
+    volume: 'C++ 配套',
+    description:
+      '深入 Linux 内核 eventpoll：红黑树 rbr / 就绪链表 rdllist / 等待队列 wq 三件套 + 容易漏的第四样（socket 的 sk_sleep 挂 ep_poll_callback，数据到达把事件「推」进就绪链表并唤醒进程）；LT/ET 可切换的逐行代码推演、九步时序图与 select/poll 对比栈图。C++ 速成书第 9 章追问内核实现时的弹药库，可独立阅读。',
+    href: '/books/cpp-backend-book/epoll_internals.html',
+    tags: ['epoll', '内核', '网络编程', '面试'],
+    accent: '#2563eb',
+    category: 'backend',
+  },
+  {
     title: 'Java 复习手册 · 秋招面试向',
     volume: 'Java',
     description:

@@ -242,6 +242,11 @@ footer.foot a{color:var(--accent-hi);}
   <h2><span class="ch-num">CHAPTER 02</span>总体架构与部署</h2>
   <p class="lead">架构全貌是一张五层漏斗：流量从上往下走，每过一层少一个数量级；数据一致性从下往上兜，用状态机、对账、补偿保证错账零容忍。</p>
 
+  <div class="talk">
+    <span class="talk-tag">延伸阅读 · 姊妹篇全景手册</span>
+    <p>本章漏斗图只给骨架。逐层的完整推演——七层全景架构、下单链路时序、Redis 与落库一致的三方案对比、热点 Key 治理、兜底恢复，以及面试一分钟速记——见姊妹篇 <a href="/books/seckill-panorama/seckill-panorama.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;text-decoration:underline;">《秒杀系统全景设计：把 100 万请求一层层砍到「只有库存数量」》</a>。两本互为表里：本手册按层深挖，全景手册按链路串讲，可对照阅读。</p>
+  </div>
+
   <h3>2.1 五层漏斗全景</h3>
   <figure class="diagram">
     <pre class="mermaid">
@@ -1054,9 +1059,25 @@ WHERE order_id = #{orderId} AND status = 0;
 
   <h3>9.3 两分钟展开版（面试官说「详细讲讲下单流程」时）</h3>
   <div class="talk">
-    <span class="talk-tag">结构化输出 · 按链路走</span>
-    <p>「下单一个请求进来，先过 Nginx 的 IP 限流和黑名单，再过网关做预约资格校验——都是 O(1) 的内存操作，不碰数据库。到服务层先查本地的售罄标志，售罄直接快速失败，连 Redis 都不碰。真正的核心是一次 Redis Lua 调用：脚本里先 SISMEMBER 判这个用户买没买过，再看库存够不够，够就 DECR 并把用户记进已购集合——因为 Redis 单线程执行脚本，这几步之间不可能插入其他请求，<strong>不超卖和一人一单就都解决了</strong>。成功之后我不会同步写库，而是先把『要创建订单』这件事写进本地消息表——一张普通的 MySQL 表，然后立刻返回用户『排队中』。后台任务扫这张表把消息投到 RocketMQ，消费者在 MySQL 里一个事务完成订单、防重表、库存三件事；万一 Redis 和 DB 库存对不上，条件更新会返回 0 行，立刻告警触发对账。最后订单 15 分钟不付款，延迟消息触发关单并回补库存，回补同样走幂等的 Lua。」</p>
+    <span class="talk-tag">结构化输出 · 按链路走 · 核心处放慢</span>
+    <p>「下单请求进来，先过 Nginx 的 IP 限流和黑名单，再过网关做预约资格校验——都是 O(1) 的内存操作，不碰数据库。到服务层先查本地售罄标志，售罄直接快速失败，连 Redis 都不碰。真正的核心是一次 Redis Lua 调用：脚本里先 SISMEMBER 判这个用户买没买过，再看库存够不够，够就 DECR 并把用户记进已购集合——因为 Redis 单线程执行脚本，这几步之间不可能插入其他请求，<strong>不超卖和一人一单就都解决了</strong>。</p>
+    <p>从这里开始才是这题的胜负手：<strong>扣减成功之后，怎么把『这笔成功』可靠地写进 MySQL</strong>？同步写会在尖峰下把单行热点打穿，所以必须异步；而一异步，面试官必然追问『消息丢了怎么办』。工业界两条主流路线我都对比过：</p>
+    <p><strong>路线一：本地消息表——MQ 无关，我们的默认选型</strong>。扣减成功后第一个动作不是发 MQ，而是往业务库插一条消息记录——一个独立小事务。它和扣减不在同一个事务里，但<strong>表在消息就在</strong>：服务此刻宕机，消息还躺在表里，重启后扫表任务接着投。插完立刻返回用户『排队中』。后台任务扫『待投递』状态的记录推到 MQ——<strong>不限定 RocketMQ，RabbitMQ、Kafka 都能换</strong>；投递成功改状态，失败靠『超时重投 + 消费端幂等』构成至少一次语义。代价：业务库多一张表和一个扫表任务，落库延迟秒级——对秒杀完全可接受，而且消息是数据库里看得见的一行，<strong>可查询、可人工补发、可对账</strong>，排障成本低。</p>
+    <p><strong>路线二：RocketMQ 事务消息——投递语义由 Broker 兜</strong>。先发 half 消息（对消费者不可见），再执行本地事务——注意这里写的只是『扣减成功』的凭证，因为扣减本身在 Redis，不在 MySQL 事务里——凭证落库成功就 commit 消息，失败就 rollback；Broker 还会定时<strong>回查</strong>『本地事务到底成没成』，由我们实现回查接口。优点：不依赖扫表组件，投递可靠性由 RocketMQ 原生保证。代价：<strong>强绑定 RocketMQ 生态</strong>，要实现并测试回查逻辑，换 MQ 就要重做。</p>
+    <p><strong>选型依据一句话</strong>：团队已深度使用 RocketMQ 且愿意绑生态，用事务消息省掉扫表组件；想要 MQ 可替换、消息状态可查可补，用本地消息表——我们选后者，理由是 MQ 无关和运维可见性。<strong>但两条路线的共同底线不变</strong>：至少一次投递决定了重复不可避免，消费端幂等（防重表唯一索引 + 订单状态机）必做；库存守恒对账必做——它兜住所有补偿覆盖不到的缝隙。</p>
+    <p>落库消费时在 MySQL 一个事务里做三件事：插订单、插防重表、条件更新库存行；条件更新返回 0 行说明 Redis 和 DB 对不上，立刻告警进对账流程。最后订单 15 分钟不付款，延迟消息触发关单并回补库存，回补同样走幂等的 Lua。」</p>
   </div>
+  <div class="table-wrap">
+    <table class="tbl">
+      <tr><th>维度</th><th>本地消息表</th><th>RocketMQ 事务消息</th></tr>
+      <tr><td>MQ 绑定</td><td>无，任意 MQ 可替换</td><td>强绑定 RocketMQ</td></tr>
+      <tr><td>不丢消息的保证</td><td>表在消息在，扫表超时重投</td><td>half 消息 + Broker 回查</td></tr>
+      <tr><td>额外成本</td><td>消息表 + 扫表任务</td><td>回查接口实现与测试</td></tr>
+      <tr><td>可观测 / 运维</td><td>消息是 DB 一行，可查可补发</td><td>依赖控制台查 half 消息</td></tr>
+      <tr><td>适用场景</td><td>MQ 未定 / 多 MQ 并存 / 要运维可见性</td><td>已用 RocketMQ、想省扫表组件</td></tr>
+    </table>
+  </div>
+  <p class="mini">记忆锚：本地消息表 = 「我自己保证不丢，MQ 随便换」；事务消息 = 「Broker 保证不丢，代价是绑定生态」。共同底线 = 消费幂等 + 对账。</p>
 
   <h3>9.4 高频追问 Top 10</h3>
 

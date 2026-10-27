@@ -122,6 +122,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: '秒杀系统全景设计 · 流量漏斗与兜底恢复',
+    volume: '后端',
+    description:
+      '抢购系统的姊妹篇全景手册：七层架构每层只做一件事 → 核心下单链路时序（同步判定、异步落库）→ Redis 与落库一致的三方案对比 → Cluster 分桶两个理解偏差纠正 → 超时关单、对账、降级、熔断与恢复，附对原方案的逐条修正与缺省 12 点清单、面试一分钟速记。',
+    href: '/books/seckill-panorama/seckill-panorama.html',
+    tags: ['系统设计', '高并发', '一致性', '面试'],
+    accent: '#7a5c3d',
+    category: 'backend',
+  },
+  {
     title: '实时协同编辑全解 · 锁 → OT → CRDT → AI 并发',
     volume: '后端',
     description:

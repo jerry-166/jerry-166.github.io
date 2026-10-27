@@ -142,6 +142,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: 'C++ 后端面试速成书 · 详略分级版',
+    volume: 'C++',
+    description:
+      '面向 Python/Java 功底的 C++ 后端速成：P0 详讲（内存模型 / 智能指针 / 虚函数 / STL / 并发）+ P1 中讲 + P2 速答卡三级详略；第 0 章零基础补课（类逐行对照 Python、栈堆对象两种活法），Python 类比贯穿全书（vptr≈ob_type、RAII≈with、右值引用=移动版重载分流锚点、epoll=前台叫号屏），28 张表、43 组代码、9 个面试作答模板与比喻词典。',
+    href: '/books/cpp-backend-book/cpp_backend_book.html',
+    tags: ['C++', '面试', '后端', '速成'],
+    accent: '#b0563c',
+    category: 'backend',
+  },
+  {
     title: 'Java 复习手册 · 秋招面试向',
     volume: 'Java',
     description:

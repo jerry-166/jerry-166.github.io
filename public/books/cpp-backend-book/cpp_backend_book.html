@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ 后端面试速成书</title>
+<style>
+/* ============ 全局主题：深色 IDE 风（与 Python 八股教程书同源） ============ */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+  --text:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+  --alice:#3fb950; --bob:#58a6ff; --carol:#d29922; --agent:#bc8cff;
+  --danger:#f85149; --warn:#e3b341; --ok:#3fb950;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.8 system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--bob);text-decoration:none} a:hover{text-decoration:underline}
+code{font-family:var(--mono);background:#21262d;padding:1px 6px;border-radius:4px;font-size:13px;color:#79b8ff}
+pre{background:#0a0d12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;margin:12px 0}
+pre code{background:none;padding:0;color:#e6edf3;font-size:13px;line-height:1.7}
+/* ============ 布局：左侧目录 + 右侧正文 ============ */
+.layout{display:flex;max-width:1420px;margin:0 auto;align-items:flex-start}
+nav.toc{position:sticky;top:0;width:280px;min-width:280px;height:100vh;overflow:auto;padding:28px 14px;border-right:1px solid var(--border);background:var(--panel)}
+nav.toc .tocTitle{font-size:15px;font-weight:700;margin-bottom:14px;padding:0 8px}
+nav.toc a{display:block;padding:4px 10px;font-size:13px;color:var(--muted);border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{color:var(--text);text-decoration:none;background:var(--panel2)}
+nav.toc a.lv2{padding-left:22px;font-size:12.5px}
+nav.toc .tocFoot{margin-top:18px;padding:10px;font-size:12px;color:var(--dim);border-top:1px dashed var(--border)}
+main{flex:1;min-width:0;padding:36px 44px 80px;max-width:1080px}
+h1{font-size:26px;margin-bottom:8px}
+h1 small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:6px}
+section{margin-bottom:56px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+h2{font-size:21px;margin:34px 0 6px;padding-left:12px;border-left:4px solid var(--bob)}
+h2 .tag{font-size:12px;color:var(--dim);font-weight:400;margin-left:10px}
+h2 .p0{color:#f85149;font-weight:700}
+h2 .p1{color:#e3b341;font-weight:700}
+h3{font-size:17px;margin:24px 0 6px;color:#79c0ff}
+h4{font-size:15px;margin:18px 0 4px;color:var(--warn)}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+/* ============ 语义框 ============ */
+.box{border:1px solid var(--border);border-left:4px solid var(--dim);border-radius:8px;padding:12px 16px;margin:14px 0;background:var(--panel2)}
+.box .boxTitle{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.box.metaphor{border-left-color:var(--warn)} .box.metaphor .boxTitle{color:var(--warn)}
+.box.mechanism{border-left-color:var(--bob)} .box.mechanism .boxTitle{color:var(--bob)}
+.box.counter{border-left-color:var(--danger)} .box.counter .boxTitle{color:var(--danger)}
+.box.interview{border-left-color:var(--agent)} .box.interview .boxTitle{color:var(--agent)}
+.box.warnbox{border-left-color:#d29922;background:#16130a} .box.warnbox .boxTitle{color:var(--warn)}
+.box.ask{border-left-color:var(--carol);background:#17131b} .box.ask .boxTitle{color:var(--carol)}
+/* ============ 表格 ============ */
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--text);font-weight:600;white-space:nowrap}
+td{color:var(--muted)} td b,td strong{color:var(--text)}
+tr:hover td{background:#161b2288}
+/* ============ 折叠推演 ============ */
+details{border:1px solid var(--border);border-radius:8px;margin:12px 0;background:var(--panel)}
+details summary{cursor:pointer;padding:10px 14px;font-size:14px;color:var(--warn);font-weight:600;list-style:none}
+details summary::before{content:"▸ ";color:var(--warn)}
+details[open] summary::before{content:"▾ "}
+details .inner{padding:2px 18px 14px}
+/* ============ 图表容器 ============ */
+.figwrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:16px;margin:16px 0}
+.figwrap .figTitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.figwrap .figSub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.figwrap svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* ============ 杂项 ============ */
+.tocAnchorTop{position:fixed;right:26px;bottom:26px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px}
+.hl{color:var(--warn);font-weight:600}
+.hlg{color:var(--ok);font-weight:600}
+.small{font-size:12.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){nav.toc{display:none}.layout{display:block}}
+.step{color:var(--alice)}
+ul,ol{margin:8px 0 8px 24px}
+li{margin:4px 0}
+kbd{font-family:var(--mono);background:#21262d;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ================= 左侧目录 ================= -->
+<nav class="toc" id="toc">
+  <div class="tocTitle">⚙️ C++ 后端面试速成书<br><span style="font-size:12px;color:var(--dim)">详略得当 · P0 详讲 / P1 中讲 / P2 速查</span></div>
+  <a href="#pre">序章 · 考点地图与读法</a>
+  <a href="#ch0">第 0 章 · 前置补课：看懂 C++ 的地基</a>
+  <a class="lv2" href="#ch0-1">0.1 C++ 类的长相（Python 对照）</a>
+  <a class="lv2" href="#ch0-2">0.2 术语翻译表</a>
+  <a class="lv2" href="#ch0-3">0.3 栈对象 vs 堆对象</a>
+  <a href="#ch1">第 1 章 · 内存模型：对象的出生地</a>
+  <a class="lv2" href="#ch1-1">1.1 内存五区</a>
+  <a class="lv2" href="#ch1-2">1.2 栈 vs 堆</a>
+  <a class="lv2" href="#ch1-3">1.3 new/delete vs malloc/free</a>
+  <a class="lv2" href="#ch1-4">1.4 内存泄漏与 RAII</a>
+  <a href="#ch2">第 2 章 · 智能指针：谁来管对象的命</a>
+  <a class="lv2" href="#ch2-1">2.1 为什么出现</a>
+  <a class="lv2" href="#ch2-2">2.2 unique_ptr：独占</a>
+  <a class="lv2" href="#ch2-3">2.3 shared_ptr：引用计数</a>
+  <a class="lv2" href="#ch2-4">2.4 循环引用与 weak_ptr</a>
+  <a href="#ch3">第 3 章 · 虚函数：行为谁做主</a>
+  <a class="lv2" href="#ch3-1">3.1 静态绑定 vs 动态绑定</a>
+  <a class="lv2" href="#ch3-2">3.2 vtable/vptr 机制</a>
+  <a class="lv2" href="#ch3-3">3.3 虚析构函数</a>
+  <a class="lv2" href="#ch3-4">3.4 构造析构顺序</a>
+  <a href="#ch4">第 4 章 · 拷贝与移动：对象怎么复制搬家</a>
+  <a class="lv2" href="#ch4-1">4.1 深浅拷贝与三/五法则</a>
+  <a class="lv2" href="#ch4-2">4.2 右值引用与 move 语义</a>
+  <a class="lv2" href="#ch4-3">4.3 完美转发一句话</a>
+  <a class="lv2" href="#ch4-4">4.4 lambda</a>
+  <a href="#ch5">第 5 章 · 关键字与类型系统</a>
+  <a class="lv2" href="#ch5-1">5.1 static 四连问</a>
+  <a class="lv2" href="#ch5-2">5.2 const 全家桶</a>
+  <a class="lv2" href="#ch5-3">5.3 四种 cast</a>
+  <a class="lv2" href="#ch5-4">5.4 指针 vs 引用</a>
+  <a class="lv2" href="#ch5-5">5.5 * / &amp; / &amp;&amp; 符号三角色</a>
+  <a href="#ch6">第 6 章 · STL 容器高频</a>
+  <a class="lv2" href="#ch6-1">6.1 vector 扩容</a>
+  <a class="lv2" href="#ch6-2">6.2 迭代器失效大全</a>
+  <a class="lv2" href="#ch6-3">6.3 map vs unordered_map</a>
+  <a class="lv2" href="#ch6-4">6.4 底层结构速览</a>
+  <a href="#ch7">第 7 章 · 并发编程</a>
+  <a class="lv2" href="#ch7-1">7.1 mutex 家族与两种锁</a>
+  <a class="lv2" href="#ch7-2">7.2 条件变量与虚假唤醒</a>
+  <a class="lv2" href="#ch7-3">7.3 atomic 与 CAS</a>
+  <a class="lv2" href="#ch7-4">7.4 死锁四条件</a>
+  <a class="lv2" href="#ch7-5">7.5 线程安全单例</a>
+  <a href="#ch8">第 8 章 · 编译链接</a>
+  <a class="lv2" href="#ch8-1">8.1 编译四阶段</a>
+  <a class="lv2" href="#ch8-2">8.2 静态库 vs 动态库</a>
+  <a class="lv2" href="#ch8-3">8.3 重载与 extern "C"</a>
+  <a href="#ch9">第 9 章 · 网络编程速览</a>
+  <a class="lv2" href="#ch9-1">9.1 select/poll/epoll</a>
+  <a class="lv2" href="#ch9-2">9.2 LT vs ET 与 Reactor</a>
+  <a href="#appA">附录 A · 高频题速答卡（P2 收容所）</a>
+  <a href="#appB">附录 B · 比喻词典</a>
+  <div class="tocFoot">面向后端秋招 · 详略版<br>2026-10 · 面试速成</div>
+</nav>
+
+<!-- ================= 正文 ================= -->
+<main>
+
+<h1 id="top">C++ 后端面试速成书<br><small>主线：一个对象从出生到死亡，C++ 替你管了什么、没管什么</small></h1>
+<p class="lead">本书专为「Python/Java 熟、C++ 竞赛级、秋招时间紧」的背景定制：<b>P0 章节详讲</b>（比喻 + 机制 + 最小代码 + 面试作答模板），<b>P1 章节中讲</b>（机制 + 例子），<b>P2 低频点一句话收进附录速答卡</b>。你熟悉的 Python 概念会被反复拿来当类比——C++ 很多东西就是「手动挡的 Python」。</p>
+
+<!-- ================================================================ -->
+<section id="pre">
+<h2>序章 · 考点地图与读法<span class="tag">5 分钟</span></h2>
+<p>C++ 后端面试的问题密度极高，但考点其实高度集中。整本书沿一条主线走：<b>一个对象的一生</b>。<b>如果你连「构造函数、析构函数、成员变量」长什么样都不熟，先去第 0 章补 15 分钟地基再回来。</b></p>
+<ol>
+<li>它<b>出生</b>在哪 → 内存五区、栈 vs 堆（第 1 章）；</li>
+<li><b>谁来管它的命</b>（什么时候死）→ new/delete、智能指针（第 1、2 章）；</li>
+<li>它的<b>行为谁做主</b> → 虚函数与多态（第 3 章）；</li>
+<li>它怎么<b>复制和搬家</b> → 深浅拷贝、move 语义（第 4 章）；</li>
+<li>语言关键字过关 → static/const/cast（第 5 章）；</li>
+<li>用<b>现成的轮子</b>装它 → STL 容器（第 6 章）；</li>
+<li>多个线程<b>抢它</b> → 并发编程（第 7 章）；</li>
+<li>它怎么<b>变成进程</b> → 编译链接（第 8 章）；</li>
+<li>它怎么<b>服务外界</b> → epoll 与网络编程（第 9 章）。</li>
+</ol>
+
+<h3>详略分级说明</h3>
+<table>
+<tr><th>级别</th><th>含义</th><th>章节</th></tr>
+<tr><td><b style="color:#f85149">P0 详讲</b></td><td>真正考的：必须能口头讲 2 分钟，含比喻和机制图</td><td>内存模型、智能指针、虚函数、STL 高频、并发基础</td></tr>
+<tr><td><b style="color:#e3b341">P1 中讲</b></td><td>高频：机制 + 一句话结论，能答 1 分钟即可</td><td>move/lambda、static/const/cast、编译链接、epoll 对比表</td></tr>
+<tr><td><b style="color:#8b949e">P2 速查</b></td><td>低频/加分项：背一句话版本，被追问再展开</td><td>菱形继承、内存序、SSO、RVO、惊群……全在附录 A</td></tr>
+</table>
+
+<div class="box interview"><div class="boxTitle">🎭 给 Python 背景读者的总纲</div>
+<p>你在 Python 里习以为常的三件事，C++ 全是手动挡：<b>内存自动回收</b>（Python 有 GC，C++ 靠 RAII 与智能指针）、<b>动态派发默认开</b>（Python 每个方法调用都查 <code>ob_type</code>，C++ 必须显式写 <code>virtual</code> 才查 vtable）、<b>赋值就是传引用</b>（Python 天生「移动语义」，C++ 到 11 才有 move）。记住这三条对照，一半的 C++ 八股都能秒懂。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch0">
+<h2>第 0 章 · 前置补课：看懂 C++ 的地基<span class="tag">零基础必读 · 15 分钟</span></h2>
+<p class="lead">这一章不讲考点，只讲「让后面所有章节的代码能看懂」的地基。类、构造、析构已经熟的可以跳过。</p>
+
+<h3 id="ch0-1">0.1 C++ 类的长相：逐行对照 Python</h3>
+<p>第 1 章会出现一个 FileGuard 类，先把它拆开，每行和 Python 摆在一起看：</p>
+<pre><code class="language-cpp">class FileGuard {                     // Python: class FileGuard:
+public:                               //   （Python 没有 public/private，全公开）
+    FileGuard(const char* path)       //   def __init__(self, path):
+        : f_(fopen(path, "r")) {}     //       self.f = open(path, "r")
+    ~FileGuard() {                    //   （Python 没有可靠对应物！__del__ 时机不定）
+        if (f_) fclose(f_);           //   ~FileGuard = 对象销毁时"编译器自动调用"的函数
+    }                                 //   ——不是你手动调的，这是 RAII 全部魔法的来源
+private:                              //   private = 只有类内部代码能碰，外面碰编译报错
+    FILE* f_;                         //   self.f —— 成员变量（C++ 必须先声明类型）
+};</code></pre>
+<table>
+<tr><th>C++ 写法</th><th>Python 等价物</th><th>含义</th></tr>
+<tr><td><code>FileGuard(...)</code>（和类同名的函数）</td><td><code>__init__</code></td><td><b>构造函数</b>：对象出生时自动执行</td></tr>
+<tr><td><code>~FileGuard()</code>（名字前带 ~）</td><td>（无；__del__ 最接近但不可靠）</td><td><b>析构函数</b>：对象死亡时<b>编译器保证自动调用</b>——所以「资源释放」可以搭它的便车</td></tr>
+<tr><td><code>f_</code>（写在类底部的变量声明）</td><td><code>self.f</code></td><td><b>成员变量</b>。区别：C++ 要先声明类型，Python 随用随挂</td></tr>
+<tr><td><code>public:</code> / <code>private:</code></td><td>（无，靠约定 _x）</td><td><b>访问控制</b>：private 后面的成员/函数只有类内部能用</td></tr>
+<tr><td>成员函数里直接写 <code>f_</code></td><td>成员函数里写 <code>self.f</code></td><td>C++ 的 <code>this</code> 是隐式的，写成员名自动指「当前这个对象的」</td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">🔧 所以 RAII 类到底在干嘛</div>
+<p>就是写一个「构造时拿资源、析构时放资源」的普通类。因为析构是编译器<b>保证</b>调的（函数正常结束、提前 return、抛异常都会调），所以资源必然被释放——你只是把「释放动作」塞进了一个必然被执行的函数里。FileGuard 翻译成 Python 思路就是：「<code>__init__</code> 里 open，__del__ 里 close」——但 Python 的 __del__ 时机不确定所以没人这么干，C++ 的析构时机是语言保证的，所以这么干成立。</p>
+</div>
+
+<h3 id="ch0-2">0.2 术语翻译表</h3>
+<p>面试官和后文嘴里这些词，全是同一批东西换着叫：</p>
+<table>
+<tr><th>术语</th><th>土话</th><th>一句话</th></tr>
+<tr><td>基类 / 父类 / Base</td><td>父类</td><td>被继承的（Python <code>class Dog(Animal)</code> 里的 Animal）</td></tr>
+<tr><td>派生类 / 子类 / Derived</td><td>子类</td><td>去继承的（上面的 Dog）</td></tr>
+<tr><td>成员变量 / 字段 / member</td><td>属性</td><td>对象肚子里存的数据（self.xxx）</td></tr>
+<tr><td>成员函数 / 方法</td><td>方法</td><td>对象能执行的动作</td></tr>
+<tr><td>构造 / 析构</td><td>出生 / 销毁</td><td>对象生命周期的两端</td></tr>
+<tr><td>实例化</td><td>造一个对象</td><td>从类到对象（new 一个出来）</td></tr>
+<tr><td>重载 overload</td><td>同名不同参</td><td>同一个函数名按参数类型选版本，编译期定（Python 没有）</td></tr>
+<tr><td>重写 override</td><td>子类改父类方法</td><td>子类把继承来的虚函数换成自己的版本</td></tr>
+</table>
+
+<h3 id="ch0-3">0.3 栈对象 vs 堆对象：同款类的两种活法</h3>
+<p>C++ 造对象有两种姿势，直接决定析构时机（Python 没这个选择困难——对象全在堆上，死活归 GC）：</p>
+<pre><code class="language-cpp">void demo() {
+    FileGuard g("a.txt");           // 姿势一：栈对象。g 这个对象本体就活在栈帧里
+                                    // 函数结束 → g 自动静音析构（fclose 自动执行）
+    FileGuard* p = new FileGuard("b.txt");
+                                    // 姿势二：堆对象。p 只是个指针（在栈上），
+                                    // 对象本体在堆上，函数结束它不会自动死
+    delete p;                       // 必须手动 delete 才触发析构；忘了 = 泄漏+文件没关
+}   // g 在这里自动析构；p 指向的堆对象若没 delete，就永远漂在堆上</code></pre>
+<div class="box mechanism"><div class="boxTitle">🔧 记住这张对照</div>
+<p><b>栈对象</b>（<code>T obj(args);</code>）：作用域结束<b>自动析构</b>——RAII 专用姿势，第 1 章例子里 <code>FileGuard g("a.txt")</code> 就是它。<b>堆对象</b>（<code>T* p = new T(args);</code>）：活得比函数长，但必须手动 delete；「把裸 new 交给智能指针管」（第 2 章）本质就是让它也自动死。Python 里 <code>g = FileGuard("a.txt")</code> 看着像姿势一，实际对象在堆上——C++ 的「对象直接住栈上」是 Python 没有的概念。</p>
+</div>
+
+</section>
+
+<!-- ================================================================ -->
+<section id="ch1">
+<h2>第 1 章 · 内存模型：对象的出生地<span class="tag"><span class="p0">P0 详讲</span> · 高频</span></h2>
+
+<h3 id="ch1-1">1.1 内存五区：一栋公寓楼</h3>
+<p>为什么出现这个问题：C++ 允许你直接操作地址，所以「变量放哪」不再是可以无视的实现细节——放哪一区，直接决定了它的<b>寿命</b>和<b>谁来管</b>。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：一栋公寓楼</div>
+<p>把进程的虚拟地址空间想成一栋楼：<b>代码区</b>是物业办公室（只读，谁都不许改）；<b>常量区</b>是图书馆藏书（<code>"hello"</code> 这种字面量，只读共享）；<b>全局/静态区</b>是大堂储物柜（程序启动就分配好，退出才收回）；<b>栈</b>是前台的一摞抽屉（函数进来推一格、出去弹一格，自动管理，但很小）；<b>堆</b>是地下自助仓库（想要多大自己申请，用完必须自己还，没人替你打扫）。</p>
+</div>
+
+<pre><code class="language-cpp">int g = 1;                 // 全局/静态区：大堂储物柜，main 之前就有
+const char* s = "hello";   // "hello" 在常量区（图书馆），指针 s 本身在栈
+
+void f() {
+    int a = 10;            // 栈：前台抽屉，f 结束自动弹掉
+    static int cnt = 0;    // 静态区：虽然写在函数里，住的是大堂储物柜
+    int* p = new int(20);  // 20 在堆（自助仓库）；指针 p 在栈
+    delete p;              // 堆上的必须自己还，否则泄漏
+}</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>30 秒版：</b>「进程内存分五区：代码区存指令、常量区存字面量、全局静态区存全局和 static 变量、栈管函数局部变量、堆管动态分配。核心区别是栈由编译器自动管理、空间小、分配快；堆由程序员手动管理、空间大、分配慢，容易泄漏。」</p>
+</div>
+
+<h3 id="ch1-2">1.2 栈 vs 堆：为什么一个快一个慢</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 机制</div>
+<p>栈分配 = <b>把栈顶指针挪一下</b>（一条 CPU 指令，纳秒级），回收 = 指针挪回去，天然 LIFO。堆分配慢在「找地方 + 记账」，这两个词下面拆开讲。</p>
+</div>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：堆分配器是二房东，OS 是大房东</div>
+<p>你的程序找 malloc/new 要内存，但分配器（如 glibc 的 ptmalloc）这个「二房东」手里得先有房。它的进货渠道是<b>操作系统</b>：以<b>页</b>为单位整批进货（Linux 一页 4KB，底层走 brk 或 mmap 系统调用）。所以每次 new 背后有两层：<b>多数时候</b>二房东库存里还有空房，直接从库存划一块给你——纯用户态操作，不惊动 OS，其实不算慢；<b>库存不够了</b>，才跑一趟大房东再进一批页——这一趟是系统调用，要陷进内核、做权限检查，才是真正的慢。这就是「可能还要向 OS 要新页」的意思：<b>不是每次都要，是要跨用户态/内核态边界进货时才贵</b>。</p>
+<p><b>记账</b>：划给你的每块内存都要记下大小（一般写在块头几个字节里），否则 free/delete 时不知道该还多少、还给谁。</p>
+<p><b>合并防碎片</b>：你还了一间 1KB，左边邻居是空的 2KB，右边是空的 3KB——二房东立刻拆墙把三间拼成 6KB 大间。不合并的话，仓库里全是零碎小隔间：明明总空余 5KB，却放不进一个 4KB 的请求（连续内存才是一块可用内存）。free 时的合并逻辑就是干这个的。</p>
+<p>对照栈为什么快：栈根本不用找地方（位置由调用层次定死）、不用记账（弹出即回收）、不用进货（栈空间程序启动时 OS 一次性划好 8MB）——三个慢因全躲开了。</p>
+</div>
+
+<table>
+<tr><th></th><th>栈</th><th>堆</th></tr>
+<tr><td><b>管理</b></td><td>编译器自动（函数返回即回收）</td><td>程序员手动（new/delete）</td></tr>
+<tr><td><b>大小</b></td><td>小，Linux 默认约 8MB，超了栈溢出</td><td>大，受限于虚拟内存</td></tr>
+<tr><td><b>速度</b></td><td>极快（移指针）</td><td>慢（查找+记账）</td></tr>
+<tr><td><b>生命周期</b></td><td>随函数调用栈帧</td><td>任意，delete 才死</td></tr>
+<tr><td><b>典型风险</b></td><td>返回局部变量地址（悬垂指针）</td><td>泄漏、双删、野指针</td></tr>
+</table>
+
+<div class="box counter"><div class="boxTitle">⛔ 反例：返回栈上地址 = 送别人一个已退房的房号</div>
+<pre><code>int* bad() {
+    int x = 42;
+    return &x;   // x 随栈帧销毁，返回的是已退房的房号
+}                // 调用方拿到悬垂指针，读到的值是垃圾</code></pre>
+</div>
+
+<h3 id="ch1-3">1.3 new/delete vs malloc/free：四维区别</h3>
+<p>malloc/free 是 C 时代的<b>库函数</b>，new/delete 是 C++ 的<b>运算符</b>——这一条是所有区别的根。</p>
+<ol>
+<li><b>构造与析构</b>：new 会调构造函数、delete 调析构函数；malloc 只给一块裸内存（类比：malloc 交毛坯房，new 交精装房还配管家）；</li>
+<li><b>类型安全</b>：new 返回具体类型指针，malloc 返回 <code>void*</code> 要手动 cast；</li>
+<li><b>失败行为</b>：malloc 失败返回 NULL，new 失败默认抛 <code>std::bad_alloc</code> 异常；</li>
+<li><b>可重载</b>：new/delete 是运算符，可以按类重载定制分配策略；malloc 不行。</li>
+</ol>
+<p class="small">底层关系：new 通常在内部调用 malloc 拿内存，然后在这块内存上调构造函数。另外 <code>new T[n]</code> 数组版必须配 <code>delete[]</code>——配错是未定义行为（数组版会在头部多记一个元素个数）。</p>
+
+<h3 id="ch1-4">1.4 内存泄漏与 RAII：C++ 的独门哲学</h3>
+<p>内存泄漏 = 堆上申请了、丢了地址、永远没还。C++ 没有垃圾回收（Python 有引用计数 + 分代 GC 兜底），那大项目怎么活？答案是 <b>RAII</b>。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：地弹簧门</div>
+<p>裸 new/delete 像普通门——进门的人（申请资源）必须记得随手关门（释放），忘了就敞一宿。RAII 像<b>地弹簧门</b>：把「关门」这个动作绑定在「门开着的这段时间」上——<b>资源的一生绑定对象的一生</b>：构造函数里拿资源，析构函数里放资源。函数无论正常 return、提前 return 还是抛异常，栈上对象<b>一定</b>被析构，资源<b>一定</b>被释放。</p>
+</div>
+
+<pre><code class="language-cpp">// RAII 最小实现：一个抱住文件的类
+class FileGuard {
+public:
+    FileGuard(const char* path) : f_(fopen(path, "r")) {}   // 构造 = 开门时拿资源
+    ~FileGuard() { if (f_) fclose(f_); }                    // 析构 = 地弹簧自动关门
+    FileGuard(const FileGuard&) = delete;                   // 禁拷贝（防双关门）
+    FileGuard& operator=(const FileGuard&) = delete;
+private:
+    FILE* f_;
+};
+
+void work() {
+    FileGuard g("a.txt");   // 之后无论 return 还是抛异常，fclose 必然执行
+    // ... 可能中途 return / throw，都不用管
+}</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「什么是 RAII？」30 秒版：</b>「Resource Acquisition Is Initialization——把资源的生命周期绑定到栈对象的生命周期：构造时获取、析构时释放。因为 C++ 保证栈对象在离开作用域时（包括异常展开时）必定析构，所以资源不会泄漏。Python 里的 <code>with</code> 语句、Java 的 try-with-resources 就是同一思想的语法糖，但 C++ 是语言级保证，智能指针、lock_guard 全是 RAII 的应用。」</p>
+<p class="small">加分一句：泄漏检测工具 valgrind / AddressSanitizer（编译加 <code>-fsanitize=address</code>），面试提一句即可。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch2">
+<h2>第 2 章 · 智能指针：谁来管对象的命<span class="tag"><span class="p0">P0 详讲</span> · 超高频</span></h2>
+
+<h3 id="ch2-1">2.1 为什么出现：裸指针三宗罪</h3>
+<p>裸指针 = 「借了不还、还了再用、没人记得还」的温床：<b>忘 delete（泄漏）、delete 两次（双删崩溃）、delete 后继续用（悬垂指针）</b>。既然 RAII 能绑资源，把「堆上的对象」也交给一个栈上的管家对象抱着，就得到智能指针——本质上<b>智能指针 = 抱着裸指针的 RAII 壳</b>。<code>&lt;memory&gt;</code> 头文件三件套按所有权模型分工：</p>
+<table>
+<tr><th></th><th>所有权模型</th><th>一句话</th><th>Python 类比</th></tr>
+<tr><td><code>unique_ptr</code></td><td>独占</td><td>一根枪只能一个人扛</td><td>无（最接近「唯一持有者」约定）</td></tr>
+<tr><td><code>shared_ptr</code></td><td>共享（引用计数）</td><td>多人合租，最后一手关灯</td><td>引用计数（<code>sys.getrefcount</code> 的手动挡）</td></tr>
+<tr><td><code>weak_ptr</code></td><td>观察（不拥有）</td><td>只留电话不留钥匙</td><td>weakref 模块</td></tr>
+</table>
+
+<h3 id="ch2-2">2.2 unique_ptr：独占，零开销</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 机制</div>
+<p>禁止拷贝（拷贝构造/赋值 = delete），只允许 <b>move</b>——所有权只能「移交」不能「复制」。不引入任何额外内存：<code>sizeof(unique_ptr&lt;T&gt;) == sizeof(T*)</code>（默认删除器时）。析构时自动 delete。它就是「带自动关门的裸指针」，不用它没理由用裸 new。</p>
+</div>
+<pre><code class="language-cpp">auto a = std::make_unique&lt;int&gt;(42);
+// auto b = a;                  // 编译错误！独占，不许拷贝
+auto b = std::move(a);           // OK：移交所有权，a 变 nullptr
+</code></pre>
+<p class="small">裸 new/delete、指针的拷贝，在 <code>unique_ptr</code> 面前都是历史写法——面试被问「现代 C++ 怎么管内存」，第一句就该是它。</p>
+
+<h3 id="ch2-3">2.3 shared_ptr：引用计数与控制块</h3>
+<p>共享所有权的核心是<b>引用计数</b>：每拷贝一次 +1，每析构一次 −1，<b>减到 0 的那个实例负责 delete 对象</b>。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：合租房的灯</div>
+<p>每个室友（shared_ptr 实例）搬进来，门口计数牌 +1；搬走 −1。<b>最后一个走的人负责关灯</b>（delete 对象）。但灯开关（控制块）是独立于房间（对象）的一块小牌子——牌子上有两个数字：<b>强计数</b>（几个室友）和<b>弱计数</b>（几个只留电话的人）。强计数到 0 关灯拆房间；强弱都到 0，连牌子一起拆。</p>
+</div>
+
+<div class="figwrap">
+<div class="figTitle">shared_ptr 的两块内存：对象 + 控制块</div>
+<div class="figSub">make_shared 把两块合并成一次分配；先 new 再构造 shared_ptr 则是两次分配</div>
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- 三个 shared_ptr 变量 -->
+  <rect x="30" y="40" width="150" height="70" rx="8" fill="#1c2129" stroke="#30363d"/>
+  <text x="105" y="68" fill="#e6edf3" font-size="13" text-anchor="middle">sp1 (栈上)</text>
+  <text x="105" y="92" fill="#8b949e" font-size="11" text-anchor="middle">对象指针 + 控制块指针</text>
+  <rect x="30" y="140" width="150" height="40" rx="8" fill="#1c2129" stroke="#30363d"/>
+  <text x="105" y="165" fill="#e6edf3" font-size="13" text-anchor="middle">sp2 = sp1</text>
+  <rect x="30" y="200" width="150" height="40" rx="8" fill="#1c2129" stroke="#30363d"/>
+  <text x="105" y="225" fill="#e6edf3" font-size="13" text-anchor="middle">sp3 = sp1</text>
+  <!-- 对象块 -->
+  <rect x="320" y="50" width="180" height="80" rx="8" fill="#12261e" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="410" y="82" fill="#3fb950" font-size="14" text-anchor="middle" font-weight="bold">对象 (堆)</text>
+  <text x="410" y="108" fill="#8b949e" font-size="11" text-anchor="middle">new 出来的 T</text>
+  <!-- 控制块 -->
+  <rect x="320" y="170" width="180" height="110" rx="8" fill="#1a1f3d" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="410" y="198" fill="#58a6ff" font-size="14" text-anchor="middle" font-weight="bold">控制块 (堆)</text>
+  <text x="330" y="224" fill="#e6edf3" font-size="12">强计数 = 3</text>
+  <text x="330" y="246" fill="#8b949e" font-size="12">弱计数 = 0</text>
+  <text x="330" y="268" fill="#8b949e" font-size="11">删除器 / 分配器</text>
+  <!-- 箭头 -->
+  <line x1="180" y1="75" x2="315" y2="85" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arr1)"/>
+  <line x1="180" y1="160" x2="315" y2="90" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arr1)"/>
+  <line x1="180" y1="220" x2="315" y2="95" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arr1)"/>
+  <line x1="180" y1="70" x2="315" y2="205" stroke="#58a6ff" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arr1)"/>
+  <text x="235" y="150" fill="#58a6ff" font-size="11">三个 sp 同时</text>
+  <text x="235" y="166" fill="#58a6ff" font-size="11">指控制块 +1 三次</text>
+  <text x="530" y="90" fill="#8b949e" font-size="11">强计数到 0</text>
+  <text x="530" y="106" fill="#8b949e" font-size="11">→ delete 对象</text>
+  <text x="530" y="222" fill="#8b949e" font-size="11">强弱都到 0</text>
+  <text x="530" y="238" fill="#8b949e" font-size="11">→ 释放控制块</text>
+</svg>
+<div class="legend"><span><i style="background:#3fb950"></i>被管理对象</span><span><i style="background:#58a6ff"></i>控制块（计数所在）</span></div>
+</div>
+
+<div class="box counter"><div class="boxTitle">⛔ 高频追问：shared_ptr 线程安全吗？</div>
+<p><b>标准答案分两截：</b>① <b>控制块的计数是原子的</b>——多个线程各自持有自己的 shared_ptr 副本拷贝/析构，计数不会乱；② <b>对象本身和同一个 shared_ptr 实例不保证</b>——多线程读写<b>同一个</b> sp 变量（如一个线程赋值一个线程析构）、或并发调用被管对象的成员，都要自己加锁。一句话：「<b>计数安全，对象不安全</b>」。</p>
+</div>
+
+<details><summary>展开：make_shared 为什么比 shared_ptr&lt;T&gt;(new T) 好</summary>
+<div class="inner">
+<ul>
+<li><b>一次分配</b>：make_shared 把对象和控制块<b>合在一块内存</b>（上图右半合并），<code>shared_ptr&lt;T&gt;(new T)</code> 是两次堆分配（先 new 再控制块）——分配次数减半、缓存局部性更好；</li>
+<li><b>异常安全</b>：C++17 前 <code>f(shared_ptr&lt;T&gt;(new T), g())</code> 若 g() 抛异常可能泄漏（求值顺序漏洞），make_shared 无此问题；</li>
+<li><b>代价</b>：对象和控制块同块 → 只要有 weak_ptr 活着（弱计数 &gt; 0），<b>整块内存都不能还</b>，对象那部分也跟着陪葬（不析构但占内存）。所以「弱引用长命」的场景有人反而用两次分配版。</li>
+</ul>
+</div>
+</details>
+
+<h3 id="ch2-4">2.4 循环引用：引用计数的死穴，weak_ptr 解药</h3>
+<p>引用计数有个天生缺陷：<b>两个人互相指着对方说"他还在用我"，于是谁都不肯走</b>。</p>
+
+<pre><code class="language-cpp">struct Son;                       // 前置声明
+struct Father {
+    std::shared_ptr&lt;Son&gt; son;     // 父持子：强引用
+    ~Father() { std::cout &lt;&lt; "~Father\n"; }
+};
+struct Son {
+    std::shared_ptr&lt;Father&gt; father;  // 子持父：也是强引用 —— 死穴在这
+    ~Son() { std::cout &lt;&lt; "~Son\n"; }
+};
+
+int main() {
+    auto f = std::make_shared&lt;Father&gt;();   // f 强计数 1
+    auto s = std::make_shared&lt;Son&gt;();      // s 强计数 1
+    f-&gt;son = s;      // s 强计数 2
+    s-&gt;father = f;   // f 强计数 2
+}   // main 结束：f、s 局部变量析构，各自强计数 2-1=1 —— 永远到不了 0！
+    // 两个析构函数都不会打印：内存泄漏，且无声无息</code></pre>
+
+<div class="box mechanism"><div class="boxTitle">🔧 机制与解药</div>
+<p>强计数到 0 才 delete，而这对父子各自被对方多持 1 次，形成死锁式的"计数永远 ≥ 1"。解药：<b>把"所有权"的一端降级为"观察权"</b>——子改持 <code>weak_ptr&lt;Father&gt;</code>，它<b>不增加强计数</b>（只加弱计数）。父的强计数只剩 main 里那 1 份，main 结束即归 0 → 触发链式析构，各自把对方释放掉。</p>
+</div>
+
+<pre><code class="language-cpp">struct Son {
+    std::weak_ptr&lt;Father&gt; father;   // 只留电话不留钥匙：不拥有，不计数
+    void callDad() {
+        if (auto f = father.lock())   // lock() 尝试升级回 shared_ptr
+            /* f 活着，安全使用 */;
+        // lock() 失败返回空 shared_ptr —— 说明 Father 已经死了
+    }
+};</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「讲讲智能指针 / 循环引用」60 秒版：</b>「智能指针是 RAII 套在裸指针上的壳，分三种所有权模型：unique_ptr 独占且零开销、不能拷贝只能 move；shared_ptr 用引用计数共享，控制块里存强/弱两个原子计数，强计数归零释放对象；weak_ptr 只观察不计数，用来打破循环引用——典型就是父子节点互相持有，只要一端降级为 weak 就解开了，用的时候 lock() 临时升级。shared_ptr 线程安全要分清：计数是原子的，但对象本身不安全。生产上默认 unique_ptr，确实需要共享才 shared_ptr，并且优先 make_shared。」</p>
+</div>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 常见追问（能答上就是加分）</div>
+<p><b>Q：weak_ptr 怎么知道对象死没死？</b> 控制块还活着（弱计数 &gt; 0），lock() 原子地检查强计数并尝试 +1，成功拿到 shared_ptr，失败返回空——所以控制块必须活得比对象久，这就是 2.3 图里"强弱都到 0 才拆牌子"的原因。</p>
+<p><b>Q：类内部要拿到管理自己的 shared_ptr 怎么办？</b> 直接 <code>shared_ptr&lt;T&gt;(this)</code> 会造出<b>第二个控制块</b>→ 双删。正确做法：继承 <code>std::enable_shared_from_this&lt;T&gt;</code>，调 <code>shared_from_this()</code>（内部存了 weak_ptr）。</p>
+</div>
+</section>
+<!-- ================================================================ -->
+<section id="ch3">
+<h2>第 3 章 · 虚函数：行为谁做主<span class="tag"><span class="p0">P0 详讲</span> · 超高频（C++ 面试的钉子户）</span></h2>
+
+<h3 id="ch3-1">3.1 为什么出现：静态绑定 vs 动态绑定</h3>
+<p>场景：你写了一个通用的 <code>draw(Shape* s)</code> 函数，希望传 Circle 就画圆、传 Square 就画方。<b>函数参数类型是 Shape*（编译期确定），实际对象是 Circle（运行期才知道）</b>——调谁的 draw？C++ 默认的答案是<b>静态绑定</b>：看指针/引用的<b>声明类型</b>，编译期就定死调 Shape::draw。要改成「看实际对象类型」，必须显式声明 <code>virtual</code>，切换到<b>动态绑定</b>。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：说明书 vs 查户口</div>
+<p>静态绑定 = 看<b>说明书</b>（声明类型）：「这东西登记的是 Shape，那就按 Shape 的说明书办事」，编译期一锤定音，快但死板。动态绑定 = <b>查户口</b>（实际对象）：先到对象家里翻出户口本（vptr 指向的 vtable），按真实身份办事。查户口要多跑一趟（两次内存间接跳转），这就是动态绑定的成本。</p>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">🔧 Python 对照（你熟的那套）</div>
+<p>Python 里<b>每个</b>方法调用都是动态绑定：<code>obj.draw()</code> 运行时查 <code>type(obj)</code> 的 MRO。C++ 反过来：<b>默认全是静态绑定</b>，只有标了 virtual 的函数才走查表——「C++ 是手动挡的 Python 动态派发」。代价换收益：非虚调用可内联、零开销；虚调用多两次间接寻址。</p>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">🔧 展开：「Python 每次都查」「C++ 静态绑定」具体在干什么</div>
+<p><b>Python——是的，每次都查。</b><code>obj.draw()</code> 每执行一次，解释器都走一遍「取 type(obj) → 沿 MRO 找 draw → 取到函数对象 → 调用」。哪怕循环里调一万次，这个查找动作每次都发生（CPython 内部有 inline cache 加速，但语义上就是每次查）。因为 Python 变量只是名字、对象一出生类型就焊死，所以<b>只能</b>每次按真实类型现场查。</p>
+<p><b>C++ 静态绑定——不是「在 vtable 里说明是什么类型」，而是压根不查表。</b>编译器生成机器码时，直接把目标函数的<b>地址写死在 call 指令里</b>：它看到 s 的声明类型是 Shape*，就生成「call Shape::draw 的固定地址」。运行时不管 s 实际指向 Circle 还是 Square，都跳那个写死的地址。所谓「编译期定死」= 查表动作在编译期就完成了、结论被烧进了机器码。</p>
+<p><b>C++ 动态绑定（标了 virtual）</b>：call 的目标不再是写死的地址，而是一小段「取对象头部 vptr → 取 vtable 第 N 格 → 跳过去」。查不查表，就这一个差别。</p>
+</div>
+
+<pre><code class="language-cpp">Shape* s = new Circle;
+s->draw();
+// draw 没标 virtual 时，编译器生成的指令大意：
+//   call 0x4012a0        ← Shape::draw 的地址，编译期写死。s 是谁？不关心
+// draw 标了 virtual 时：
+//   mov rax, [rdi]       ← 取对象头 8 字节，即 vptr（rdi 是 this/s）
+//   call [rax+0]         ← 跳到 vtable 第 0 格里存的地址（Circle::draw）
+// Python 语义上每次都做的是第二种查找，只是查的字段是 type(obj) 而非 vptr</code></pre>
+
+<h3 id="ch3-2">3.2 vtable/vptr 机制：多态的三个角色</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 机制</div>
+<ol>
+<li><b>每个「有虚函数的类」一张虚函数表（vtable）</b>：编译期生成，放在只读数据段，存的是该类各虚函数的实际地址——类比 Python 的 <code>type.__dict__</code>（类级、全类共享一份）；</li>
+<li><b>每个对象一个虚表指针（vptr）</b>：藏在对象头部（前 8 字节，64 位），<b>构造时由该类的构造函数设成指向自己类的 vtable</b>——类比 Python 每个对象的 <code>ob_type</code>；</li>
+<li><b>虚调用三步</b>：取对象的 vptr → 在 vtable 里按槽位（slot）找到函数地址 → 间接调用。槽位在编译期已按声明顺序定死。</li>
+</ol>
+</div>
+
+<div class="figwrap">
+<div class="figTitle">一次虚调用的完整链路：s->draw() 实际发生了什么</div>
+<div class="figSub">Shape 声明两个虚函数 draw/area；Circle 重写了两者；Square 只重写 draw</div>
+<svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/></marker>
+    <marker id="arr3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker>
+  </defs>
+  <!-- 调用代码 -->
+  <rect x="20" y="30" width="220" height="80" rx="8" fill="#0a0d12" stroke="#30363d"/>
+  <text x="30" y="58" fill="#79b8ff" font-size="13" font-family="Consolas">Shape* s = new Circle;</text>
+  <text x="30" y="82" fill="#79b8ff" font-size="13" font-family="Consolas">s->draw();</text>
+  <!-- 对象 -->
+  <rect x="320" y="20" width="170" height="100" rx="8" fill="#12261e" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="405" y="46" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">Circle 对象 (堆)</text>
+  <text x="335" y="72" fill="#e6edf3" font-size="12">+0: vptr ──────┐</text>
+  <text x="335" y="94" fill="#8b949e" font-size="11">radius 等成员…</text>
+  <!-- Circle vtable -->
+  <rect x="560" y="20" width="190" height="100" rx="8" fill="#1a1f3d" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="655" y="46" fill="#58a6ff" font-size="13" text-anchor="middle" font-weight="bold">Circle 的 vtable</text>
+  <text x="575" y="72" fill="#e6edf3" font-size="12">[0] &Circle::draw</text>
+  <text x="575" y="94" fill="#e6edf3" font-size="12">[1] &Circle::area</text>
+  <!-- 步骤说明 -->
+  <rect x="20" y="150" width="220" height="150" rx="8" fill="#1c2129" stroke="#30363d"/>
+  <text x="35" y="178" fill="#3fb950" font-size="13">① 取 s 指向的对象</text>
+  <text x="35" y="204" fill="#3fb950" font-size="13">② 读对象头部的 vptr</text>
+  <text x="35" y="230" fill="#3fb950" font-size="13">③ 查 vtable 的 draw 槽位</text>
+  <text x="35" y="256" fill="#3fb950" font-size="13">④ 间接调用 Circle::draw</text>
+  <text x="35" y="286" fill="#6e7681" font-size="11">编译期只定死"槽位 0 是 draw"，</text>
+  <text x="35" y="302" fill="#6e7681" font-size="11">地址是运行期查出来的</text>
+  <!-- 箭头：vptr 指向 vtable -->
+  <path d="M480 70 L 555 70" stroke="#58a6ff" stroke-width="1.8" marker-end="url(#arr3b)"/>
+  <!-- 箭头：代码到对象 -->
+  <path d="M240 70 L 315 70" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <!-- 多态结果 -->
+  <rect x="320" y="170" width="430" height="130" rx="8" fill="#17131b" stroke="#bc8cff" stroke-width="1.5"/>
+  <text x="535" y="198" fill="#bc8cff" font-size="13" text-anchor="middle" font-weight="bold">同一个 s->draw()，不同的实际对象 → 不同的 vtable → 不同的行为</text>
+  <text x="340" y="226" fill="#e6edf3" font-size="12">Shape* s = new Circle;  s->draw();  // 打印 "Circle"</text>
+  <text x="340" y="250" fill="#e6edf3" font-size="12">Shape* s = new Square;  s->draw();  // 打印 "Square"</text>
+  <text x="340" y="278" fill="#8b949e" font-size="11">若 draw 不是 virtual：两次都调 Shape::draw（看说明书不看户口）</text>
+</svg>
+</div>
+
+<div class="box counter"><div class="boxTitle">⛔ sizeof 三连（面试数字题）</div>
+<ul>
+<li><b>空类 sizeof = 1</b>：不为 0 是为了保证不同对象地址不同（各占至少 1 字节）；</li>
+<li><b>空类 + 一个虚函数 = 8</b>（64 位）：多出的 8 字节就是 vptr（不是虚表！虚表全类一份，对象里只存指针）；</li>
+<li><b>有成员再加虚函数：成员大小向 8 对齐后 + 8</b>。虚函数<b>个数</b>不影响对象大小（表在类级）。</li>
+</ul>
+</div>
+
+<h3 id="ch3-3">3.3 虚析构函数：为什么基类析构必须 virtual</h3>
+<p>这是虚函数考点的<b>最高频变体</b>。场景：你用多态方式管理对象（几乎总是如此，如容器里放 <code>unique_ptr&lt;Shape&gt;</code>），delete 的是基类指针——如果基类析构<b>不是</b> virtual，静态绑定生效：<b>只调基类析构，派生类析构被跳过</b>，派生类申请的资源全泄漏。</p>
+
+<pre><code class="language-cpp">struct Base {
+    ~Base() { puts("~Base"); }              // ❌ 非虚析构
+};
+struct Derived : Base {
+    int* big_ = new int[1'000'000];
+    ~Derived() { delete[] big_; puts("~Derived"); }
+};
+Base* p = new Derived;
+delete p;     // 只打印 ~Base！Derived::~Derived 没执行 → big_ 泄漏 4MB
+// 修复：Base 里写 virtual ~Base() = default;  → 先 ~Derived 再 ~Base ✅</code></pre>
+
+<div class="box mechanism"><div class="boxTitle">🔧 机制</div>
+<p>析构函数走的是和普通虚函数一样的 vtable 槽位。虚析构时，编译器生成的 delete 序列是：查 vptr → 调<b>最派生类</b>的析构 → 析构函数自动沿继承链逐层向上调基类析构（所以你从没手动写过 <code>~Base()</code> 调用）。一句口诀：<b>「要么基类析构 virtual，要么保证不被多态地 delete」</b>——后者的检查人是编译器管不了的，所以工程上一律给多态基类虚析构。</p>
+</div>
+
+<div class="box ask"><div class="boxTitle">🧑‍🎓 追问：构造函数为什么不能是虚的？</div>
+<p>因果倒置：虚调用<b>依赖</b> vptr，而 vptr 是<b>构造函数运行时才设置</b>的——蛋还没下就想靠孵蛋器？反过来析构可以虚，因为析构时对象（和 vptr）已经完整存在。</p>
+</div>
+
+<div class="box counter"><div class="boxTitle">⛔ 展开：构造/析构函数里调虚函数，调的是「当前层」的版本</div>
+<pre><code class="language-cpp">struct Base {
+    Base() { draw(); }              // 构造函数里调虚函数！
+    virtual void draw() { puts("Base::draw"); }
+};
+struct Derived : Base {
+    int* cache_ = new int[100];     // Derived 自己的成员
+    void draw() override { puts("Derived::draw"); cache_[0] = 1; }
+};
+Derived d;   // 打印 Base::draw，不是 Derived::draw！</code></pre>
+<p>逐步看 <code>Derived d;</code> 内部的时序：① 先跑 Base 的构造函数，<b>此刻 vptr 被设成指向 Base 的 vtable</b>——对象现在「还是个 Base」；② Base() 里调 draw() → 查表查到的自然是 Base::draw；③ Base 构造完，才轮到 Derived 的部分：vptr 改指 Derived 的 vtable、初始化 Derived 的成员、跑 Derived 的构造函数体。析构完全倒序：一进 ~Derived() 之后再往上走，vptr 也逐层改回去——在 ~Base() 里调 draw() 同样只会到 Base::draw。</p>
+<p><b>为什么这样设计</b>：Base() 执行时 Derived 的成员（cache_）还是垃圾，若调到 Derived::draw（它一上来就写 cache_[0]）等于访问未初始化内存。语言规定「构造到哪层，就当哪层用」，用失去多态换安全。</p>
+<p><b>Python 对照（重要差异）</b>：Python 的 <code>__init__</code> 里调 <code>self.draw()</code> <b>会</b>调到子类版本——因为 Python 对象一出生 ob_type 就焊死成 Derived，不存在「先当父类再变子类」的过程。所以「父类 __init__ 调了可被重写的方法、子类一重写父类初始化就被劫持」是 Python 的经典坑；C++ 用「构造期不做多态」直接把这类坑堵死了。两边是同族坑的两种处理。</p>
+</div>
+
+<h3 id="ch3-4">3.4 构造/析构顺序：对仗工整的两个清单</h3>
+<table>
+<tr><th></th><th>顺序</th><th>记忆法</th></tr>
+<tr><td><b>构造</b></td><td>① 基类（按继承声明顺序）→ ② 成员变量（按<b>类内声明</b>顺序，不是初始化列表顺序！）→ ③ 本类构造函数体</td><td>先打地基，再装家具，最后拎包入住</td></tr>
+<tr><td><b>析构</b></td><td>完全倒序：① 本类函数体 → ② 成员（声明倒序）→ ③ 基类</td><td>退房反着来：先搬自己东西，再拆家具，最后拆地基</td></tr>
+</table>
+<div class="box warnbox"><div class="boxTitle">⚠️ 展开：什么是「初始化列表」+ 那个经典坑（零基础版）</div>
+<p><b>初始化列表</b> = 构造函数参数括号后面、花括号前面，<b>以冒号开头的那一串</b>，作用是「成员出生时就带值」：</p>
+<pre><code class="language-cpp">class A {
+    int b;        // ←「声明顺序」指的是这里：成员在 class 里的书写先后
+    int a;        //    先写 b 后写 a → 编译器永远先造 b、后造 a
+public:
+    A() : a(1), b(a) {}   // ← 冒号后这串就是「初始化列表」
+};</code></pre>
+<p>相当于 Python 在 <code>__init__</code> 里写 <code>self.a = 1</code>。但 C++ 有条反直觉规则：<b>实际初始化顺序只看 class 里的声明顺序，初始化列表里写的先后不算数</b>。上例虽然列表里 a 写在前，真实执行却是——<b>第一步 b(a)</b>：此刻 a 还没轮到初始化、值是垃圾，b 被填了垃圾；<b>第二步 a(1)</b>：a 这才变成 1。结果 b 里躺着垃圾——这就是那条「未定义行为」的坑。修法：让声明顺序和依赖关系一致（<code>int a; int b;</code>），或别用成员初始化成员。</p>
+<p><b>和「构造函数体里赋值」的区别</b>：列表是<b>初始化</b>（出生即带值，一步到位）；函数体里写 <code>a = 1;</code> 是<b>先默认初始化、再赋值</b>（两步，类类型成员白付一次默认构造）。const 成员和引用成员只能用列表初始化（它们出生后不可再赋值）。面试答「区别」时就答这两条 + 声明顺序坑。</p>
+
+<p><b>为什么语法长这么怪（对比 Python 的 A(a=1, b=a)）——三个疑问一次答清：</b></p>
+<ul>
+<li><b>{ } 是函数体，不是返回值</b>：构造函数没有返回值。<code>A() : a(1) { }</code> 的 <code>{ }</code> 相当于 Python <code>def __init__(self):</code> 冒号后面的 body。执行顺序：先跑列表（成员全部出生带值）→ 再跑函数体（后续逻辑：校验、计算、打印）。<code>{ }</code> 空着 = 函数体啥也不干，纯靠列表。</li>
+<li><b>为什么初值放"外面"而不塞进参数括号</b>：C++ 把「成员出生」和「出生后干活」拆成两个阶段，列表专管前者。非拆不可的原因：const 成员、引用成员、没有默认构造的成员类型<b>必须出生那一刻就带值</b>——函数体里的 <code>a = 1;</code> 对它们属于「先出生再赋值」，直接非法。Python/Java 的字段都是先出生（None / null）再随便赋值，所以根本用不上这个语法。</li>
+<li><b>为什么声明顺序说了算、列表顺序不算</b>：析构必须按构造的<b>严格倒序</b>（后出生的先死——否则可能出现「a 还被 b 依赖着，a 先死了」）。但一个类可以有<b>多个构造函数</b>，每个构造函数的列表顺序可以写得不一样——若按列表顺序构造，同一类的对象构造顺序就不唯一，编译器要生成的析构顺序就没了唯一依据。所以语言锚定一个全类唯一不变的东西：<b>成员声明顺序</b>。列表只是「给谁塞了初值」的购物清单，不是执行顺序。工程规矩：列表书写顺序永远抄声明顺序，肉眼顺序 = 实际顺序，坑就消失了。</li>
+</ul>
+</div>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「讲讲虚函数机制」60 秒版：</b>「虚函数解决的是『基类指针调用派生类实现』的多态问题。实现上是三层结构：每个含虚函数的类有一张编译期生成的 vtable，存该类各虚函数的实际地址；每个对象头部藏一个 vptr，构造时指向本类的 vtable；虚调用就是取 vptr、查表、间接调用三步。所以有虚函数的类 sizeof 会多 8 字节——那是 vptr 不是虚表，虚表是类级共享的。基类析构必须 virtual，否则 delete 基类指针只会执行基类析构，派生类资源泄漏。C++ 默认静态绑定，这点和 Python 正好相反——Python 每次调用都查类型，C++ 只在 virtual 时查表。」</p>
+</div>
+<p class="small">P2 一句话区：纯虚函数 <code>virtual void f() = 0</code> 定义抽象类（不能实例化）；override 显式标记重写、final 禁止再重写/继承；菱形继承与虚继承见附录 A。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch4">
+<h2>第 4 章 · 拷贝与移动：对象怎么复制搬家<span class="tag"><span class="p0">P0</span> 深浅拷贝 + <span class="p1">P1</span> move/lambda</span></h2>
+
+<h3 id="ch4-1">4.1 深浅拷贝与三/五法则</h3>
+
+<div class="box mechanism"><div class="boxTitle">🔧 先补课：拷贝构造 / 拷贝赋值 / 移动构造 / 移动赋值是四个什么函数</div>
+<p>先别管深浅，这四个名字 = 「构造 vs 赋值」×「复印 vs 搬家」两个维度的组合。它们都是<b>类里的特殊成员函数</b>，你不写编译器就默认给一份（默认版对指针成员做浅拷贝——这正是问题的起点）。<b>你不手动调用它们</b>，编译器在你写出对应代码时自动调：</p>
+<table>
+<tr><th>四个函数长这样</th><th>你写出什么代码会触发它</th><th>干了什么</th></tr>
+<tr><td><code>Buf(const Buf&amp; o)</code><br>拷贝构造</td><td><code>Buf b = a;</code><br>或按值传参 <code>f(a)</code></td><td>用旧对象<b>造出一个新对象</b>（复印一份）</td></tr>
+<tr><td><code>Buf&amp; operator=(const Buf&amp; o)</code><br>拷贝赋值</td><td><code>b = a;</code>（b 早就存在）</td><td>把旧对象内容<b>抄进一个已有对象</b>（贴到旧纸上）</td></tr>
+<tr><td><code>Buf(Buf&amp;&amp; o)</code><br>移动构造</td><td><code>Buf c = std::move(a);</code></td><td>用旧对象<b>造新对象</b>，但不复印——把家当直接搬走（4.2 详讲）</td></tr>
+<tr><td><code>Buf&amp; operator=(Buf&amp;&amp; o)</code><br>移动赋值</td><td><code>c = std::move(a);</code></td><td>把旧对象家当<b>搬进一个已有对象</b></td></tr>
+</table>
+<p><b>Python 对照（关键！）</b>：Python 的 <code>b = a</code> 只是把名字 b 挂到 a 指的那个对象上——<b>既没复制对象也没复制引用，只是起了个别名</b>；想真复制得 <code>copy.deepcopy(a)</code>。C++ 的 <code>Buf b = a;</code> 是<b>真·复制出一个新对象</b>（必然跑拷贝构造），想「起别名」得写 <code>Buf&amp; r = a;</code>（引用）。分清这一条，四个函数就只剩两个维度了：<b>造新的（构造）还是灌进旧的（赋值）× 复印（copy）还是搬家（move）</b>。</p>
+<table>
+<tr><th colspan="2" rowspan="2"></th><th colspan="2">右边的东西</th></tr>
+<tr><th>有名字（左值）</th><th>没名字（右值 / 被 move）</th></tr>
+<tr><th rowspan="2">左边的变量</th><td><b>还不存在</b><br>（首次亮相）</td><td>拷贝<b>构造</b><br><code>Buf b = a;</code></td><td>移动<b>构造</b><br><code>Buf c = std::move(a);</code></td></tr>
+<tr><td><b>早已存在</b></td><td>拷贝<b>赋值</b><br><code>b = a;</code></td><td>移动<b>赋值</b><br><code>c = std::move(a);</code></td></tr>
+</table>
+<p><b>常见误解校准</b>：「有名字=拷贝、没名字=构造」把两件事混成了一句。<b>右边有没有名字，决定拷贝还是移动；左边存不存在，决定构造还是赋值</b>——两个独立的问题，对着上表十字定位。另注意：<code>inner(x)</code> 传参本质是「用 x 构造参数 s」（参数是个新对象），走的也是拷贝/移动构造——这正是 4.3 完美转发要解决的问题。</p>
+</div>
+
+<p>场景：一个对象内部有 <code>int* data_</code> 指向堆内存。默认拷贝（拷贝构造/拷贝赋值）是<b>逐成员复制</b>——指针被复制的是<b>地址</b>，不是地址上的东西。于是两个对象指向同一块堆内存，析构时<b> delete 两次</b>，崩溃。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：合租 vs 分居</div>
+<p><b>浅拷贝 = 合租</b>：两个人共用一个冰箱（堆内存），退租时都想把冰箱搬走（双删）。<b>深拷贝 = 分居</b>：搬走前新买一台一模一样的冰箱（重新分配并复制内容），各搬各的。<b>移动 = 直接把整个房子过户</b>：原房主拿到钥匙就跑（见 4.2）。</p>
+</div>
+
+<pre><code class="language-cpp">class Buf {
+public:
+    Buf(size_t n) : data_(new int[n]), n_(n) {}
+    // 深拷贝：分居，新买冰箱
+    Buf(const Buf& o) : data_(new int[o.n_]), n_(o.n_) {
+        std::copy(o.data_, o.data_ + o.n_, data_);
+    }
+    Buf& operator=(const Buf& o) {   // 赋值：先自检、再释放旧的、再深拷
+        if (this != &o) { delete[] data_; /* …同上… */ }
+        return *this;
+    }
+    ~Buf() { delete[] data_; }        // 析构：退租关灯
+private:
+    int* data_; size_t n_;
+};</code></pre>
+
+<div class="box mechanism"><div class="boxTitle">🔧 三法则 / 五法则（Rule of Three / Five）</div>
+<p>如果你需要手动写 <b>析构函数、拷贝构造、拷贝赋值</b>中的任何一个，那几乎肯定三个都需要（典型信号：类直接管理裸资源）。C++11 追加移动两件套成五法则：<b>析构 + 拷贝构造 + 拷贝赋值 + 移动构造 + 移动赋值</b>。现代答案是 <b>Rule of Zero</b>：类里只用 string/vector/智能指针管资源，五个全不用写——编译器生成的版本全部正确（还能白得移动语义）。</p>
+</div>
+<p class="small">P2 一句话区：RVO/NRVO（返回值优化）——函数按值返回局部对象时，编译器直接在调用方的内存上构造，连 move 都省了；C++17 起 PRV（纯右值）场景强制省略拷贝。被追问再展开，见附录 A。</p>
+
+<h3 id="ch4-2">4.2 右值引用与 move 语义：搬家 vs 复印</h3>
+<p>为什么出现：临时对象（如函数返回的 <code>string</code>、字面量拼出来的串）马上就要销毁，深拷贝它纯属浪费——<b>反正原主一会儿就死了，直接把家当搬走</b>。C++11 用「右值引用 <code>&amp;&amp;</code>」把「即将死亡的值」标记出来，让重载决议选中「搬家版」构造/赋值。</p>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：退租甩卖</div>
+<p>租客 A 明天就退租（右值，将亡值），他的冰箱对你（新对象）有两条路：<b>复印</b>（深拷贝：买台一样的，A 的冰箱随他扔）或<b>过户</b>（move：直接把 A 的冰箱搬走，A 房间留个空壳）。<code>std::move</code> 不是搬东西的动作，只是<b>给 A 盖了个「明天退租」的章</b>（把左值强制转型成右值引用），真正搬家发生在搬家公司的合同里（移动构造/移动赋值）。搬完之后 A 是「有效但未指定」状态——能析构、能重新赋值，但别假设里面还有东西。</p>
+</div>
+
+<pre><code class="language-cpp">std::string a = "一串很长很长的........................文本";
+std::string b = a;              // 拷贝：a 原封不动，b 深拷贝一份（O(n)）
+std::string c = std::move(a);   // 移动：c 掏空 a，只偷指针+长度（O(1)）
+// 此后 a 变空壳（实现相关，通常是空串）——别再用它的内容
+
+// vector 扩容时的收益（连接第 6 章）：
+// C++11 起，vector 增容搬元素用移动而非拷贝——string 列表扩容从 O(n·串长) 降到 O(n)
+</code></pre>
+
+<details><summary>展开：零基础版——「左值/右值」是啥？std::move 到底干了啥？搬家的代码长什么样？</summary>
+<div class="inner">
+<p><b>先补两个词。</b><b>左值</b>：有名字、之后还要用的东西（变量 a）。<b>右值</b>：没名字的临时值——<code>"hello" + " world"</code> 拼出来的临时串、函数按值返回的临时对象，用完这一行就销毁。</p>
+<pre><code class="language-cpp">std::string a = "hello";              // a 是左值：有名字，后面还要用
+std::string t = "hello" + " world";   // 右边先拼出临时串（右值）再拷给 t
+                                       // 临时串马上要销毁——深拷贝它纯属浪费</code></pre>
+<p><b>std::move 的真身（它真的什么都没搬）</b>：它只是一次强制类型转换，把 a 的「标签」从左值改成右值引用：</p>
+<pre><code class="language-cpp">std::string c = std::move(a);
+// std::move(a) 等价于 static_cast&lt;std::string&amp;&amp;&gt;(a) —— 只改标签，一个字节都没动
+// 改标签的唯一作用：让编译器在「拷贝构造 vs 移动构造」二选一时选中移动版</code></pre>
+<p><b>真正的搬运发生在移动构造函数里</b>（库作者写好的），代码大意就三步：</p>
+<pre><code class="language-cpp">string(string&amp;&amp; o) {      // 移动构造：参数是「将亡值」的引用
+    data_ = o.data_;       // ① 偷指针：把指向堆内存的指针拿过来，不复制内容
+    size_ = o.size_;       // ② 偷长度
+    o.data_ = nullptr;     // ③ 源置空：防止 a 析构时把这块内存 free 掉（现在归 c 了）
+}
+// 所以是 O(1)：只做了三次赋值，一个字节的内容都没复制
+// a 变「空壳」也是 ③ 造成的：指针被拿走，它手里什么都没有了</code></pre>
+<p>串起来看全程：<code>std::move(a)</code> 盖章 → 编译器选移动构造 → 移动构造偷指针并置空 → a 成空壳。「盖章 → 选中搬家合同 → 搬家公司进场」三步分别发生在三个地方。</p>
+</div>
+</details>
+
+<div class="box counter"><div class="boxTitle">⛔ 高频陷阱</div>
+<p><b>对同一个对象 move 两次</b> = 第二次从空壳里搬，通常搬出空/垃圾。move 完的对象只能析构或重新赋值。<code>const T&amp;&amp;</code> 万万不能当移动参数——const 挡住了「掏空」操作，重载决议反而落回深拷贝版本。</p>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">🔧 右值引用的价值不在单个参数，在「重载配对分流」</div>
+<p>单独看 <code>void f(string&amp;&amp; x)</code> 没什么用——它只是「只接收将亡值」的门槛。真正的价值是<b>同一个函数名配两个版本，让编译器自动分流</b>：</p>
+<pre><code class="language-cpp">void push_back(const string&amp; x);   // 版本一：左值走这 → 拷贝（源还要用，不敢动它）
+void push_back(string&amp;&amp; x);        // 版本二：右值走这 → 移动（源是将亡值，放心偷）
+
+vec.push_back(a);                  // a 有名字（左值）→ 编译器自动选版本一
+vec.push_back(make_str());         // 返回值没名字（右值）→ 自动选版本二（偷指针）
+</code></pre>
+<p>没有 <code>&amp;&amp;</code> 那个版本时，右值也只能进 <code>const&amp;</code> 版被深拷贝——白扔了「源反正要死」的情报。所以记忆口径：<b>右值引用不是「保证不拷贝不移动」，恰恰是给「移动版函数」一个存在的签名锚点，让编译器有地方把将亡值分流过去</b>。vector::push_back、string 拼接、容器插入全是这套双版本。</p>
+</div>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「什么是 move 语义」30 秒版：</b>「move 语义解决临时对象被无谓深拷贝的问题。右值引用 <code>T&amp;&amp;</code> 绑定将亡值，让类提供『搬家版』构造/赋值：不复制资源，只偷指针，源对象留空壳，O(n) 变 O(1)。std::move 本身不移动任何东西，只是把左值 cast 成右值引用、触发重载决议选移动版。典型收益场景是 vector 扩容和容器传大对象。」</p>
+</div>
+
+<h3 id="ch4-3">4.3 完美转发：把参数「原样」传下去</h3>
+<p>场景：你写一个<b>中间人函数</b>（工厂、包装器、线程池投递），收到参数后要转交给真正的构造函数/处理函数。麻烦来了：</p>
+<pre><code class="language-cpp">void inner(std::string s);              // 真正干活的函数（按值接收）
+
+void wrapper(std::string&amp;&amp; x) {          // 中间人：哪怕参数类型写成右值引用
+    inner(x);                           // ❌ 这里走的还是拷贝！
+}
+// 为什么？C++ 规定：只要一个东西「有名字」，它就是左值——
+//   x 虽然类型是 string&amp;&amp;，但它有名字，所以 inner(x) 匹配的是拷贝版
+//   右值传进来，过一道手就「降级」成左值，白白浪费了</code></pre>
+<p>解法是两个配件配合：</p>
+<pre><code class="language-cpp">template &lt;typename T&gt;
+void wrapper(T&amp;&amp; x) {                    // ① 万能引用：模板推导语境下的 T&amp;&amp;，
+                                         //    左值来了推导成 T&amp;，右值来了推导成 T&amp;&amp;
+    inner(std::forward&lt;T&gt;(x));           // ② forward：按推导出的原始属性转交——
+}                                        //    x 原来是右值 → 转出去还是右值（走移动）
+                                         //    x 原来是左值 → 转出去还是左值（走拷贝）
+// 对比 std::move(x)：无条件转右值（左值来了也被强搬，会出事故）
+// std::forward&lt;T&gt;(x)：有条件转——「原样转交」，这就是「完美」二字的含义</code></pre>
+<div class="box interview"><div class="boxTitle">🎭 面试作答（30 秒）</div>
+<p>「完美转发解决的是参数过中间人函数时右值降级成左值的问题。万能引用 <code>T&amp;&amp;</code> 在模板推导下左值右值都能绑、并记住原始属性；<code>std::forward&lt;T&gt;(x)</code> 据此原样转交。一句话区分：move 是无条件转右值，forward 是有条件转。」</p>
+</div>
+
+<h3 id="ch4-4">4.4 lambda：匿名函数对象</h3>
+<pre><code class="language-cpp">int base = 10;
+auto f1 = [base](int x) { return base + x; };     // 按值捕获：拷贝一份进闭包
+auto f2 = [&base](int x) { return base + x; };    // 按引用捕获：用原变量（注意悬垂！）
+auto f3 = [=](int x) { return base + x; };        // 全部按值
+auto f4 = [=, &base](int x) { return base + x; };// 默认按值，base 例外按引用
+// 本质：编译器生成一个匿名类，捕获变量 = 该类的成员变量，lambda 体 = operator()
+//        [base] 等价于 class __F { int base; int operator()(int x) const {...} };
+</code></pre>
+
+<details><summary>展开：看不懂「匿名类 / operator()」的从这里进（零基础版）</summary>
+<div class="inner">
+<p>先补一个 C++ 前置知识：这个语言里「能加括号调用的东西」除了函数，还有一种——<b>给类定义一个名字就叫 <code>operator()</code> 的成员函数</b>，这个类的对象就能当函数用，术语叫「仿函数」：</p>
+<pre><code class="language-cpp">struct Adder {                       // 一个普通类，没什么特别
+    int base;                        // 成员变量：肚子里记住一个数
+    Adder(int b) : base(b) {}        // 构造：把数存进肚子
+    int operator()(int x) const {    // 关键：成员函数硬取名叫 operator()
+        return base + x;             //   用肚子里的数 + 参数算结果
+    }
+};
+Adder f(10);      // 造一个对象，肚子里存着 10
+f(5);             // 对象居然能加括号调用！= f.operator()(5) = 15</code></pre>
+<p>现在把 lambda 和 Adder 摆在一起，逐项对应：</p>
+<pre><code class="language-cpp">auto f1 = [base](int x) { return base + x; };
+// 编译器在背后替你生成的，就是 Adder 那样的一个类：
+//   [base]        → 类里多一个成员变量 int base（按值捕获 = 拷贝一份存进对象肚子）
+//   [&base]       → 成员变成 int& 引用（不拷贝，直连原变量）
+//   (int x){...}  → operator() 的参数表和函数体
+//   f1(5)         → 调 f1.operator()(5)
+// 「匿名类」= 这个类没名字、你没写过、编译器自动生成——所以叫匿名</code></pre>
+<p>所以「lambda 本质是匿名类」展开就一句：<b>你写 lambda，编译器替你写一个只此一处的小仿函数类；捕获的变量变成它的成员变量，lambda 体变成它的 operator()</b>。这也顺带解释了悬垂捕获为什么危险：按引用捕获 = 成员是个引用、绑着外面的局部变量；局部变量随栈帧销毁后，f1 这个对象还活着，但它肚子里的引用指的东西没了——再用就是访问废墟。</p>
+</div>
+</details>
+<div class="box warnbox"><div class="boxTitle">⚠️ 两个高频追问</div>
+<p><b>① 悬垂捕获</b>：按引用捕获局部变量后，lambda 活得比它长（如存起来异步执行），变量随栈帧销毁 → 引用失效。异步回调默认按值捕获。</p>
+<p><b>② mutable 是干嘛的</b>——先看现象再讲原因：</p>
+<pre><code class="language-cpp">int hits = 0;
+auto bad = [hits]() { return ++hits; };          // ❌ 编译错误！
+auto ok  = [hits]() mutable { return ++hits; };  // ✅ 加 mutable 才编译通过
+// 原因回到上面的仿函数对照：[hits] 生成的类是
+//   struct __F { int hits; int operator()() const { ... } };
+//                                    ↑ 这个 const =「承诺不改任何成员变量」
+// ++hits 要改成员 hits → 和承诺冲突 → 编译器拒绝
+// mutable = 把 operator() 的 const 撤掉 → 承诺作废 → 能改了
+// 注意：改的永远是闭包肚子里的那份副本，外面的 hits 毫发无损</code></pre>
+<p><b>「hits 明明没写 const，哪来的冲突？」</b>——冲突不来自 hits 本身，来自函数签名末尾那个 const：<code>int operator()() const</code> 的尾部 const 修饰的是隐含的 <b>this 指针</b>（把它变成 <code>const __F*</code>）。函数体里的 hits 其实是 <code>this-&gt;hits</code>——经过 const 的 this 一看，它眼里的 hits 就是 const int，++ 不了。一句话：<b>成员没变 const，是「从 const 成员函数里看出去」它变 const 了</b>。这条规则对所有成员函数生效：const 成员函数里改任何普通成员，报的都是同一个错。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch5">
+<h2>第 5 章 · 关键字与类型系统<span class="tag"><span class="p1">P1 中讲</span> · 高频但可压缩</span></h2>
+
+<h3 id="ch5-1">5.1 static 四连问：一个关键字，四种身份</h3>
+<table>
+<tr><th>位置</th><th>效果</th><th>一句话</th></tr>
+<tr><td><b>函数内局部变量</b></td><td>存静态区，寿命=整个程序，但作用域仍在函数内；只初始化一次</td><td>「住大堂的抽屉」：函数走了东西还在</td></tr>
+<tr><td><b>全局变量/函数</b></td><td>内部链接：仅本编译单元（.cpp 文件）可见</td><td>文件私有，防跨文件重定义冲突</td></tr>
+<tr><td><b>类成员变量</b></td><td>类级共享一份，不随对象走；类外初始化；静态区</td><td>全班的公共储物柜，不属于任何一个学生</td></tr>
+<tr><td><b>类成员函数</b></td><td>无 this 指针 → 只能访问静态成员；可用 <code>类名::</code> 直接调</td><td>不绑定具体对象的工具方法</td></tr>
+</table>
+<pre><code class="language-cpp">// ① 函数内：改寿命——函数走了值还在，下次进来接着用上次的值
+void visit() {
+    static int count = 0;      // 只在第一次执行时初始化，之后跳过这句
+    ++count;                   // 每次调用 +1，值跨调用累积（Python 想实现得用函数属性/闭包）
+}
+
+// ② 全局 static：改可见性——本 .cpp 私有，别的文件看不见
+static int table_[256];        // 这个文件的「私有全局变量」
+static void helper() {}        // 别的 .cpp 想调？链接器：查无此人
+
+// ③ 类内静态成员变量：改归属——属于类不属于对象，全类共享一份
+class Conn {
+public:
+    static int alive_;         // 类里只声明
+};
+int Conn::alive_ = 0;          // 类外定义（全程序唯一一份），所有对象共享
+
+// ④ 类内静态成员函数：没有 this，不绑任何对象
+class Conn2 {
+    int fd_ = 0;                   // 普通成员：属于某个具体对象
+public:
+    static int alive() {           // 静态函数里不能碰 fd_（没有 this，不知道是哪个对象的）
+        return 0;
+    }
+};
+int n = Conn2::alive();        // 不用造对象直接调：类名::函数名</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p>按上表四种身份各一句话答完，收尾加：「记忆锚点是<b>两条线：改寿命（局部 static）或改可见性/归属（其余三种）</b>。」</p>
+</div>
+
+<h3 id="ch5-2">5.2 const 全家桶</h3>
+<pre><code class="language-cpp">const int* p1;        // 底层 const：指向的东西不能改（指针可改指向）
+int* const p2;        // 顶层 const：指针本身不能改指向（东西可改）
+const int* const p3;  // 双 const：都锁死
+// 速读口诀：const 在 * 左边锁内容，在 * 右边锁指针
+
+void f(const BigObj&amp; x);      // 参数 const 引用：只读访问 + 零拷贝（C++ 传大对象的默认姿势）
+class T {
+    int get() const;          // 成员函数 const：承诺不改任何成员（this 变成 const T*）
+};</code></pre>
+<p class="small">加分点：const 成员函数里确实要改某个成员时，给那个成员标 <code>mutable</code>（如缓存、计数器）。</p>
+
+<h3 id="ch5-3">5.3 四种 cast：为什么弃用 C 风格强转</h3>
+<table>
+<tr><th>cast</th><th>用途</th><th>检查时机</th><th>一句风险评级</th></tr>
+<tr><td><code>static_cast</code></td><td>数值转换、上行转换（派生→基类）、void* 还原</td><td>编译期</td><td>常用；下行转换（基类→派生）它能转但<b>不查真实类型</b>，转错=UB</td></tr>
+<tr><td><code>dynamic_cast</code></td><td>多态类型的下行/交叉转换</td><td><b>运行期（RTTI）</b></td><td>指针失败返回 nullptr、引用失败抛 bad_cast——代价是查 RTTI；<b>要求基类有虚函数</b>（没有 vtable 没得查）</td></tr>
+<tr><td><code>const_cast</code></td><td>加/去 const</td><td>编译期</td><td>唯一能去 const 的；但改真正只读对象仍是 UB——合法用途是「对接忘了写 const 的老 API」</td></tr>
+<tr><td><code>reinterpret_cast</code></td><td>位模式重解释（指针↔整数、不相关指针互转）</td><td>无检查</td><td>核弹级：说「我知道我在干嘛」；网络协议解析/硬件映射才用</td></tr>
+</table>
+
+<p>光看表没用，每种 cast 配一段「什么场景、写出什么代码、会发生什么」：</p>
+<pre><code class="language-cpp">// ① static_cast：日常"讲道理"的转换（数值、void* 还原）
+double d = 3.9;
+int i = static_cast&lt;int&gt;(d);          // 3，砍小数——等价 Python 的 int(d)
+void* raw = malloc(64);
+int* p = static_cast&lt;int*&gt;(raw);      // malloc 返回 void*，必须还原回具体类型才能用
+
+// ② dynamic_cast：多态类型"验明正身"的下行转换（基类指针 → 子类指针）
+Shape* s = new Circle;                // 你手里是基类指针，但想调 Circle 独有的方法
+if (Circle* c = dynamic_cast&lt;Circle*&gt;(s))    // 运行期查户口：s 真是 Circle 吗？
+    c-&gt;setRadius(5);                  // 是 → 转换成功，安全调 Circle 独有方法
+// 若 s 实际是 Square → 返回 nullptr，if 不进——不崩、可控降级
+// 这就是它比 static_cast 强的地方：static_cast 也能转基类→子类，但它不查，
+// 转错了照样给你个假指针，一用就未定义行为
+
+// ③ const_cast：专门加/去 const（唯一合法高频场景 = 接忘写 const 的老 API）
+void oldApi(char* s);                 // 十年前的老代码，参数忘了写 const
+const char* msg = "config";
+oldApi(const_cast&lt;char*&gt;(msg));       // 不转编译不过；前提是你确信 oldApi 不改内容
+
+// ④ reinterpret_cast：按位重解释，网络协议解析才用
+uint8_t packet[4] = {0x12, 0x34, 0x56, 0x78};
+uint32_t* asInt = reinterpret_cast&lt;uint32_t*&gt;(packet);  // 这 4 个字节直接当 int 读
+// 「这段字节流按头部结构体解释」——网络/二进制协议解析的日常，别处别用
+</code></pre>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p>「C 风格强转一句话说不清自己干了哪件事，四种 cast 把意图分开、把危险的单独点名——reinterpret 在代码 review 里一眼被抓。」追问 dynamic_cast 原理就接第 3 章：「它沿 RTTI（每个多态类一份 type_info，vtable 里有指针）做运行期类型比对。」</p>
+</div>
+
+<h3 id="ch5-4">5.4 指针 vs 引用：五维对照</h3>
+<table>
+<tr><th></th><th>指针</th><th>引用</th></tr>
+<tr><td>可否为空</td><td>可以（要判空）</td><td><b>必须绑定，不存在空引用</b></td></tr>
+<tr><td>可否重绑</td><td>可以改指向</td><td>绑死一辈子（之后赋值都是改被引对象）</td></tr>
+<tr><td>sizeof</td><td>指针本身 8 字节</td><td>取被引对象大小（编译视角无独立实体）</td></tr>
+<tr><td>多级</td><td>有二级指针</td><td>没有「引用的引用」</td></tr>
+<tr><td>底层实现</td><td colspan="2" style="text-align:center">主流编译器都按<b>自动解引用的常量指针</b>实现——但标准没规定，语义上引用是「别名」</td></tr>
+</table>
+<h3 id="ch5-5">5.5 * / &amp; / &amp;&amp;：同一个符号的三种角色</h3>
+<p>这三个符号最混淆的根源：<b>同一个符号在「声明里」和「表达式里」是两个完全不同的东西</b>。判断角色只看位置：</p>
+<table>
+<tr><th>符号</th><th>写在声明里（类型位置）</th><th>写在表达式里（语句位置）</th></tr>
+<tr><td><code>*</code></td><td>指针类型：<code>int* p;</code>（p 是存地址的变量）</td><td>解引用：<code>*p</code>（顺着地址取里面的东西）</td></tr>
+<tr><td><code>&amp;</code></td><td>左值引用（别名）：<code>int&amp; r = a;</code></td><td>取地址：<code>&amp;a</code>（拿到 a 的地址，类型 int*）</td></tr>
+<tr><td><code>&amp;&amp;</code></td><td>右值引用（绑将亡值，见 4.2）；模板推导语境下成万能引用（见 4.3）</td><td>（表达式里没有对应用法）</td></tr>
+</table>
+<pre><code class="language-cpp">int a = 10;
+int* p = &amp;a;     // &amp; 在表达式里：取 a 的地址，塞给 p（* 在类型里：p 是指针）
+int&amp; r = a;      // &amp; 在类型里：r 是 a 的别名，此后 r 就是 a
+int b = *p;      // * 在表达式里：顺着 p 里的地址取值 → 10
+int&amp;&amp; rr = 20;   // &amp;&amp; 在类型里：右值引用，绑字面量 20 这个将亡值</code></pre>
+<p><b>指针的问题清单</b>（被问「指针有什么坑」的答题弹药）：① <b>可能为空</b>（用前必须判空，引用天生免检）；② <b>可能悬垂</b>（指向的对象已死：返回局部变量地址、delete 后继续用）；③ <b>可被随意拷贝</b>（两个指针指向同一块堆内存，双双 delete = 双删崩溃）；④ <b>算术越界</b>（p+10 没人检查）。</p>
+<table>
+<tr><th>工具</th><th>① 空</th><th>② 悬垂</th><th>③ 双删</th><th>说明</th></tr>
+<tr><td>普通引用 <code>T&amp;</code></td><td><b style="color:var(--ok)">解决</b></td><td>没解决</td><td><b style="color:var(--ok)">解决</b></td><td>必须绑定（天生非空）；不可重绑、拷贝引用=拷贝对象，无「两个引用各删一次」问题。但<b>悬垂引用照样存在</b>：返回局部变量的引用一样是废墟</td></tr>
+<tr><td>unique_ptr / shared_ptr</td><td>没解决（可空）</td><td><b style="color:var(--ok)">基本解决</b></td><td><b style="color:var(--ok)">解决</b></td><td>RAII 自动释放（不泄漏不悬垂）；unique 禁拷贝、shared 引用计数，双删绝迹。<b>注意 ① 没解决</b>——智能指针照样可为 nullptr，判空照旧</td></tr>
+</table>
+<p>所以不是「智能指针包圆 ①②③」：它接管的是<b>生命周期类</b>问题（②③），可空性（①）是它从指针继承来的属性——有时反而是特性（可空=「暂无对象」的合法状态）。</p>
+
+<p><b>传数组的三种写法</b>（前两种是同一个东西）：</p>
+<pre><code class="language-cpp">void f(int* arr, int n);      // 写法一：指针+长度（最常用）
+void f(int arr[], int n);     // 写法二：看着传数组，实际编译器自动退化成 int*（和写法一完全等价！）
+void f(int arr[10], int n);   // 写法三：方括号里的 10 被编译器无视，还是退化成 int*
+void g(int (&arr)[10]);       // 真·数组引用：不退化，长度 10 编进类型里——但不通用（只能接长度恰为 10 的数组）
+// 「退化」= 数组名在传参时自动变成「指向首元素的指针」，长度信息丢失 → 所以才必须额外传 n</code></pre>
+
+<p><b>传参决策表（「C++ 怎么传参」的总答案）</b>：</p>
+<table>
+<tr><th>传参写法</th><th>实际传了什么</th><th>Python 类比</th></tr>
+<tr><td><code>void f(int x)</code> 基本类型</td><td><b>传值</b>：拷贝一份，函数内改动不影响外面</td><td>不可变对象传参的效果</td></tr>
+<tr><td><code>void f(BigObj o)</code> 类类型传值</td><td>⚠️ <b>拷贝构造整个对象</b>——可能很贵，C++ 性能坑第一名（Python 没有「传值复制对象」概念，最易漏防）</td><td>（无对应）</td></tr>
+<tr><td><code>void f(int* p)</code> 指针</td><td>传地址，但<b>地址值本身也是拷贝的</b>：改 p（改指向）外面无感，改 <code>*p</code>（进屋）才联动</td><td>可变对象传参</td></tr>
+<tr><td><code>void f(int&amp; r)</code> 引用</td><td>传别名：r 就是原对象本身，怎么改都是它（不存在「改指向」）</td><td>可变对象传参（最接近的写法）</td></tr>
+<tr><td><code>void f(int arr[])</code> 数组名</td><td>退化成指针，传首元素地址（长度丢失，所以配 n）</td><td>list 传引用</td></tr>
+</table>
+<pre><code class="language-cpp">std::string a = "hi";
+void f(std::string s)  { s += "x"; }    // f(a) 后 a=="hi"：改的是副本，外面无感
+void g(std::string&amp; s) { s += "x"; }    // g(a) 后 a=="hix"：改别名 = 改原对象
+void h(std::string* p) { *p += "x"; }   // h(&amp;a) 后 a=="hix"：解引用进屋改
+void k(std::string* p) { p = nullptr; } // k(&amp;a) 后 a=="hi"：p 是地址副本，改 p 本身外面无感
+
+// 工程铁律（面试标准答案）——判断标准就一条：拷贝便宜吗？
+void f(const BigObj&amp; x);   // 只读入参 → const 引用：零拷贝 + 不可修改（大对象默认姿势）
+void f(BigObj&amp; x);         // 要改原对象 → 非 const 引用
+void f(BigObj&amp;&amp; x);        // 接管所有权/移动 → 右值引用（配重载分流，见 4.2）
+// 口诀：基本类型传值，大对象 const 引用，要改就非 const 引用，要偷就 &amp;&amp;
+// int 拷 4 字节无所谓；vector 拷十万条是事故</code></pre>
+<p class="small">P2 一句话区：inline 现代意义主要是「允许多重定义」（ODR 豁免），优化是编译器自己的事；volatile 只保证「每次都真读内存」（禁用寄存器缓存），<b>不是线程同步工具</b>——见附录 A。</p>
+</section>
+<!-- ================================================================ -->
+<section id="ch6">
+<h2>第 6 章 · STL 容器高频<span class="tag"><span class="p0">P0 详讲</span> · vector/map/迭代器失效是钉子户</span></h2>
+
+<h3 id="ch6-1">6.1 vector：三指针与扩容倍增</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 机制：vector 就是三个指针</div>
+<p>vector 内部只有三个指针：<code>_start</code>（数据开头）、<code>_finish</code>（已用末尾）、<code>_end_of_storage</code>（容量末尾）。<code>size() = _finish - _start</code>，<code>capacity() = _end_of_storage - _start</code>。连续内存是它一切特性的根：随机访问 O(1)、缓存友好、但中间插删要搬移元素。</p>
+</div>
+
+<p><b>扩容</b>：push_back 时 size == capacity，就申请一块更大的内存（GCC 2 倍、MSVC 1.5 倍），把旧元素搬过去（C++11 起用移动，呼应 4.2），释放旧内存。<b>为什么倍增而不是 +1</b>：若每次只加 1，n 次 push_back 总搬运量 1+2+…+n = O(n²)；倍增让总量收敛到 O(n)，单次<b>均摊</b> O(1)——和 Python list 扩容、Redis 字典渐进 rehash 是同一个思想。</p>
+
+<div class="box warnbox"><div class="boxTitle">⚠️ 扩容 = 全体迭代器/指针/引用作废</div>
+<p>旧内存整块释放，所有指向旧元素的迭代器、指针、引用全部悬垂。这是「vector 插入会使迭代器失效」的根因，也是 6.2 大全表的第一行。</p>
+</div>
+
+<h3 id="ch6-2">6.2 迭代器失效大全：一张表答所有变体</h3>
+<table>
+<tr><th>容器</th><th>插入</th><th>删除</th></tr>
+<tr><td><b>vector / string</b></td><td>引发扩容 → <b>全部失效</b>；不扩容 → 插入点<b>之后</b>失效</td><td>删除点及<b>之后</b>全部失效</td></tr>
+<tr><td><b>deque</b></td><td>中间插入 → <b>全部失效</b>；两端插入 → 迭代器失效但<b>引用不失效</b></td><td>中间删除 → 全部失效；两端删除 → 仅指向被删元素的失效</td></tr>
+<tr><td><b>list / map / set</b><br>（节点式容器）</td><td><b>不失效</b>（新节点是新分配的，旧节点没动）</td><td>仅<b>指向被删元素</b>的失效，其余不动</td></tr>
+<tr><td><b>unordered_map</b></td><td>插入不失效；<b>rehash 时迭代器全失效</b>（引用不失效）</td><td>仅指向被删元素的失效</td></tr>
+</table>
+
+<div class="box counter"><div class="boxTitle">⛔ 经典陷阱：边遍历边 erase</div>
+<pre><code class="language-cpp">std::vector&lt;int&gt; v{1, 2, 3, 4, 5};
+// ❌ 错误写法：erase 后 it 已失效，++it 是未定义行为（运气好才不崩）
+for (auto it = v.begin(); it != v.end(); ++it)
+    if (*it % 2 == 0) v.erase(it);
+
+// ✅ 标准写法：erase 返回"下一个有效迭代器"，用它续命
+for (auto it = v.begin(); it != v.end(); )
+    if (*it % 2 == 0) it = v.erase(it);
+    else ++it;
+
+// ✅ C++20 一行流：std::erase_if(v, [](int x){ return x % 2 == 0; });</code></pre>
+</div>
+
+<h3 id="ch6-3">6.3 map vs unordered_map：红黑树 vs 哈希表（超高频对比）</h3>
+<table>
+<tr><th></th><th>map</th><th>unordered_map</th></tr>
+<tr><td><b>底层</b></td><td>红黑树（平衡二叉搜索树）</td><td>哈希表（拉链法，桶数组+链表/红黑树节点）</td></tr>
+<tr><td><b>查找/插入/删除</b></td><td>稳定 O(log n)</td><td>均摊 O(1)，<b>最坏 O(n)</b>（哈希冲突全撞一个桶）</td></tr>
+<tr><td><b>有序性</b></td><td>按 key 有序，迭代即中序遍历</td><td>无序</td></tr>
+<tr><td><b>内存</b></td><td>每节点带父/左右指针+颜色位，开销大且分散</td><td>桶数组 + 节点，负载因子超阈值（默认 1.0）触发 rehash</td></tr>
+<tr><td><b>选型</b></td><td>要有序遍历 / 要 lower_bound / key 需要严格弱序</td><td>纯点查，追求平均性能（绝大多数后端场景默认它）</td></tr>
+</table>
+
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「map 和 unordered_map 怎么选？」30 秒版：</b>「底层一个是红黑树一个是哈希表：map 稳定 O(log n) 且按 key 有序，支持范围查询和 lower_bound；unordered_map 均摊 O(1) 但最坏 O(n)、无序，负载因子超阈值会 rehash 导致迭代器失效。需要有序或范围查询用 map，纯点查默认 unordered_map——前提是 key 可哈希且哈希函数质量好。」</p>
+<p class="small">被追问「为什么红黑树不用 AVL」：AVL 更平衡（查询略快）但插删旋转次数多；红黑树是「查询与修改的折中」，工程通用性更强。一句话即可。</p>
+</div>
+
+<h3 id="ch6-4">6.4 底层结构速览：其余容器一句话</h3>
+<table>
+<tr><th>容器</th><th>底层</th><th>一句话记忆</th></tr>
+<tr><td><b>list</b></td><td>双向链表</td><td>插删 O(1) 不失效迭代器，但不支持随机访问、缓存不友好</td></tr>
+<tr><td><b>deque</b></td><td>分段数组 + 中控 map</td><td>「两端都快的 vector」：头尾插删 O(1)，中间慢；管它叫 map 的中控数组存的是各段指针</td></tr>
+<tr><td><b>priority_queue</b></td><td>vector 上堆的二叉堆</td><td>堆顶 O(1)、插删 O(log n)；默认大根堆，要小根堆写 <code>greater&lt;T&gt;</code></td></tr>
+<tr><td><b>string</b></td><td>SSO 小串优化</td><td>短串（通常 ≤15 字节）直接存在对象内部（栈），长串才上堆——见附录 A</td></tr>
+</table>
+<p class="small">加分一句话：<code>emplace_back(args...)</code> vs <code>push_back(T(args))</code>——前者在容器内存上<b>原地构造</b>，省掉临时对象和一次移动/拷贝；<code>reserve(n)</code> 提前扩容可以避免反复搬家的开销（压测场景常考点）。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch7">
+<h2>第 7 章 · 并发编程<span class="tag"><span class="p0">P0 详讲</span> · C++ 后端必考</span></h2>
+
+<h3 id="ch7-1">7.1 mutex 家族与两种 RAII 锁</h3>
+<p>裸调 <code>lock()/unlock()</code> 的问题和裸 new/delete 一样：中间 return 或抛异常就忘了 unlock，死锁。所以同样是 RAII 出场——<b>互斥量也是一种资源</b>，「锁的一生绑定锁对象的一生」。</p>
+<table>
+<tr><th></th><th>lock_guard</th><th>unique_lock</th></tr>
+<tr><td><b>定位</b></td><td>最简作用域锁</td><td>全能版</td></tr>
+<tr><td><b>加/解锁时机</b></td><td>构造即锁、析构即解（写死）</td><td>可 <code>lock()/unlock()</code> 手动、可延迟加锁（<code>defer_lock</code>）、可移动</td></tr>
+<tr><td><b>条件变量配套</b></td><td>❌（cv.wait 需要中途解锁再加锁，它做不到）</td><td>✅（wait 内部要求能操作锁）</td></tr>
+<tr><td><b>开销</b></td><td>零额外（通常不存锁状态）</td><td>多一个「是否持有」标记，略重</td></tr>
+</table>
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p>「默认 lock_guard，需要条件变量或手动控制锁范围才 unique_lock。一句话：<b>lock_guard 是地弹簧门，unique_lock 是带手动开关的地弹簧门</b>。」多锁场景补一句 <code>std::scoped_lock(l1, l2)</code>——C++17 死锁免死金牌，内部一次性按避免死锁的顺序拿锁。</p>
+</div>
+
+<h3 id="ch7-2">7.2 条件变量与虚假唤醒</h3>
+<p>场景：消费者线程要等队列非空。忙等（while 轮询）烧 CPU；睡眠固定时间又慢。条件变量 = <b>「排队取号睡觉，柜台按号叫醒」</b>：wait 时<b>原子地</b>「放锁 + 睡觉」（放锁是关键，抱着锁睡觉谁也生产不了），被 notify 后醒来重新抢锁、从 wait 处继续。</p>
+
+<pre><code class="language-cpp">std::mutex m;
+std::condition_variable cv;
+std::deque&lt;int&gt; q;
+
+void consumer() {
+    std::unique_lock&lt;std::mutex&gt; lk(m);       // 必须 unique_lock（wait 要操作锁）
+    cv.wait(lk, []{ return !q.empty(); });    // ← 等价于 while(!pred) wait(lk);
+    int x = q.front(); q.pop_back();
+}
+void producer(int v) {
+    { std::lock_guard&lt;std::mutex&gt; lk(m); q.push_back(v); }
+    cv.notify_one();                          // 出锁后再叫号，减少被叫醒又抢不到锁的空转
+}</code></pre>
+
+<div class="box mechanism"><div class="boxTitle">🔧 看不懂 producer 里的裸花括号？——那是 Python 的 with 块</div>
+<pre><code class="language-cpp">void producer(int v) {
+    { std::lock_guard&lt;std::mutex&gt; lk(m); q.push_back(v); }
+    //↑ 这对花括号 = 一个「局部作用域块」：块里声明的变量，出块就销毁
+    cv.notify_one();
+}</code></pre>
+<p>C++ 允许在任何地方用一对 <code>{ }</code> 圈出一块作用域。这行代码的完整含义：<code>lock_guard</code> 在块内构造（= 加锁），push_back 干活，然后<b>出块 → lk 析构 → 自动解锁</b>。等价的 Python 写法就是：</p>
+<pre><code>def producer(v):
+    with lock:            # 进块加锁
+        q.append(v)
+    # 出块自动解锁
+    cv.notify()</code></pre>
+<p><b>为什么要圈这么小</b>：精确控制锁的持有范围——数据塞完立刻放锁。notify 特意留在块外：它不碰队列、不需要锁；而且若抱着锁 notify，被叫醒的消费者立刻抢锁必然失败、白醒一场。先放锁再叫号，被叫醒的人才有机会直接拿到锁——这就是注释「出锁后再叫号」的意思。</p>
+</div>
+
+<div class="box counter"><div class="boxTitle">⛔ 为什么必须用循环/谓词（虚假唤醒）</div>
+<p>两个原因：<b>① OS 层虚假唤醒</b>——pthread 实现允许没 notify 也醒（性能原因），醒了队列可能还是空的；<b>② 丢失/抢占唤醒</b>——notify_one 叫醒多个等待者抢锁时，别的消费者可能抢先把你等的那条数据拿走了（惊群后白醒）。所以醒来后<b>必须重查条件</b>，不满足接着睡。<code>wait(lk, pred)</code> 就是官方封装的 while 循环。</p>
+</div>
+<div class="box ask"><div class="boxTitle">🧑‍🎓 高频追问：为什么 wait 必须持锁？</div>
+<p>等待的条件本身（队列）是共享数据，不持锁地「查条件→睡觉」两步之间可能被生产者插队：刚查完空、还没睡下，对方塞了数据还 notify 了——然后你才睡下，这个唤醒就<b>丢了</b>，可能永远睡死。wait 的「放锁+睡觉」原子性就是为了关死这个窗口。这也是「为什么 wait 要把锁交出去」的镜像答案：不放锁，生产者进不了临界区，永远没法 notify。</p>
+</div>
+
+<h3 id="ch7-3">7.3 atomic 与 CAS：无锁计数器</h3>
+<p>为什么 <code>counter++</code> 多线程不安全：它看着是一行，实际是「读-改-写」三条机器指令：</p>
+<pre><code class="language-cpp">counter++;   // 编译成三条指令：
+             //   ① 从内存把 counter 读进寄存器
+             //   ② 寄存器里的值 +1
+             //   ③ 把寄存器写回内存</code></pre>
+<p>两个线程的各三条指令可以任意交错，丢更新就丢在交错上：</p>
+<pre><code>counter 初始 5，A、B 各执行一次 ++，期望结果 7
+线程A                     线程B
+① 读到 5
+                          ① 读到 5        ← B 也在 5 的基础上读
+② 加 1 → 6
+                          ② 加 1 → 6
+③ 写回 6
+                          ③ 写回 6        ← 两次 ++ 只涨了 1，B 把 A 的更新覆盖了</code></pre>
+<div class="box mechanism"><div class="boxTitle">🔧 和 Redis 什么关系——同一个问题的两种命运</div>
+<p>「读-改-写不是原子的」这个问题你在 Redis 那里见过：为什么 Redis 的 INCR 是原子的？因为 Redis <b>单线程</b>执行命令——一个 INCR 的读改写独占完成，中间插不进另一个客户端的 INCR，相当于「天然有人排队，三步不被打断」。C++ 多线程没有这个保护，得自己造原子性：mutex = 自己拉排队栏杆把三步圈起来；atomic = CPU 原子指令把三步焊成真·一条指令。一句话：<b>Redis 靠单线程躲开、C++ 靠原子指令/锁解决——同一个问题的两种工程解</b>。</p>
+</div>
+<p>所以解法分两档：</p>
+<ul>
+<li><b>mutex</b>：互斥整段代码，重（涉及内核态 futex 切换）；</li>
+<li><b>atomic</b>：单个变量的原子读改写，CPU 单指令级（x86 的 lock 前缀），轻。<code>std::atomic&lt;int&gt;</code> 的 <code>++</code>、<code>load()</code>、<code>store()</code> 都是原子的。</li>
+</ul>
+<div class="box mechanism"><div class="boxTitle">🔧 CAS（Compare-And-Swap）：无锁结构的积木</div>
+<p><code>compare_exchange_weak/strong(expected, desired)</code>：值还等于 expected 就换成 desired 返回 true，否则把当前值写回 expected 返回 false。典型用法是<b>自旋重试</b>：读旧值 → 算新值 → CAS 装入，失败说明被人抢了，重读重试。乐观锁思想——和 MySQL 的 CAS 更新、Redis 的 WATCH/Lua 是同一族。ABA 问题一句话带过（值变回去了但中间换过人，加版本号解决），见附录 A。</p>
+</div>
+<p class="small">内存序（memory_order）：atomic 才有的深水区。面试安全答法：「我知道有 relaxed / acquire-release / seq_cst 三档，平时全用默认 seq_cst（顺序一致、最稳），只有压测确认同步开销成为瓶颈才考虑降档——降档需要严格论证，一般交给库作者。」这句既诚实又不掉分。</p>
+
+<h3 id="ch7-4">7.4 死锁：四条件与破环术</h3>
+<table>
+<tr><th>必要条件</th><th>白话</th><th>打破它的手段</th></tr>
+<tr><td><b>互斥</b></td><td>资源一次只能一个人用</td><td>基本打不破（资源本性）</td></tr>
+<tr><td><b>持有并等待</b></td><td>抱着已有的锁再去等新锁</td><td>一次性申请全部锁（scoped_lock）</td></tr>
+<tr><td><b>不可剥夺</b></td><td>别人的锁不能强行抢走</td><td>拿不到就放掉已有的重来（try_lock + 退避）</td></tr>
+<tr><td><b>循环等待</b></td><td>A 等 B、B 等 A 转圈</td><td><b>全局锁顺序</b>：所有线程都按同一顺序拿锁</td></tr>
+</table>
+<div class="box interview"><div class="boxTitle">🎭 面试作答</div>
+<p><b>「怎么避免死锁？」30 秒版：</b>「死锁四条件：互斥、持有并等待、不可剥夺、循环等待——四个同时成立才死锁。工程上最实用的是两招：① 全局统一加锁顺序（打破循环等待）；② 用 std::scoped_lock 一次性拿多把锁（打破持有并等待）。再辅以 try_lock 超时退避。排查手段：gdb 看各线程卡在哪个 lock、或 ThreadSanitizer。」</p>
+</div>
+
+<h3 id="ch7-5">7.5 线程安全单例：现代标准答案只有一行</h3>
+<pre><code class="language-cpp">class Singleton {
+public:
+    static Singleton& instance() {
+        static Singleton inst;      // ← Meyers 单例：C++11 起局部 static 初始化线程安全
+        return inst;                //    标准保证：并发首次调用也只初始化一次（编译器用锁/守护变量实现）
+    }
+    Singleton(const Singleton&) = delete;
+    Singleton& operator=(const Singleton&) = delete;
+private:
+    Singleton() = default;
+};</code></pre>
+<div class="box mechanism"><div class="boxTitle">🔧 为什么不用「双重检查锁」了</div>
+<p>老答案 DCLP（Double-Checked Locking）在 C++11 前是<b>错误</b>的：<code>instance = new T</code> 是「分配→构造→赋指针」三步，无内存序约束下别的线程可能看到「指针非空但对象没构造完」。C++11 用 <code>atomic</code> + acquire/release 才能写对，但既然局部 static 已被标准保证线程安全，现代答案就是上面那一行。面试若被追问 DCLP，答出「三步重排序问题 + C++11 局部 static 由标准兜底」即是满分。</p>
+</div>
+<p class="small">线程基础一句话带过：std::thread 构造即启动；不 join 就析构会 std::terminate，要么 join 要么 detach；detach 后线程对象不再管它（野线程，资源随进程回收）。async/future 属 P2，见附录 A。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch8">
+<h2>第 8 章 · 编译链接<span class="tag"><span class="p1">P1 中讲</span></span></h2>
+
+<h3 id="ch8-1">8.1 编译四阶段：hello.cpp 怎么变成可执行文件</h3>
+<table>
+<tr><th>阶段</th><th>工具链动作</th><th>产物</th><th>干了什么</th></tr>
+<tr><td>① 预处理</td><td><code>g++ -E</code></td><td>hello.i</td><td>展开 #include / 宏，删注释——纯文本替换</td></tr>
+<tr><td>② 编译</td><td><code>g++ -S</code></td><td>hello.s</td><td>C++ → 汇编；语法语义检查、优化都在这步</td></tr>
+<tr><td>③ 汇编</td><td><code>g++ -c</code></td><td>hello.o</td><td>汇编 → 机器码；<b>符号表</b>在这里（自己定义了什么、引用了什么）</td></tr>
+<tr><td>④ 链接</td><td>g++（默认）</td><td>a.out</td><td>把多个 .o 和库拼起来，<b>把「符号引用」钉到具体地址</b></td></tr>
+</table>
+<div class="box mechanism"><div class="boxTitle">🔧 用这张表解释两大经典报错</div>
+<p><b>undefined reference</b> = 链接期错误：声明了（编译期通过了）但没有任何 .o/库里给出定义。<b>redefinition / multiple definition</b> = 同一符号被定义了两次（典型：在头文件里定义了非 inline 的函数/变量，被两个 cpp include）。「声明是告诉编译器『有这东西』，定义是真正『造出来』——链接器只认定义。」</p>
+</div>
+
+<h3 id="ch8-2">8.2 静态库 vs 动态库</h3>
+<table>
+<tr><th></th><th>静态库 (.a / .lib)</th><th>动态库 (.so / .dll)</th></tr>
+<tr><td><b>链接时机</b></td><td>编译链接期，整块复制进可执行文件</td><td>链接期只记符号，<b>运行时/加载时</b>才映射进来</td></tr>
+<tr><td><b>体积</b></td><td>可执行文件大（每份程序都带一份）</td><td>可执行文件小，库全系统共享一份（代码段共享内存）</td></tr>
+<tr><td><b>更新</b></td><td>改库必须重编所有使用方</td><td>替换 .so 即生效（ABI 兼容时）</td></tr>
+<tr><td><b>部署</b></td><td>无依赖、单文件到处跑</td><td>目标机必须有这个 .so 且版本匹配（依赖地狱来源）</td></tr>
+<tr><td><b>类比</b></td><td>把书买回家放书架</td><td>去图书馆借阅（办了借书证=记了符号）</td></tr>
+</table>
+
+<h3 id="ch8-3">8.3 函数重载与 extern "C"：name mangling</h3>
+<div class="box mechanism"><div class="boxTitle">🔧 机制</div>
+<p>为什么 C++ 能重载而 C 不能：链接器只认符号名。C 的符号名就是函数名——两个 <code>max</code> 必撞。C++ 编译器把<b>参数类型编码进符号名</b>（name mangling），如 <code>max(int,int)</code> → <code>_Z3maxii</code>、<code>max(double,double)</code> → <code>_Z3maxdd</code>——链接器眼里是两个不同符号。这也解释了：① 重载不算「同名函数」而是「不同符号」；② 函数返回值<b>不参与</b>编码（mangling 只看参数，返回值不同的重载会撞符号）。</p>
+<p><b>extern "C"</b> = 告诉编译器「这段代码按 C 规则出符号、别 mangle」：C++ 调 C 库（如 dlfcn）、或写要被 C/dlsym 调用的插件导出函数时必须加。<code>#ifdef __cplusplus extern "C" { #endif …</code> 是头文件通用写法。</p>
+</div>
+<div class="box mechanism"><div class="boxTitle">🔧 展开：inline 到底是啥意思（两层含义 + 相关词）</div>
+<p><b>第一层（字面义：内联展开）</b>：普通函数调用有开销（压参数、跳转、返回）。inline 的原始设想 = 把函数体<b>原地复制到调用处</b>，省掉调用开销——类似 <code>#define</code> 宏的文本替换，但有类型检查。现实：现代编译器<b>根本不理会</b>你写不写 inline，它自己按函数大小/优化级别决定谁内联。这层含义已名存实亡。</p>
+<p><b>第二层（现代真实作用：ODR 豁免）</b>：回到 8.1 的 multiple definition——在头文件里定义的函数会被 N 个 .cpp include，每个 .o 里都有一份定义，链接时撞车报错。inline 关键字是对<b>链接器</b>说：「这个符号允许在每个 .o 里各存一份，链接时随便挑一份用，别报错」。现代 C++ 写 inline 基本都是为了这层。</p>
+<p><b>「撞车」撞的是什么——不是运行时阻塞</b>：函数代码执行时根本没有互斥，一万个线程同时调同一个函数毫无问题（代码段只读、全场共享）。撞车发生在<b>链接期</b>：链接器的规矩是「一个符号全程序只许一份定义」，它看到 foo 在 100 个 .o 里各有一份，不知道该信谁的，干脆报 multiple definition 拒绝工作。inline 就是出示合法证明：「这 100 份一模一样，随便挑一份，别报错」。是<b>链接器记账规矩的问题，与运行时行为无关</b>。</p>
+<p><b>「不是有导入路径吗？看路径挑一份不就行了」——不行，两个原因</b>：① include 路径只决定<b>预处理期</b>文本从哪个文件复制过来——100 个 .cpp include 的是<b>同一个头文件</b>，复制出来的 100 份定义一字不差，链接器眼里它们不是「100 个候选」，是「同一份的 100 个复印件」，路径信息早在编译完成后就丢了（.o 里的符号只有名字如 <code>_Z3foov</code>，不带出身）；② 这条报错真正要防的是<b>意外的同名冲突</b>——两个程序员各自在自己的 .cpp 里写了 <code>void init()</code>，内容完全不同，链接器没有任何信息判断你想调哪个：挑哪个都是猜。既然「相同副本」和「不同实现撞名」从符号上看无法区分，唯一安全的策略就是一律报错，让相同的（inline 豁免）和不同的（改名）都由程序员显式表态。</p>
+<p><b>要不要自己写</b>：函数定义写在 .cpp 里——不用；定义写在头文件里（会被多个 .cpp include）——必须写（或利用类内定义的隐式 inline）；单纯想优化内联——不用写，写了也基本被无视。</p>
+<p><b>相关词（面试黑话全家桶）</b>：</p>
+<ul>
+<li><b>ODR（单一定义规则）</b>：每个符号全程序只允许一份定义——inline 是给这条规则开的合法例外通道；</li>
+<li><b>inline variable（C++17）</b>：变量也能 inline——头文件里定义全局变量不再撞链接；</li>
+<li><b>隐式 inline</b>：类内直接写函数体的成员函数自动带 inline 属性——所以头文件的 class 里写函数体不报 multiple definition；</li>
+<li><b>强制内联</b>：<code>[[gnu::always_inline]]</code> / MSVC <code>__forceinline</code>——逼编译器真内联（极少用）。</li>
+</ul>
+</div>
+
+<p class="small">P2 一句话区：模板必须放头文件（实例化点需要看到完整定义）；动态库符号可见性 -fvisibility=hidden。</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="ch9">
+<h2>第 9 章 · 网络编程速览<span class="tag"><span class="p1">P1 中讲</span> · C++ 后端岗位专属高频</span></h2>
+
+<h3 id="ch9-1">9.1 select / poll / epoll：一张表打天下</h3>
+<p>问题背景：一个 TCP 服务有 1 万个连接，怎么知道哪些连接来数据了？——IO 多路复用：把「盯连接」这件事外包给内核，一次 syscall 问一批 fd。</p>
+<table>
+<tr><th></th><th>select</th><th>poll</th><th>epoll</th></tr>
+<tr><td><b>fd 上限</b></td><td>FD_SETSIZE=1024（写死在 fd_set 位图）</td><td>无硬限（数组，受内存限制）</td><td>无硬限（红黑树管理）</td></tr>
+<tr><td><b>每次调用的开销</b></td><td colspan="2" style="text-align:center">每次都要把整个 fd 集合<b>从用户态拷进内核</b>，返回后再<b>线性扫描全表</b>找就绪 → O(n)</td><td>注册一次进内核（epoll_ctl），之后 wait 只拿<b>就绪列表</b> → O(1)</td></tr>
+<tr><td><b>触发方式</b></td><td>LT</td><td>LT</td><td><b>LT + ET 可选</b></td></tr>
+<tr><td><b>跨平台</b></td><td>全平台</td><td>类 Unix</td><td>仅 Linux（macOS/FreeBSD 对应 kqueue）</td></tr>
+</table>
+
+<div class="box metaphor"><div class="boxTitle">🏠 比喻：三种餐厅服务员</div>
+<p><b>select</b> = 服务员每上一轮菜都挨桌问一遍「好了吗？」——桌子还限 1024 张，人越多越累（每次全量拷贝+全表扫描）。<b>poll</b> = 同样挨桌问，但桌子数不限了。<b>epoll</b> = 前台登记制：客人入座登记（epoll_ctl ADD），服务员坐等<b>叫号屏</b>（就绪链表）——哪个桌好了屏上显示哪个（wait 直接返回就绪列表），一万桌也只看屏不看全场。</p>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">🔧 epoll 三个 syscall</div>
+<ol>
+<li><code>epoll_create1()</code>：开一个 epoll 实例（内核里的「登记簿」：红黑树存所有被监听 fd + 就绪链表）；</li>
+<li><code>epoll_ctl(ADD/MOD/DEL)</code>：登记/改/删一个 fd 及其关注事件——数据结构在内核常驻，<b>不用每次重传</b>；</li>
+<li><code>epoll_wait()</code>：等就绪链表非空，返回就绪事件数组。fd 就绪时，内核把它挂进就绪链表（这是<b>内核内部</b>的动作，不涉及你的代码）——这就是「O(1) 拿就绪」的来源。</li>
+</ol>
+</div>
+
+<div class="box mechanism"><div class="boxTitle">🔧 一次 epoll 服务的完整时间线（把理解对齐到这个流程上）</div>
+<pre><code>【启动期：注册一次，之后不再重复传 fd 列表 —— 这是 epoll 独有的】
+线程   epoll_create1()             → 开一个 epoll 实例（内核登记簿）
+线程   epoll_ctl(ADD, listen_fd)   → 把要盯的 fd 登记进登记簿
+线程   epoll_ctl(ADD, conn_fd) ...
+
+【运行期：事件循环，每一轮】
+线程   epoll_wait(...)             → 线程在这里睡着（不耗 CPU）
+内核   网卡收到数据 → 硬件中断 → 数据放进某 fd 的接收缓冲区
+内核   该 fd 就绪 → 挂进这个 epoll 实例的就绪链表 → 唤醒睡着的线程
+线程   wait 返回 → 手里拿到「就绪事件数组」（只有就绪的，不是全量）
+线程   逐个处理事件：read / write / accept（新连接再 epoll_ctl ADD 进登记簿）
+线程   处理完 → 回到 epoll_wait 继续睡，循环</code></pre>
+<p><b>常见误解逐条校准：</b></p>
+<ul>
+<li>❌「通过 socket 与 OS 进行连接」→ ✅ 你的代码（用户态）和内核的通道是<b>系统调用</b>——上面每一行线程动作都是一次 syscall。socket 本身就是内核里的对象，fd 只是它的编号（把手）；</li>
+<li>❌「内核把 fds 交给代码/回调」→ ✅ <b>没有回调到你的代码</b>。你的线程睡在 epoll_wait 里，被内核唤醒后 wait 返回就绪列表，线程自己消费。「回调」只发生在内核内部挂链表那一步；</li>
+<li>✅「唤醒线程，让线程消费就绪列表」→ 完全正确，这就是 epoll 的核心；</li>
+<li>❌「三者都在一开始注册到内核」→ ✅ <b>只有 epoll 注册一次</b>。select/poll 每一轮都要把全量 fd 拷进内核、扫完再拷回来——正是它们 O(n) 慢的根源（对比表第 2 行）；</li>
+<li>△「IO 操作放入事件队列，线程切走」→ ✅ 纠正表述：不是「IO 操作在队列里」，是「<b>就绪的 fd 事件</b>在就绪列表里」。线程消费事件时做的是<b>非阻塞</b>读写（通常立刻完成）；只有耗时的业务逻辑才丢给线程池，然后事件循环线程回去继续 wait。</li>
+</ul>
+</div>
+
+<h3 id="ch9-2">9.2 LT vs ET 与 Reactor</h3>
+<table>
+<tr><th></th><th>LT 水平触发（默认）</th><th>ET 边缘触发</th></tr>
+<tr><td><b>通知时机</b></td><td>只要缓冲区<b>还有</b>数据，每次 wait 都反复通知</td><td>只在「从无到有/来新数据」的<b>瞬间</b>通知一次</td></tr>
+<tr><td><b>读法</b></td><td>随读随止，读一次也行</td><td><b>必须一次读到 EAGAIN</b>（读完），漏读就饿死到下个事件</td></tr>
+<tr><td><b>fd 要求</b></td><td>阻塞/非阻塞皆可</td><td><b>必须非阻塞</b>（不然最后一次 read 会把线程卡死）</td></tr>
+<tr><td><b>类比</b></td><td>水位高于线就一直响的警报器</td><td>水位「上涨沿」才响一次的警报器</td></tr>
+</table>
+
+<details open><summary>展开：一个具体场景把 LT/ET 的区别演出来（100 字节 / 每次只读 40 字节）</summary>
+<div class="inner">
+<p>设定：fd 的接收缓冲区里来了 <b>100 字节</b>，你的 buf 一次只能读 <b>40 字节</b>。</p>
+<p><b>LT 的剧本（水位高于线就一直响）：</b></p>
+<pre><code>第 1 轮 wait: 缓冲区 100 &gt; 0 → 通知！  read → 读到 40，剩 60
+第 2 轮 wait: 剩 60 &gt; 0     → 又通知！ read → 读到 40，剩 20
+第 3 轮 wait: 剩 20 &gt; 0     → 又通知！ read → 读到 20，剩 0
+第 4 轮 wait: 空了          → 安静
+// 你每次只读一点也无所谓——没读完，下轮 wait 还会追着你提醒</code></pre>
+<p><b>ET 的剧本（上涨沿只响一声）：</b></p>
+<pre><code>第 1 轮 wait: 数据从 0→100 的瞬间 → 通知一次！
+  如果你只 read 一次 40 字节就回去 wait……
+第 2 轮 wait: 没有新数据到来 → 不通知！
+  剩下的 60 字节永远躺在缓冲区里，这个连接被「饿死」
+正确姿势：收到通知后循环 read 直到读空：
+  read 40 → read 40 → read 20 → read 返回 EAGAIN（空了）→ 才回去 wait</code></pre>
+<p><b>为什么 ET 必须配非阻塞 fd</b>：循环读靠什么知道「空了」？非阻塞 read 空了会立刻返回 EAGAIN（暂时没数据）；阻塞 read 空了会<b>把线程卡死在原地等数据</b>——一个 fd 卡住，整个事件循环全停摆。这就是上表「fd 要求」那一格的由来。</p>
+<p class="small">校准一个常见误解：阻塞模式<b>压根没有 EAGAIN</b>——空了就挂起等数据，不会给你返回值。「只读一次 40 剩 60 被饿死」的风险两种模式共有（都源于只读一次就走）；ET 配阻塞的独特死法是：循环读用来「确认空了」的最后一次 read 恰好碰上空缓冲 → 线程被钉死在内核里等新数据 → 整个事件循环停摆，所有连接全卡。</p>
+<p><b>ET 图什么</b>：每个事件只唤醒一次，高并发下事件量减半（省掉 LT「没读完反复提醒」的唤醒）——nginx 用的就是 ET。</p>
+</div>
+</details>
+<div class="box mechanism"><div class="boxTitle">🔧 Reactor 三种形态：具体是谁在干什么</div>
+<p>Reactor = 「epoll 监听 + 分发器把就绪事件派给对应 handler」这套骨架。三种形态的差别只在<b>几个人分几摊活</b>——活就三样：收新连接（accept）、读写数据（IO）、跑业务逻辑：</p>
+<table>
+<tr><th>形态</th><th>分工</th><th>代表 / 特点</th></tr>
+<tr><td><b>单 Reactor 单线程</b></td><td>一个线程包揽三样：epoll_wait、accept、read/write、业务全自己干</td><td>Redis（6.0 前）——简单无锁，但一个慢命令全场卡</td></tr>
+<tr><td><b>单 Reactor + 工作线程池</b></td><td>主线程只管 epoll + accept + read/write；拼出完整请求后<b>丢线程池跑业务</b>，跑完把结果交回主线程写回</td><td>经典 Web 服务模型——IO 与业务分离</td></tr>
+<tr><td><b>主从 Reactor</b></td><td>主 Reactor 只盯 listen_fd 收新连接；收到后把连接<b>分派</b>给若干从 Reactor，每个从 Reactor 有自己的 epoll 管一批连接的读写</td><td>Netty / muduo——连接数巨大时多个事件循环分摊</td></tr>
+</table>
+<p><b>asyncio 对照</b>：事件循环 = Reactor（单 Reactor 单线程形态）；loop 底层的 selector（Linux 上默认 epoll）= 分发器；你写的回调/协程 = handler。写 <code>asyncio.start_server</code> 时，底层就是「主线程事件循环 + epoll + 回调派发」——Reactor 的 Python 方言。</p>
+</div>
+<p class="small">P2 一句话区：惊群（多个进程/线程抢同一 accept，内核有 SO_REUSEPORT/wake-one 缓解）；C10K → C10M（用户态协议栈、io_uring）；零拷贝 sendfile/mmap。追问再展开。</p>
+</section>
+<!-- ================================================================ -->
+<section id="appA">
+<h2>附录 A · 高频题速答卡（P2 收容所）<span class="tag">一句话版 · 被追问再展开</span></h2>
+<p>正文里标注「见附录 A」的低频点全部收容在此。每条只给<b>一句话答案</b>——面试被问到时先用这句顶住，需要展开的再回正文对应章节。</p>
+
+<h3>语言核心类</h3>
+<table>
+<tr><th style="width:38%">问题</th><th>一句话答案</th></tr>
+<tr><td><b>菱形继承是什么问题？虚继承怎么解决？</b></td><td>D 继承 B、C，B/C 都继承 A → D 里有两份 A（二义 + 冗余）；虚继承 <code>class B : virtual public A</code> 让 A 在 D 里只存一份（由最终派生类负责构造），代价是对象里多一个 vbptr 偏移指针。</td></tr>
+<tr><td><b>纯虚函数和抽象类？</b></td><td><code>virtual void f() = 0;</code> 含纯虚函数的类是抽象类，不能实例化，只能当接口基类用——类似 Java 的 interface / Python 的 abc。</td></tr>
+<tr><td><b>构造函数里能调虚函数吗？</b></td><td>语法可以但多态失效：构造期间 vptr 逐层设置，调到的只是「当前层」的版本，不会下降到派生类。</td></tr>
+<tr><td><b>重载/重写/隐藏的区别？</b></td><td>重载=同作用域同名不同参（静态绑定）；重写=派生类覆盖基类 virtual 函数、签名相同（动态绑定）；隐藏=派生类同名函数遮蔽基类所有同名重载（基类版本要用 <code>Base::f()</code> 显式调）。</td></tr>
+<tr><td><b>inline 的现代意义？</b></td><td>主要不是优化提示而是 ODR 豁免——允许多个编译单元里出现相同定义；是否内联由编译器决定。类内定义的成员函数隐式 inline。</td></tr>
+<tr><td><b>volatile 是干嘛的？</b></td><td>禁止编译器把变量缓存进寄存器，每次都真读内存（内存映射硬件/信号处理场景）；<b>不提供原子性、不是线程同步工具</b>——线程同步用 atomic/mutex。</td></tr>
+<tr><td><b>RVO/NRVO？</b></td><td>返回值优化：函数按值返回局部对象时直接在调用方内存构造，省拷贝省移动；C++17 起纯右值场景强制省略。所以「按值返回大对象」在现代 C++ 是安全的。</td></tr>
+<tr><td><b>struct 和 class 区别？</b></td><td>唯一区别是默认访问权限：struct 默认 public，class 默认 private（继承权限同此）。语义习惯：聚合数据用 struct，有行为封装用 class。</td></tr>
+</table>
+
+<details><summary>展开：菱形继承与虚继承 / volatile（vs Java）/ RVO 三个高频追问详解</summary>
+<div class="inner">
+<p><b>① 菱形继承与虚继承——和 Python MRO 不是一回事</b>：</p>
+<pre><code class="language-cpp">struct A { void f(); int x; };
+struct B : A {};           // 普通继承：B 肚子里有一份 A
+struct C : A {};           // C 肚子里也有一份 A
+struct D : B, C {};        // D 肚子里有两份 A！
+                           // d.f() → 编译报「请求歧义」：从 B 来的还是从 C 来的？
+                           // d.x  → 两份实实在在占两份内存（数据冗余）
+
+struct B : virtual public A {};   // 虚继承：手动标记
+struct C : virtual public A {};   // → D 里 A 只有唯一一份（由最终类 D 负责构造）
+struct D : B, C {};        // d.f() 不再歧义，d.x 只有一份</code></pre>
+<p><b>和 Python MRO 的本质区别</b>：Python 的菱形<b>只冲突方法查找顺序</b>——MRO（C3 线性化）自动排一条链 D→B→C→A，查到第一个就用，全程自动，且数据天生只有一份（所有类共享布局）。C++ 的菱形<b>先撞数据冗余</b>：两份 A 的成员变量实打实占两份内存，方法调用默认<b>不会自动二选一</b>——直接编译报错，要你显式写 <code>d.B::f()</code> 消歧；虚继承解决的是<b>数据合回一份</b>（代价：对象里多一个 vbptr 偏移指针，运行期才能定位那个唯一子对象），方法选谁仍靠 virtual 函数或显式指定。一句话：<b>Python 自动调解方法之争、数据天生一份；C++ 默认数据翻倍+编译报错，虚继承手动把数据合回一份</b>。所以答案是：对，虚继承必须自己写，没有任何自动成分。</p>
+<p><b>那方法到底选谁——按「候选个数」分三种情况</b>：</p>
+<ul>
+<li><b>只有一个候选</b>：f 只在 A 定义（B、C 都没碰）→ 调 A::f，不歧义——虽然普通继承下 D 肚子里有两份 A 子对象，但函数是同一个。只有 B 重写了 f → 调 B::f（B::f 支配 A::f），也不歧义；</li>
+<li><b>两个候选</b>：B、C <b>都</b>重写/新增了 f → B::f 和 C::f 打架，编译器<b>拒绝猜</b>，报「请求歧义」——必须显式 <code>d.B::f()</code> 或 <code>d.C::f()</code>；</li>
+<li><b>虚继承已加 + f 是 virtual</b>：数据合成一份了，但<b>方法解析规则一点没变</b>——B、C 都重写时照样歧义、照样要显式指定。虚继承管数据，virtual 管行为，两套开关各管各的。</li>
+</ul>
+<p>对比 MRO：Python 永远自动挑链上第一个，绝不报错；C++ 只在唯一候选时自动，有竞争就甩给你。设计哲学差异：Python「总得选一个」、C++「猜错比报错贵」。</p>
+<p><b>② volatile：C++ 和 Java 同名不同义</b>：</p>
+<p>你记的 Java 比喻「每个工人有自己的记忆板」——记忆板的真身是 <b>CPU 每个核心的私有缓存</b>（L1/L2 cache，寄存器算一部分）：每个核改了变量先记在自己缓存里，别的核看不见 → 可见性问题。<b>Java volatile</b> = 「写立刻刷回主存 + 读都从主存拿 + 禁止指令重排」= 解决<b>可见性 + 有序性</b>，是真正的线程同步工具（但依然不保证原子性）。<b>C++ volatile 只做一件事</b>：「别把这个变量缓存进寄存器，每次都真读写内存」——它防的是<b>编译器优化</b>（比如把连续两次读合并成一次），设计给内存映射硬件/信号处理用；<b>不管</b>多核缓存一致性、不管原子性、不管顺序——拿它做线程同步是经典错误。跨语言对齐：Java volatile ≈ C++ 的 std::atomic（acquire-release 语义那族），和 C++ volatile 不是一回事。</p>
+<p><b>③ RVO/NRVO（返回值优化）</b>：</p>
+<pre><code class="language-cpp">Buf make() {
+    Buf local(1024);     // 局部对象
+    return local;        // 朴素世界：local 拷贝→返回值临时对象，临时再拷贝→外部变量（两次深拷）
+}
+Buf b = make();          // RVO：编译器直接把 local「造在 b 的内存上」——零拷贝零移动</code></pre>
+<p>原理：编译器早知道 local 的最终归宿是 b，于是把「构造 local」这一步直接落到 b 的地址上——<code>return</code> 和「搬运到外部」两步<b>根本不发生</b>，是<b>空间上的合谋</b>，不是「先造好再搬运」。NRVO 的 N = Named：local 这种<b>有名字</b>的局部变量也享受（无名临时的版本叫 RVO，C++17 起纯右值场景<b>强制</b>省略拷贝、不再是可选项）。校准一下之前的理解：「有名字是左值、返回时要拷贝/移动」是<b>没有 RVO 时</b>的朴素规则；有 RVO 时编译器直接跳过整场搬运。这也回答了「按值返回大对象安不安全」——现代 C++ 安全，放心 return。</p>
+</div>
+</details>
+
+<h3>STL 与底层类</h3>
+<table>
+<tr><th style="width:38%">问题</th><th>一句话答案</th></tr>
+<tr><td><b>string 的 SSO？</b></td><td>小串优化：短字符串（libstdc++ 15 字节、MSVC 15/23 字节）直接存在 string 对象内部，不走堆——大量小串场景省掉堆分配，这就是 string sizeof 通常 32 字节的原因。</td></tr>
+<tr><td><b>vector 的 erase 复杂度？</b></td><td>删除点之后全体前移，O(n)；尾部 push_back/pop_back 均摊 O(1)；中间 insert O(n)。</td></tr>
+<tr><td><b>为什么 vector 扩容倍率是 2 或 1.5？</b></td><td>倍增让 n 次追加的总搬运量收敛 O(n)（均摊 O(1)）；1.5 倍（MSVC）相对 2 倍（GCC）能更早释放的旧内存被复用（2 的幂永远对不齐旧块）——两种都是工程折中。</td></tr>
+<tr><td><b>hash 冲突怎么处理？</b></td><td>拉链法（链地址，std::unordered_map 用它）或开放寻址（线性探测等）；单桶链表过长（Java 8 起 &gt;8）还会树化成红黑树防退化。</td></tr>
+<tr><td><b>unordered_map 的负载因子与 rehash？</b></td><td>load_factor = size / bucket_count，超过 max_load_factor（默认 1.0）触发 rehash：桶数组翻倍、全体重挂——迭代器全失效，O(n)。</td></tr>
+<tr><td><b>map[] 和 at() 区别？</b></td><td><code>operator[]</code>：key 不存在就<b>默认构造并插入</b>（副作用陷阱）；<code>at()</code>：不存在抛 out_of_range。<code>if (m.count(k))</code> 或 <code>find</code> 才是纯查询。</td></tr>
+</table>
+
+<details><summary>展开：开放寻址法 / rehash 为什么不做 Java 式高低位迁移</summary>
+<div class="inner">
+<p><b>① 开放寻址法（拉链法的对手）</b>：冲突了不拉链，就地往「下一个槽」找空位：</p>
+<pre><code>插入 key 的哈希落到槽 5，槽 5 被占 → 试槽 6 → 被占 → 试槽 7 → 空！放这
+查找同一 key：沿同样的探测路径走（槽5→6→7）
+// 变体：线性探测（+1,+2,+3）、平方探测（+1,+4,+9）、双重哈希（第二个哈希函数定步长）
+// 死穴1「聚集」：连片占用让探测路径越走越长
+// 死穴2「删除」：直接清空槽会截断后续查找的探测路径——必须留「墓碑」标记
+// Python dict 就是开放寻址；Java HashMap 是拉链（链长>8 树化）</code></pre>
+<p><b>② rehash 为什么不像 Java HashMap 那样高低位分流迁移</b>——好问题，答案在桶数的设计哲学：</p>
+<ul>
+<li><b>Java HashMap</b>：容量恒为 2 的幂，定位桶用 <code>hash &amp; (n-1)</code>。扩容翻倍 = 哈希值多暴露一个二进制位，每个节点<b>只看新增那一位</b>：0 留原桶、1 去「原桶+旧容量」——不用重算哈希、一次遍历分完，常数极小。代价：2 的幂对劣质哈希函数不友好（低位相同就全撞一个桶）。</li>
+<li><b>std::unordered_map（libstdc++）</b>：桶数取<b>素数</b>——素数取模能把劣质哈希打散（哈希值只在低位有区分度时，模素数仍能分散）。代价：扩容后模数变了，每个节点的桶号<b>必须全部重算重挂</b>，「看一位定位」这招在素数桶下不存在。</li>
+</ul>
+<p>所以不是没想到，是<b>「迁得快」和「容错劣质哈希」二选一</b>：Java 选 2 幂桶+快速迁移（赌哈希好——它自带扰动函数兜底）；标准库选素数桶+全量重挂（对用户随手写的哈希更宽容）。两边复杂度都是 O(n)，差的是常数。追求极致的 absl::flat_hash_map 走第三条路：2 幂桶+开放寻址+元数据字节。面试答出这层取舍即满分。</p>
+</div>
+</details>
+
+<h3>并发与网络类</h3>
+<table>
+<tr><th style="width:38%">问题</th><th>一句话答案</th></tr>
+<tr><td><b>CAS 的 ABA 问题？</b></td><td>值从 A 改成 B 又改回 A，CAS 只比对值发现「没变」其实变过两次；解法是附版本号/时间戳一起比对（tagged pointer）。</td></tr>
+<tr><td><b>async/future/promise？</b></td><td>async 启动异步任务返回 future（一次性取结果容器），promise 是手动版（塞值的一端）；<code>std::packaged_task</code> 包装可调用对象打包异常传递——线程安全的「占位结果」三件套。</td></tr>
+<tr><td><b>什么是惊群？</b></td><td>一个事件唤醒所有等在 accept/epoll 上的进程但只有一个能处理，其余空转；缓解：内核 accept 的 wake-one、SO_REUSEPORT 按哈希分流、EPOLLEXCLUSIVE。</td></tr>
+<tr><td><b>零拷贝是什么？</b></td><td>传统读文件发送要「内核缓冲→用户缓冲→socket 缓冲」4 次拷贝 4 次切换；sendfile/splice 让数据全程留在内核，mmap 把内核缓冲映射进用户态——省拷贝省切换。</td></tr>
+<tr><td><b>大端小端？怎么判断？</b></td><td>低字节存低地址=小端（x86/ARM 默认）；网络字节序=大端。判断：联合体或 <code>*(char*)&amp;x == x &amp; 0xff</code>；转换 <code>htons/htonl/ntohs/ntohl</code>（host↔network short/long）。</td></tr>
+<tr><td><b>TCP 怎么保证可靠？（跨语言常问）</b></td><td>序号+确认应答、超时重传（RTT 自适应）、滑动窗口流量控制、拥塞控制（慢启动/拥塞避免/快恢复）、校验和——五大件按需展开。</td></tr>
+<tr><td><b>C++20 协程？</b></td><td>co_await/co_yield/co_return 三关键字的语言级无栈协程，编译器把函数拆成状态机（对比 Python 有栈生成器是「运行时帧暂停」）；工程上仍偏库作者层，答「了解概念 + 知道 co_await 挂起点返回 awaiter」足够。</td></tr>
+</table>
+
+<div class="box interview"><div class="boxTitle">🎭 面试前 30 分钟怎么用这本书</div>
+<p>只看三样：① 每章紫色的 🎭 面试作答框（共 9 个，全部能脱稿 = 覆盖 80% 提问）；② 6.2 迭代器失效表 + 9.1 epoll 对比表（两大钉子表格）；③ 本附录当考前押题快速过一遍。P2 内容千万别花时间背——被追问到再回来查。</p>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="appB">
+<h2>附录 B · 比喻词典<span class="tag">自测回忆锚点</span></h2>
+<p>用法：遮住右列，看左列「概念」回忆比喻——比喻是想起来机制的钥匙。</p>
+<table>
+<tr><th style="width:30%">概念</th><th>比喻</th></tr>
+<tr><td>内存五区</td><td>公寓楼：代码区=物业（只读）、常量区=图书馆、全局区=大堂储物柜、栈=前台抽屉（自动）、堆=地下自助仓库（自己管）</td></tr>
+<tr><td>RAII</td><td>地弹簧门：把「关门」绑在「门开着的时间」上——资源的一生绑定对象的一生</td></tr>
+<tr><td>shared_ptr 控制块</td><td>合租房门牌的计数牌：强计数=室友数，最后一人关灯；弱计数=只留电话的人</td></tr>
+<tr><td>循环引用</td><td>两个人互相指认「他还在用我」，谁都不肯先走——weak_ptr 是把一端降级成「只留电话」</td></tr>
+<tr><td>move 语义</td><td>退租甩卖：把 A 的冰箱直接过户（O(1)）而不是复印一台一样的（O(n)）；std::move 只是盖「明天退租」的章</td></tr>
+<tr><td>深浅拷贝</td><td>合租（共用冰箱→双删崩溃）vs 分居（新买冰箱）vs 过户（move）</td></tr>
+<tr><td>静态/动态绑定</td><td>看说明书（声明类型，编译期定死）vs 查户口（实际对象，运行期查 vtable）</td></tr>
+<tr><td>vptr</td><td>对象随身带的户口本指针，构造时由本层构造函数填写——Python ob_type 的手动挡</td></tr>
+<tr><td>构造/析构顺序</td><td>打地基→装家具→拎包入住；退房严格反着来</td></tr>
+<tr><td>lock_guard / unique_lock</td><td>地弹簧门 vs 带手动开关的地弹簧门</td></tr>
+<tr><td>条件变量</td><td>取号睡觉、柜台按号叫醒；虚假唤醒=没叫你自己醒了，必须重查号（谓词）</td></tr>
+<tr><td>select/poll/epoll</td><td>服务员挨桌问（限 1024 桌/不限桌）vs 前台登记+叫号屏（只看屏不看全场）</td></tr>
+<tr><td>LT / ET</td><td>水位高于线一直响 vs 上涨沿才响一次</td></tr>
+<tr><td>静态库 / 动态库</td><td>把书买回家 vs 去图书馆借阅</td></tr>
+<tr><td>map / unordered_map</td><td>图书馆按书名排架（可按序浏览）vs 贴条码的仓库（报码直取但无序）</td></tr>
+</table>
+<p class="small" style="margin-top:20px">全书完 · 详略版速成书 · 与《Python 八股教程书》《协作编辑 OT/CRDT 教程书》同框架 · 2026-10</p>
+</section>
+
+</main>
+</div>
+<a class="tocAnchorTop" href="#top">↑ 返回目录</a>
+<script src="anno.js"></script>
+</body>
+</html>

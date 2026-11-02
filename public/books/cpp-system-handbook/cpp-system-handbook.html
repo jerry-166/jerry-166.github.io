@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C++ 系统知识手册：内存管理 · CPU 微架构 · 并发</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='13' fill='%230e7490'/%3E%3Ctext x='32' y='43' font-size='27' font-family='monospace' font-weight='bold' text-anchor='middle' fill='white'%3EC++%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f7fa; --paper:#ffffff; --ink:#1f2937; --muted:#6b7280; --line:#e2e6ec;
+  --accent:#0e7490; --accent-bg:#ecfeff;
+  --heap:#c2410c; --heap-bg:#fff7ed; --stack:#1d4ed8; --stack-bg:#eff6ff;
+  --danger:#b91c1c; --danger-bg:#fef2f2; --ok:#15803d; --ok-bg:#f0fdf4; --kernel:#6d28d9; --kernel-bg:#f5f3ff;
+  --code-bg:#161b22; --code-ink:#e6edf3;
+  --sidebar:#11151c; --side-ink:#c7ced9; --side-active:#22d3ee;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:'Segoe UI','Microsoft YaHei',sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.75;}
+code,pre,.mono{font-family:Consolas,'Cascadia Code','Courier New',monospace;}
+
+/* ===== 侧边导航 ===== */
+.sidebar{position:fixed;top:0;left:0;width:272px;height:100%;background:var(--sidebar);color:var(--side-ink);
+  overflow-y:auto;padding:20px 0 40px;z-index:50;transition:transform .25s ease;}
+.sidebar .brand{padding:0 22px 16px;border-bottom:1px solid #262d38;margin-bottom:12px;}
+.sidebar .brand b{color:#fff;font-size:16px;display:block;line-height:1.4;}
+.sidebar .brand span{font-size:11.5px;color:#7d8794;}
+.sidebar a{display:block;color:var(--side-ink);text-decoration:none;font-size:13px;padding:6px 22px;border-left:3px solid transparent;}
+.sidebar a:hover{color:#fff;background:#1a2029;}
+.sidebar a.active{color:var(--side-active);border-left-color:var(--side-active);background:#161c24;}
+.sidebar .grp{padding:14px 22px 5px;font-size:11px;letter-spacing:.12em;color:#6b7483;text-transform:uppercase;}
+.sidebar a.sub{padding-left:34px;font-size:12.5px;color:#9aa3b0;}
+
+/* ===== 主区 ===== */
+.main{margin-left:272px;}
+.content{max-width:880px;margin:0 auto;padding:0 28px 70px;}
+.menu-btn{display:none;}
+
+/* 封面 */
+.hero{padding:74px 0 40px;border-bottom:1px solid var(--line);margin-bottom:8px;}
+.hero .kicker{font-size:13px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;}
+.hero h1{font-size:38px;line-height:1.25;margin:12px 0 16px;color:#0b1220;}
+.hero p{color:var(--muted);max-width:640px;font-size:15.5px;}
+.hero .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;}
+.hero .meta span{font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 12px;color:#374151;}
+
+/* 篇 */
+.part{padding-top:34px;}
+.part-head{border-left:5px solid var(--accent);padding:4px 0 4px 16px;margin-bottom:22px;}
+.part-head .no{font-size:12.5px;color:var(--accent);letter-spacing:.14em;text-transform:uppercase;}
+.part-head h2{font-size:27px;margin:4px 0 4px;color:#0b1220;}
+.part-head p{color:var(--muted);font-size:13.5px;margin:0;}
+h3.sec{font-size:19px;margin:34px 0 10px;color:#0b1220;display:flex;align-items:baseline;gap:9px;}
+h3.sec .tag{font-size:12.5px;color:var(--accent);font-family:Consolas,monospace;}
+h4{font-size:15.5px;margin:22px 0 7px;color:#111827;}
+p{margin:9px 0;}
+ul,ol{margin:8px 0;padding-left:23px;}
+li{margin:4px 0;}
+code{background:#eef1f5;padding:1.5px 6px;border-radius:5px;font-size:13px;color:#0b3b47;}
+a.inline{color:var(--accent);}
+
+/* 卡片 / 网格 */
+.grid{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;}
+.card{flex:1;min-width:210px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:13px 14px;}
+.card b{display:block;margin-bottom:4px;}
+.card.heap{border-color:#fdba74;background:var(--heap-bg);}
+.card.heap b{color:var(--heap);}
+.card.stack{border-color:#93c5fd;background:var(--stack-bg);}
+.card.stack b{color:var(--stack);}
+.card.kernel{border-color:#c4b5fd;background:var(--kernel-bg);}
+.card.kernel b{color:var(--kernel);}
+.card.ok{border-color:#86efac;background:var(--ok-bg);}
+.card.danger{border-color:#fca5a5;background:var(--danger-bg);}
+.callout{border-radius:8px;padding:11px 14px;margin:13px 0;font-size:13.5px;line-height:1.7;}
+.callout.note{background:var(--accent-bg);border:1px solid #a5f3fc;}
+.callout.warn{background:var(--danger-bg);border:1px solid #fca5a5;}
+.callout.tip{background:var(--ok-bg);border:1px solid #86efac;}
+.callout b{display:block;margin-bottom:3px;}
+.callout.warn b{color:var(--danger);} .callout.tip b{color:var(--ok);} .callout.note b{color:var(--accent);}
+
+/* 代码块 */
+pre.code{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:15px 17px;overflow-x:auto;font-size:13px;line-height:1.7;margin:14px 0;}
+pre.code .cm{color:#8b949e;} pre.code .kw{color:#ff7b72;} pre.code .st{color:#a5d6ff;} pre.code .fn{color:#d2a8ff;}
+
+/* 表格 */
+table.tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;background:#fff;border:1px solid var(--line);}
+table.tbl th,table.tbl td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+table.tbl th{background:#f1f4f8;font-weight:600;}
+table.tbl td code{font-size:12px;}
+
+/* 机制图通用块 */
+.seg{border-radius:7px;padding:9px 12px;font-size:12.5px;border:1px solid var(--line);background:#fff;margin:5px 0;}
+.seg.heap{background:var(--heap-bg);border-color:#fdba74;}
+.seg.stack{background:var(--stack-bg);border-color:#93c5fd;}
+.seg.kernel{background:var(--kernel-bg);border-color:#c4b5fd;}
+.seg.dark{background:#1f2937;color:#fff;border-color:#1f2937;}
+.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:700;}
+.pill.dirty{background:#fee2e2;color:var(--danger);} .pill.clean{background:#dcfce7;color:var(--ok);}
+.arrow{text-align:center;color:var(--muted);font-size:13px;margin:2px 0;}
+.diagram{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin:15px 0;}
+.diagram .cap{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;}
+
+/* 路径总览 */
+.pathflow{display:flex;gap:0;flex-wrap:wrap;align-items:stretch;margin:18px 0;}
+.pathflow .node{flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;font-size:12.5px;}
+.pathflow .node b{display:block;color:var(--accent);margin-bottom:3px;}
+.pathflow .sep{display:flex;align-items:center;padding:0 6px;color:#9ca3af;}
+
+.toc-cards{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;}
+.toc-cards a{flex:1;min-width:220px;text-decoration:none;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;}
+.toc-cards a b{color:var(--accent);display:block;margin-bottom:6px;}
+.toc-cards a span{font-size:12.5px;color:var(--muted);line-height:1.6;display:block;}
+
+/* 主线导读 */
+.threadline{border:1px solid var(--line);border-radius:11px;padding:16px 18px;margin:18px 0;background:#fff;}
+.threadline h5{font-size:15px;margin:0 0 3px;}
+.threadline.mem h5{color:var(--accent);}
+.threadline.conc h5{color:var(--stack);}
+.threadline .tl-sub{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.6;}
+.tl-step{display:flex;gap:12px;align-items:flex-start;}
+.tl-step .num{flex:none;width:24px;height:24px;border-radius:50%;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.threadline.mem .num{background:var(--accent-bg);color:var(--accent);border:1px solid #a5f3fc;}
+.threadline.conc .num{background:var(--stack-bg);color:var(--stack);border:1px solid #93c5fd;}
+.tl-step .body{flex:1;min-width:0;}
+.tl-step .body b{font-size:13.5px;}
+.tl-step .body p{font-size:12.5px;color:var(--muted);margin:3px 0 0;line-height:1.65;}
+.tl-arrow{color:#9ca3af;text-align:center;font-size:13px;padding:1px 0;}
+.tl-branch{border-top:1px dashed var(--line);margin-top:11px;padding-top:10px;}
+.tl-branch .b-label{font-size:12.5px;font-weight:700;margin:0 0 6px;}
+.threadline.mem .b-label{color:var(--accent);}
+.threadline.conc .b-label{color:var(--stack);}
+
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%);width:260px;}
+  .sidebar.open{transform:translateX(0);box-shadow:0 0 40px rgba(0,0,0,.4);}
+  .main{margin-left:0;}
+  .menu-btn{display:inline-flex;position:fixed;top:12px;right:12px;z-index:60;background:#111827;color:#fff;border:none;
+    border-radius:8px;padding:11px 14px;font-size:14px;}
+  .content{padding:0 18px 60px;}
+  .hero{padding:64px 0 32px;}
+  .hero h1{font-size:29px;}
+  .backdrop.show{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
+}
+</style>
+</head>
+<body>
+
+<button class="menu-btn" id="menuBtn">目录</button>
+<div class="backdrop" id="backdrop"></div>
+
+<nav class="sidebar" id="sidebar">
+  <div class="brand"><b>C++ 系统知识手册</b><span>内存 · CPU · 并发</span></div>
+  <a href="#top" class="navlink">封面与导读</a>
+  <a href="#overview" class="navlink">学习路径总览</a>
+  <div class="grp">第一篇</div>
+  <a href="#p1" class="navlink">C++ 内存管理</a>
+  <a href="#p1-1" class="navlink sub">1.1 内存分区模型</a>
+  <a href="#p1-2" class="navlink sub">1.2 常见误区</a>
+  <a href="#p1-3" class="navlink sub">1.3 new 与 malloc</a>
+  <a href="#p1-4" class="navlink sub">1.4 ptmalloc 内部</a>
+  <a href="#p1-5" class="navlink sub">1.5 页表 MMU 缺页</a>
+  <a href="#p1-6" class="navlink sub">1.6 RAII 智能指针</a>
+  <div class="grp">第二篇</div>
+  <a href="#p2" class="navlink">CPU 微架构</a>
+  <a href="#p2-1" class="navlink sub">2.1 缓存层级</a>
+  <a href="#p2-2" class="navlink sub">2.2 MESI 一致性</a>
+  <a href="#p2-3" class="navlink sub">2.3 五级流水线</a>
+  <a href="#p2-4" class="navlink sub">2.4 乱序与多发射</a>
+  <div class="grp">第三篇</div>
+  <a href="#p3" class="navlink">并发与多线程</a>
+  <a href="#p3-1" class="navlink sub">3.1 进程 vs 线程</a>
+  <a href="#p3-2" class="navlink sub">3.2 上下文切换</a>
+  <a href="#p3-3" class="navlink sub">3.3 CPU 调度</a>
+  <a href="#p3-4" class="navlink sub">3.4 竞态与临界区</a>
+  <a href="#p3-5" class="navlink sub">3.5 原子操作</a>
+  <a href="#p3-6" class="navlink sub">3.6 内存模型与序</a>
+  <a href="#p3-7" class="navlink sub">3.7 锁与无锁</a>
+  <a href="#p3-8" class="navlink sub">3.8 伪共享与TLS</a>
+  <div class="grp">附录</div>
+  <a href="#app" class="navlink">速查与配套</a>
+  <a href="#app-num" class="navlink sub">量化值速查</a>
+  <a href="#app-sim" class="navlink sub">配套模拟器</a>
+  <a href="#app-term" class="navlink sub">术语表</a>
+</nav>
+
+<main class="main">
+<div class="content">
+
+  <!-- ===== 封面 ===== -->
+  <section class="hero" id="top">
+    <div class="kicker">从一行 C++ 到一台机器</div>
+    <h1>C++ 系统知识手册<br>内存管理 · CPU 微架构 · 并发</h1>
+    <p>本手册把一条完整的学习链路系统沉淀：代码编译后如何进入虚拟地址空间，内存如何被分配与翻译，CPU 内部如何取指执行，以及多核多线程下如何保证正确。机制图去重精简，配套两个可交互的白盒模拟器。</p>
+    <div class="meta">
+      <span>面向：校招软件 / 游戏客户端</span>
+      <span>前置：C++ 基础</span>
+      <span>形态：自包含 HTML，可离线打开</span>
+    </div>
+  </section>
+
+  <!-- ===== 总览 ===== -->
+  <section id="overview">
+    <h3 class="sec"><span class="tag">OVERVIEW</span>学习路径总览</h3>
+    <p>整条主线回答一个问题：<b>一句 C++ 代码，在机器里到底经历了什么。</b>知识按"由软件到硬件、由单线程到多核"组织成三大篇。</p>
+    <div class="pathflow">
+      <div class="node"><b>源代码</b>编译为机器码</div>
+      <div class="sep">→</div>
+      <div class="node"><b>虚拟内存</b>分区与分配</div>
+      <div class="sep">→</div>
+      <div class="node"><b>MMU/页表</b>翻译地址</div>
+      <div class="sep">→</div>
+      <div class="node"><b>CPU</b>取指执行</div>
+      <div class="sep">→</div>
+      <div class="node"><b>多核</b>缓存一致与同步</div>
+    </div>
+    <div class="toc-cards">
+      <a href="#p1"><b>第一篇 · C++ 内存管理</b><span>内存分区、new/malloc、ptmalloc、页表 MMU 缺页 COW、RAII 与智能指针</span></a>
+      <a href="#p2"><b>第二篇 · CPU 微架构</b><span>缓存层级、MESI、五级流水线、乱序执行与多发射</span></a>
+      <a href="#p3"><b>第三篇 · 并发与多线程</b><span>进程线程、上下文切换、原子与内存序、锁与无锁、伪共享</span></a>
+    </div>
+
+    <h4>两条主线，把全书串起来</h4>
+
+    <!-- ===== 内存主线 ===== -->
+    <div class="threadline mem">
+      <h5>内存主线：一句 C++ 代码的内存之旅</h5>
+      <p class="tl-sub">从"内存住哪"一路走到"怎么管好内存"，并在缺页处接上 OS 缓存层级、在代码执行处接上 CPU 流水线。</p>
+      <div class="tl-step"><div class="num">1</div><div class="body"><b>内存分区模型</b><p>进程跑在独占虚拟地址空间，按段划分 .text/.rodata/.data/.bss、堆、mmap、栈与内核空间，先建立"代码和数据各住哪"的地图；机器码在磁盘，运行时由加载器按需分页映射进 .text。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">2</div><div class="body"><b>new 与 malloc</b><p>要动态内存就用 malloc（C 库函数）或 new（C++ 运算符，先 operator new 分配、再调构造）。new 默认底层走 malloc；malloc 按大小分流：小对象 brk 推堆顶、大对象 mmap 匿名映射。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">3</div><div class="body"><b>页与 chunk</b><p>打通两个粒度——malloc 切的是 chunk（库的逻辑单位，可小于一页、也可跨多页），OS 分配的是页（4KB，物理内存最小单位）。sbrk 一次"批发"按页对齐的一大段，再切成 chunk"零售"。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">4</div><div class="body"><b>缺页分配（关联 OS）</b><p>malloc 只预留虚拟地址，真正访问且页未映射时触发缺页：内核分配物理页框、建 PTE、回填 TLB，再重试指令。五种缺页：首次访问、COW、栈增长、swap 换入、文件页回收。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">5</div><div class="body"><b>RAII 与智能指针（防泄漏）</b><p>解决"怎么管"——RAII 把资源绑栈对象，unique/shared/weak 按所有权自动析构；配合 make_*、基类 virtual 析构、标准容器，几乎不手写 delete。</p></div></div>
+      <div class="tl-branch"><p class="b-label">支线一 · 缺页分配 → 串起 OS 缓存层级</p><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.65;">一次访存先经 MMU 查 TLB、再查多级页表得到物理地址，内容按 L1/L2/L3→RAM 逐级取，缺页由内核补、必要时从磁盘读。这把"内存分配"和"页表/TLB/缓存"串成一条完整时序。</p></div>
+      <div class="tl-branch"><p class="b-label">支线二 · C++ 代码执行 → 串起 CPU 流水线</p><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.65;">.text 里的指令被 CPU 取指执行，五级流水线 IF/ID/EX/MEM/WB 重叠，数据/控制/结构冒险靠转发、停顿、分支预测解决，再用乱序与多发射提速。这把"内存里的指令"和"CPU 怎么跑"串起来。</p></div>
+    </div>
+
+    <!-- ===== 并发主线 ===== -->
+    <div class="threadline conc">
+      <h5>并发主线：线程如何被切换、又如何安全共享</h5>
+      <p class="tl-sub">从"进程和线程的区别"走到"共享数据三大问题"，把创建进程/线程、上下文切换、调度与内存序串成一条线。</p>
+      <div class="tl-step"><div class="num">1</div><div class="body"><b>进程 vs 线程</b><p>进程是资源分配单位、各有独立地址空间；线程是 CPU 调度单位，共享进程的代码/堆/文件，独占栈、寄存器、PC。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">2</div><div class="body"><b>创建进程 / 线程时发生什么</b><p><b>创建进程</b>：fork() 让内核新建 task_struct、PID、内核栈，并以 COW 复制 mm 与页表；execve() 再建全新 VMA、加载 ELF、把 argv/envp 放栈顶、设入口 PC，物理页延迟到首次缺页才真正分配。</p><p style="margin-top:6px;"><b>创建线程</b>：std::thread 只是句柄；pthread 用 mmap 分配线程栈、建用户态 TCB；内核 clone（带 CLONE_VM）建 task_struct 与内核栈、共享同一套页表，然后入运行队列。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">3</div><div class="body"><b>上下文切换哪些内容</b><p>六步骤——触发 → 存现场（PC/寄存器/栈指针入 TCB）→ 选线程 → 地址空间判断（同进程 CR3 不变、跨进程换 CR3 且 TLB 失效，PCID 可缓解）→ 装现场 → 跳转。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">4</div><div class="body"><b>CPU 调度方式切换</b><p>线程在就绪/运行/阻塞三态间转换，CFS 选 vruntime 最小者；触发时机含时间片用完、阻塞、抢占、终止。并发是单核时间片轮转，并行是多核同时执行。</p></div></div>
+      <div class="tl-arrow">↓</div>
+      <div class="tl-step"><div class="num">5</div><div class="body"><b>共享数据访问三问题</b><p>同一份共享数据在多核下要同时回答原子性、有序性、可见性，下面分三条展开。</p></div></div>
+      <div class="tl-branch"><p class="b-label">a · 原子性（操作不可分割）</p><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.65;">mutex 先 CAS 抢 state，失败经 futex 睡眠、解锁时 wake 唤醒；atomic 靠 LOCK/CAS 与 MESI 硬件缓存锁，只锁相关缓存行；多核高频写要防伪共享，用 alignas(64) 对齐。</p></div>
+      <div class="tl-branch"><p class="b-label">b · 有序性（禁止非法重排）</p><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.65;">用内存序 release/acquire（更强用 seq_cst），配合内存屏障，让编译器与 CPU 不把关键读写越过屏障重排。</p></div>
+      <div class="tl-branch"><p class="b-label">c · 可见性（写及时被看到）</p><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.65;">MESI 保证最终一致：写要先拿独占、向其他核发失效；但写可能停在 store buffer，需内存屏障冲刷。release/acquire 配对建立 happens-before——解锁=release、加锁=acquire，写方 release 前的所有写，读方 acquire 后保证可见。注意 C++ 的 volatile 不保证多线程可见性。</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 第一篇 ===== -->
+  <section class="part" id="p1">
+    <div class="part-head">
+      <div class="no">PART 01</div>
+      <h2>C++ 内存管理</h2>
+      <p>虚拟地址空间如何分区，内存如何被分配、翻译与回收，以及现代 C++ 如何靠 RAII 管理资源。</p>
+    </div>
+
+    <h3 class="sec" id="p1-1"><span class="tag">1.1</span>进程虚拟地址空间与内存分区</h3>
+    <p>进程运行在<b>独占的虚拟地址空间</b>中，这段空间按用途划分成不同的段。机器码在编译链接后先存于磁盘可执行文件，运行时由加载器<b>按需分页映射</b>进内存，而不是编译后直接整体装入。</p>
+    <div class="diagram">
+      <div class="seg dark">内核空间（用户态不可访问）</div>
+      <div class="arrow">高地址 ↑</div>
+      <div class="seg stack"><b>栈</b>：局部变量、函数栈帧；向下增长，默认上限 8MB</div>
+      <div class="seg kernel"><b>mmap 区</b>：共享库、大对象、文件映射；向下增长</div>
+      <div class="seg heap"><b>堆</b>：动态分配的对象；向上增长</div>
+      <div class="seg"><b>.data</b>：已初始化且非 0 的全局/静态变量　|　<b>.bss</b>：未初始化/零初始化的全局静态，加载时清零、不占可执行文件体积</div>
+      <div class="seg"><b>.rodata</b>：字符串字面量、全局 const、constexpr、虚函数表 vtable（只读）</div>
+      <div class="seg"><b>.text</b>：只读机器指令（代码段）</div>
+      <div class="arrow">低地址 ↓</div>
+      <div class="cap">图 1-1 进程虚拟地址空间分段（示意，非真实比例）</div>
+    </div>
+    <table class="tbl">
+      <tr><th>段</th><th>存什么</th><th>关键特征</th></tr>
+      <tr><td><code>.text</code></td><td>机器指令</td><td>只读</td></tr>
+      <tr><td><code>.rodata</code></td><td>字面量、全局 const、constexpr、vtable</td><td>只读</td></tr>
+      <tr><td><code>.data</code></td><td>已初始化非 0 全局/静态</td><td>可写，占文件体积</td></tr>
+      <tr><td><code>.bss</code></td><td>未初始化/零初始化全局静态</td><td>加载清零，不占文件体积</td></tr>
+      <tr><td>堆</td><td>动态对象</td><td>向上增长</td></tr>
+      <tr><td>mmap 区</td><td>共享库、大对象、文件映射</td><td>向下增长</td></tr>
+      <tr><td>栈</td><td>局部变量、栈帧</td><td>向下增长，默认 8MB</td></tr>
+    </table>
+
+    <h4>地址空间的四个关键细节</h4>
+    <div class="diagram">
+      <div class="seg stack"><b>栈顶（最高处）</b>：命令行参数 / 环境变量</div>
+      <div class="seg stack"><b>栈帧内部（高地址 → 低地址）</b>：实参 → 返回地址 → 保存的 rbp → 局部变量（函数内 const 局部变量也在栈帧里）</div>
+      <div class="seg kernel"><b>栈底 guard page（保护页）</b>：函数调深、碰到未映射页时触发缺页，内核自动补一页，直到 8MB 上限；超出则栈溢出报错</div>
+      <div class="seg danger"><b>0x0 附近</b>：保留空指针页，故意不映射，解引用 nullptr 立即段错误（Segmentation Fault）</div>
+      <div class="cap">图 1-2 栈与地址空间的关键细节（教学简化，非真实比例）</div>
+    </div>
+
+    <h3 class="sec" id="p1-2"><span class="tag">1.2</span>三个高频误区</h3>
+    <div class="callout warn"><b>误区一：const 都在常量区</b>函数内的 const 局部变量仍在<b>栈上</b>，const 只是编译器层的只读约束；只有全局 const、constexpr、字符串字面量才进 <code>.rodata</code>。</div>
+    <div class="callout warn"><b>误区二：虚指针 vptr 在常量区</b>vptr 位于<b>对象自身内存</b>（堆或栈），随对象走；只有它指向的虚函数表 vtable 才在只读段。</div>
+    <div class="callout warn"><b>误区三：malloc 会构造对象</b>malloc 只分配<b>原始内存</b>，不调用构造函数；C++ 中在原始内存上构造对象是 placement new 的职责。</div>
+  </section>
+  <section class="part" style="padding-top:0;">
+    <h3 class="sec" id="p1-3"><span class="tag">1.3</span>malloc/free 与 new/delete 的关系</h3>
+    <p>malloc/free 是 <b>C 库函数</b>；new/delete 是 <b>C++ 运算符</b>（可重载）。new 表达式做两件事：先调 <code>operator new</code> 分配原始内存（默认实现底层通常就是 malloc），再在其上调用<b>构造函数</b>；delete 则先调析构、再 <code>operator delete</code>（通常底层 free）。</p>
+    <div class="callout note"><b>为什么要"包装"一层</b>面向对象的需要：分配的同时构造、释放时析构，并获得类型安全。malloc 只给一块原始内存，对对象一无所知。</div>
+    <table class="tbl">
+      <tr><th>对比项</th><th>malloc / free</th><th>new / delete</th></tr>
+      <tr><td>性质</td><td>C 库函数</td><td>C++ 运算符，可重载</td></tr>
+      <tr><td>返回值</td><td>void*，需强转</td><td>类型化指针</td></tr>
+      <tr><td>失败行为</td><td>返回 NULL</td><td>抛 bad_alloc（nothrow 版返回 nullptr）</td></tr>
+      <tr><td>大小</td><td>手动指定字节数</td><td>自动计算 sizeof(T)</td></tr>
+      <tr><td>构造/析构</td><td>不调用</td><td>自动调用</td></tr>
+      <tr><td>数组</td><td>无概念</td><td>new[] / delete[]</td></tr>
+    </table>
+
+    <h3 class="sec" id="p1-4"><span class="tag">1.4</span>malloc 内部机制：glibc ptmalloc</h3>
+    <p>ptmalloc 按请求大小分流。小对象走堆区、用分级空闲链表管理；大对象直接 mmap。</p>
+    <div class="grid">
+      <div class="card heap"><b>小对象（&lt; 阈值）</b>默认阈值 128KB，运行中动态调整，64 位上限约 32MB。通过 brk/sbrk 推高 program break，内部用 bins 管理空闲块。</div>
+      <div class="card kernel"><b>大对象（≥ 阈值）</b>直接 mmap 匿名映射（MAP_ANONYMOUS | MAP_PRIVATE），free 时 munmap 立即归还 OS。</div>
+    </div>
+    <h4>小对象的空闲块查找顺序</h4>
+    <div class="pathflow">
+      <div class="node"><b>tcache</b>线程缓存</div><div class="sep">→</div>
+      <div class="node"><b>fastbins</b>快速</div><div class="sep">→</div>
+      <div class="node"><b>small bins</b>小块</div><div class="sep">→</div>
+      <div class="node"><b>unsorted</b>未排序</div><div class="sep">→</div>
+      <div class="node"><b>large bins</b>大块</div>
+    </div>
+    <ul>
+      <li>fast/small 按尺寸<b>精确匹配</b>，只有 large bin 才是 best-fit；</li>
+      <li>分配时先查 bins 有无合适块，没有才推堆顶向 OS 申请；</li>
+      <li>free 后 chunk 进 bins 缓存、<b>不立即归还 OS</b>，相邻空闲块合并以防碎片；</li>
+      <li><b>sbrk</b> 是"推 brk"的系统调用封装，<b>brk</b> 即程序堆顶边界（program break）。</li>
+    </ul>
+    <div class="callout note"><b>32 位地址空间的兜底</b>当 brk 推不动（碰到 mmap 的 VMA）时，ptmalloc 在 sysmalloc 中 fallback 到 mmap 独立块；只有地址空间彻底耗尽才返回 NULL / bad_alloc。</div>
+
+    <h4>chunk 与页的关系</h4>
+    <ul>
+      <li>sbrk 一次"批发"一大段（按页对齐，如 128KB），ptmalloc 再把它切成一个个 chunk"零售"；一个 chunk 可小于一页（多个 chunk 挤在同一页里），大 chunk 也可跨多页；</li>
+      <li>可用 <code>/proc/self/maps</code> 查看进程的 VMA：brk 堆与 mmap 区是各自独立的条目，权限、起止地址一目了然。</li>
+    </ul>
+    <div class="callout warn"><b>物理内存不够：overcommit 与 OOM Killer</b>
+      Linux 默认允许内存超发（overcommit），所以 malloc 往往成功，等真正写那些页时才可能出问题。物理内存紧张时内核依次处理：① 回收可丢弃的页缓存 / buffer；② 把匿名页（堆/栈）换出到 swap；③ 仍不足则触发 <b>OOM Killer</b> 按策略挑选进程杀掉。超发策略可用 <code>/proc/sys/vm/overcommit_memory</code> 调整。64 位下不缺虚拟地址，真正会卡住你的是物理内存。</div>
+  </section>
+  <section class="part" style="padding-top:0;">
+    <h3 class="sec" id="p1-5"><span class="tag">1.5</span>页、页表、MMU、TLB 与缺页</h3>
+    <p><b>页</b>是 OS 管理内存的最小单位，x86 默认 4KB（2<sup>12</sup>），物理侧对应等大的<b>页框</b>。虚拟地址 = 虚拟页号 VPN（高位）+ 页内偏移（低 12 位）= VPN×4096 + 偏移。</p>
+    <ul>
+      <li><b>页表</b>：内核拥有的映射数据结构，物理放在 RAM，用户态不可直接读写；</li>
+      <li><b>MMU</b>：硬件，每次访存自动查页表翻译；<b>TLB</b> 位于 MMU 内、CPU 芯片的 SRAM 上，缓存最近的翻译结果；</li>
+      <li>物理地址 = PFN&lt;&lt;12 | 偏移，页内偏移在虚拟/物理中是同一个值。例：PFN=5、offset=100 → 20580；VPN8、off0 → 32768 = 0x8000；</li>
+      <li><b>多级页表</b>按需分配：没用到的地址区间不建下级表，用很少内存支撑巨大地址空间；查得慢的问题靠 TLB 缓解。</li>
+    </ul>
+    <h4>多级页表的具体层级</h4>
+    <ul>
+      <li><b>x86_64（48 位）</b>：4 级——PML4 → PDPT → PD → PT，每级 512 项、对应 9 位地址；</li>
+      <li><b>32 位 x86</b>：2 级——PD（PDI，10 位）→ PT（PTI，10 位），每级 1024 项；</li>
+      <li>单级页表须一次性建全 2²⁰ 项（约 4MB/进程），二级页表只用 3 页时总共仅约 8KB（1 个页目录 + 1 个页表）——这就是"按需分配、稀疏省内存"，20 位是寻址能力、不是必须建满的表。</li>
+    </ul>
+    <h4>一次访存的翻译时序</h4>
+    <div class="pathflow">
+      <div class="node"><b>查 TLB</b>命中→物理地址</div><div class="sep">→</div>
+      <div class="node"><b>未命中</b>查多级页表</div><div class="sep">→</div>
+      <div class="node"><b>页表有</b>回填 TLB</div><div class="sep">→</div>
+      <div class="node"><b>页表无</b>缺页，内核处理</div>
+    </div>
+    <div class="callout note"><b>缺页时内核具体做什么（回答"回填 TLB、L1？"）</b>
+      ① 分配一个空闲物理页框；若内容在磁盘（swap/文件页），先把数据读进该页框；② 建立/更新 PTE，把虚拟页映射到该页框并设好权限；③ 回填 TLB，再返回用户态重试那条触发缺页的指令。
+      <b>TLB 会被回填，但 L1 不是内核主动写的。</b>L1 缓存的是指令/数据内容，等指令恢复执行、真正访问该地址时，硬件才按缓存行从 L2/L3/RAM 加载（demand fill），并顺带利用空间局部性预取相邻行。</div>
+    <h4>五种缺页原因</h4>
+    <table class="tbl">
+      <tr><th>原因</th><th>说明</th></tr>
+      <tr><td>首次访问</td><td>demand paging，第一次用到该页</td></tr>
+      <tr><td>写时复制 COW</td><td>见下方</td></tr>
+      <tr><td>栈自动增长</td><td>栈触到边界时自动扩展新页</td></tr>
+      <tr><td>swap 换入</td><td>页被换出到磁盘，需读回</td></tr>
+      <tr><td>文件页被回收</td><td>页缓存被回收，需重新读文件</td></tr>
+    </table>
+    <div class="callout note"><b>COW 写时复制</b>fork 后父子 PTE 共享同一物理页并标只读；任一方写触发写保护缺页，内核分配新页、复制内容、把写方 PTE 改可写，另一方仍指原页且只读。<b>谁写谁才获得独立副本。</b></div>
+
+    <h4>内核如何管理物理内存：buddy / slab / page cache</h4>
+    <div class="grid">
+      <div class="card kernel"><b>伙伴系统 buddy</b>最底层按页 / 页块（1,2,4,8…页）分配，相邻空闲块可合并，防止外部碎片。</div>
+      <div class="card kernel"><b>slab / slub</b>内核自己的小对象池，按类型缓存 task_struct、inode、file、sk_buff，免重复初始化（Linux 默认 slub）。</div>
+      <div class="card"><b>page cache</b>RAM 里缓存的磁盘文件内容；干净页内存紧张时可直接丢弃，脏页先刷盘。</div>
+    </div>
+
+    <h3 class="sec" id="p1-6"><span class="tag">1.6</span>RAII 与智能指针</h3>
+    <p><b>RAII</b> 把资源生命周期绑定到栈对象：构造时获取资源、析构时释放。栈对象离开作用域必然析构（异常栈展开也会析构），且不限于内存——lock_guard 管锁、fstream 管文件。</p>
+    <div class="grid">
+      <div class="card stack"><b>unique_ptr</b>独占所有权，同一时刻只有一个持有者。注意：它是"独占所有权"，<b>不是单例</b>。</div>
+      <div class="card stack"><b>shared_ptr</b>共享所有权，引用计数是原子操作；但不自动给所指对象加锁，多线程改同一对象仍需 mutex。</div>
+      <div class="card"><b>weak_ptr</b>不增 use_count，用于打破循环引用。</div>
+    </div>
+    <ul>
+      <li>强/弱计数始终在<b>同一控制块</b>：use_count 归零销毁对象，weak_count 归零才释放控制块；</li>
+      <li><code>make_shared</code> 把对象与控制块合并为一次分配（少一次分配、缓存友好；但长命 weak_ptr 时整块延迟释放）；<code>shared_ptr(new T)</code> 是两次分配。</li>
+    </ul>
+    <div class="callout note"><b>那单例到底该怎么实现</b>单例靠<b>私有构造 + static 接口</b>，与 operator new 无关（重载 operator new 只改内存来源、不限制实例个数）。C++11 起函数内 static 局部变量的初始化是线程安全的：
+      <pre class="code">class Singleton {
+public:
+    static Singleton&amp; get() {
+        static Singleton instance; // C++11 起初始化线程安全
+        return instance;
+    }
+private:
+    Singleton() = default;
+    Singleton(const Singleton&amp;) = delete;
+    Singleton&amp; operator=(const Singleton&amp;) = delete;
+};</pre>
+    </div>
+    <div class="callout tip"><b>现代实践：如何防止内存泄漏</b>
+      ① 优先栈对象 / 值语义，优先用标准容器（vector 等）管理动态对象；② 必须堆分配时用 make_unique / make_shared；③ 裸指针或引用仅用于非拥有的观察，不负责删；④ 基类析构函数加 virtual；⑤ 一切资源用 RAII 类型（lock_guard、fstream、智能指针）；几乎不手写 delete。</div>
+  </section>
+  <!-- ===== 第二篇 ===== -->
+  <section class="part" id="p2">
+    <div class="part-head">
+      <div class="no">PART 02</div>
+      <h2>CPU 微架构</h2>
+      <p>CPU 内部如何用缓存弥补速度差，如何保证多核缓存一致，以及一条指令在流水线中如何被执行。</p>
+    </div>
+
+    <h3 class="sec" id="p2-1"><span class="tag">2.1</span>存储层级与 CPU 缓存</h3>
+    <p>CPU 内有两类 SRAM，职责不同：一类缓存<b>指令/数据内容</b>，一类缓存<b>地址翻译</b>。</p>
+    <div class="diagram">
+      <div class="pathflow" style="margin:4px 0;">
+        <div class="node"><b>L1i / L1d</b>核私有，约 32KB</div><div class="sep">→</div>
+        <div class="node"><b>L2</b>核私有</div><div class="sep">→</div>
+        <div class="node"><b>L3</b>多核共享</div><div class="sep">→</div>
+        <div class="node"><b>RAM</b>容量大、慢</div>
+      </div>
+      <div class="cap">图 2-1 缓存层级（越靠近核心越快、越小）</div>
+    </div>
+    <ul>
+      <li>L1 分 L1i（指令）与 L1d（数据）；L2 核私有；L3 多核共享；</li>
+      <li><b>TLB</b> 缓存地址翻译，分 iTLB（IF 取指用）与 dTLB（MEM 数据用）；</li>
+      <li>缓存基于两种局部性：<b>时间局部性</b>（刚用过还会用）与<b>空间局部性</b>（用到相邻数据）；</li>
+      <li>缓存与缓存一致性的最小单位是<b>缓存行，64B</b>。</li>
+    </ul>
+    <div class="callout note"><b>指令地址 vs 数据地址</b>指令地址是 PC 指向的 <code>.text</code> 里的位置；数据地址是 load/store 操作的堆/栈位置。取指走 iTLB + L1i，读写数据走 dTLB + L1d。</div>
+    <div class="callout note"><b>什么情况下数据在 L2/L3 而不在 L1</b>数据首次进入一般先到 L1，并不是"主动越过 L1 存放"。但 L1 最小（约 32KB），装满后新行会把旧行挤出（evict）。
+      多数 CPU 采用<b>包含（inclusive）策略</b>，L1 是 L2 的子集：被 L1 淘汰的行通常仍保留在 L2/L3，所以 L1 miss 时先查 L2、再 L3，命中就逐级取回、不必访问 RAM；多核共享的数据主要放在共享的 L3。
+      一次性遍历大数组这类没有时间局部性的流式访问，可用非临时（non-temporal）指令旁路 L1，避免把有用数据冲掉。不同架构也有 exclusive（不包含）策略。</div>
+
+    <h3 class="sec" id="p2-2"><span class="tag">2.2</span>MESI 缓存一致性</h3>
+    <p>多核各有私有缓存，靠 MESI 协议通过总线 <b>snooping（监听）</b>与失效消息保证缓存<b>最终一致</b>。</p>
+    <table class="tbl">
+      <tr><th>状态</th><th>含义</th><th>能否直接写</th></tr>
+      <tr><td><code>M</code></td><td>本核独有、已修改、与内存不一致</td><td>可以</td></tr>
+      <tr><td><code>E</code></td><td>本核独有、干净</td><td>可以（转 M）</td></tr>
+      <tr><td><code>S</code></td><td>多核可同时持有、干净</td><td>否，先失效别人</td></tr>
+      <tr><td><code>I</code></td><td>无效，无可用数据</td><td>否，先获取</td></tr>
+    </table>
+    <div class="callout warn"><b>关键：一致 ≠ 即时可见</b>MESI 保证最终一致，但不保证可见时机；加上编译器/CPU 重排，多线程仍需内存屏障或锁来保证正确性。</div>
+    <div class="callout note"><b>为什么 MESI 是硬件层面，而不是物理分区</b>MESI 由 CPU 的<b>缓存控制器 + 总线监听逻辑</b>在硅片电路里实现，状态流转完全由硬件自动完成，OS 和应用无感知、也不参与；它在纳秒级响应，若靠 OS 软件中断处理根本来不及。
+      它<b>不是把缓存物理切成四块区域</b>：缓存还是同一块 SRAM，只是每个缓存行的 tag 里额外用 2 个状态位编码 M/E/S/I。硬件在总线上自动广播/监听请求与失效消息。这也正是 LOCK 指令能直接利用 MESI 做缓存锁的原因。</div>
+  </section>
+  <section class="part" style="padding-top:0;">
+    <h3 class="sec" id="p2-3"><span class="tag">2.3</span>五级指令流水线</h3>
+    <div class="pathflow">
+      <div class="node"><b>IF 取指</b>PC 虚拟地址，iTLB 翻译，L1i 取指令</div><div class="sep">→</div>
+      <div class="node"><b>ID 译码</b>解析 opcode，读寄存器文件</div><div class="sep">→</div>
+      <div class="node"><b>EX 执行</b>ALU 运算；load/store 算有效地址</div><div class="sep">→</div>
+      <div class="node"><b>MEM 访存</b>仅 load/store，dTLB、L1d；store 先进 store buffer</div><div class="sep">→</div>
+      <div class="node"><b>WB 写回</b>写回寄存器；store 无 WB</div>
+    </div>
+    <h4>三类指令的数据路径</h4>
+    <table class="tbl">
+      <tr><th>类型</th><th>路径</th><th>是否碰内存</th></tr>
+      <tr><td>load</td><td>RAM → MEM → 寄存器</td><td>是</td></tr>
+      <tr><td>add（运算）</td><td>寄存器 → EX → 寄存器</td><td>否，MEM 空转</td></tr>
+      <tr><td>store</td><td>寄存器 → MEM → RAM</td><td>是，无 WB</td></tr>
+    </table>
+    <div class="callout note"><b>打通的关键认知</b>"EX 都要算术了，为什么 MEM 才读数据"——误区根源是<b>以为一条指令瞬时一次做完</b>。实际上读内存要靠独立的 load 指令先把数据搬进寄存器，ALU 只对寄存器操作；指令是分阶段、可与其他指令重叠的。</div>
+
+    <h4>流水线冒险（hazard）与处理</h4>
+    <table class="tbl">
+      <tr><th>冒险</th><th>成因</th><th>处理手段</th></tr>
+      <tr><td>数据冒险</td><td>后一条指令要用前一条还没算完的结果</td><td>转发（旁路 forwarding），必要时停顿 stall</td></tr>
+      <tr><td>控制冒险</td><td>分支/跳转改变 PC，下一条指令地址未知</td><td>分支预测、推测执行、冲刷流水线</td></tr>
+      <tr><td>结构冒险</td><td>多条指令同一周期争用同一硬件资源</td><td>资源重复（如分离 L1i / L1d）</td></tr>
+    </table>
+    <div class="callout note"><b>流水线的收益（时空图量化）</b>4 条指令若不流水线要 20 个周期（4×5），五级流水线重叠后约 8 个周期即可全部完成；单条指令延迟不变，但单位时间完成的指令数（吞吐）大幅提升。</div>
+
+    <h3 class="sec" id="p2-4"><span class="tag">2.4</span>现代 CPU 的三大提速手段</h3>
+    <div class="grid">
+      <div class="card"><b>流水线</b>多条指令处在不同阶段、重叠执行，提升吞吐。</div>
+      <div class="card"><b>乱序执行 OoO</b>操作数就绪的指令先执行，不必死等；经 ROB（重排序缓冲）最终<b>按序提交</b>，保证结果正确。</div>
+      <div class="card"><b>多发射</b>超标量，一个周期同时启动多条指令（4–6 宽），配合 SIMD；分静态（编译器排）与动态（硬件调度）。</div>
+    </div>
+    <div class="callout tip"><b>落盘与写回的区别</b>WB 写回的是寄存器；匿名页（堆/栈，无文件 backing）默认只在 RAM、不落盘。只有软件显式 write 才涉及磁盘：先落 page cache（脏页）立即返回，由 flusher 线程稍后（约 30s 或内存紧张时）异步刷盘，fsync 强制等待刷完，与流水线 WB 无关。</div>
+  </section>
+  <!-- ===== 第三篇 ===== -->
+  <section class="part" id="p3">
+    <div class="part-head">
+      <div class="no">PART 03</div>
+      <h2>并发与多线程</h2>
+      <p>多个执行流如何共享与隔离，上下文如何切换，以及如何用原子、内存序和锁保证正确。</p>
+    </div>
+
+    <h3 class="sec" id="p3-1"><span class="tag">3.1</span>进程 vs 线程：共享什么、独占什么</h3>
+    <div class="grid">
+      <div class="card heap"><b>线程共享（进程级）</b>代码段、堆、全局/静态数据、页表（地址空间）、文件描述符。</div>
+      <div class="card stack"><b>线程独占（线程级）</b>线程栈、寄存器状态（含 PC）、栈指针、TLS、信号掩码、线程 ID。</div>
+    </div>
+    <p>进程是<b>资源分配</b>的最小单位（独立地址空间），线程是 <b>CPU 调度</b>的最小单位，一个进程至少含一个线程。</p>
+
+    <h3 class="sec" id="p3-2"><span class="tag">3.2</span>上下文切换：CR3、TLB、PC、栈</h3>
+    <h4>创建一个线程时，到底发生了什么</h4>
+    <div class="diagram">
+      <div class="pathflow" style="margin:4px 0;">
+        <div class="node"><b>① std::thread</b>C++ 句柄对象，放栈/堆都行，只是"遥控器"</div><div class="sep">→</div>
+        <div class="node"><b>② pthread 库</b>mmap 分配线程栈 + 建用户态 TCB</div><div class="sep">→</div>
+        <div class="node"><b>③ 内核 clone</b>建 task_struct + 内核栈，登记同一套页表</div><div class="sep">→</div>
+        <div class="node"><b>④ 入队/运行</b>进运行队列，调度后在新栈上执行用户函数</div>
+      </div>
+      <div class="cap">图 3-1 线程创建的完整步骤（教学简化）</div>
+    </div>
+
+    <h4>创建进程：fork 与 execve 到底做了什么</h4>
+    <div class="diagram">
+      <div class="seg kernel"><b>fork() 先</b>：内核新建 task_struct、PID、内核栈，以 COW 复制父进程 mm 与页表（不立即复制物理页）</div>
+      <div class="arrow">↓ execve() 替换程序（PID 不变，成功后不返回）</div>
+      <div class="seg"><b>1</b> 按路径找到磁盘上的可执行文件，校验 ELF 格式与执行权限</div>
+      <div class="seg"><b>2</b> 清空旧地址空间：销毁旧 mm_struct、VMA、页表（task_struct / PID 保留）</div>
+      <div class="seg"><b>3</b> 建新地图：解析 ELF 程序头，建一批新 VMA（代码/数据/堆/栈/mmap）</div>
+      <div class="seg"><b>4</b> 映射可执行文件与动态链接器 ld-linux（共享库由它加载）</div>
+      <div class="seg stack"><b>5</b> 初始化用户栈：argv、envp 压到栈顶（main(argc,argv) 因此能取到参数）</div>
+      <div class="seg"><b>6</b> 把 PC 设到程序入口 _start（它初始化后再调 main）</div>
+      <div class="seg ok"><b>7</b> 从新 PC 开始跑，第一条指令触发缺页、才真正把代码读进 RAM</div>
+      <div class="cap">图 3-2 创建进程：fork 与 execve 七步（教学简化）</div>
+    </div>
+
+    <table class="tbl">
+      <tr><th>对比</th><th>同进程线程切换</th><th>跨进程切换</th></tr>
+      <tr><td>PC / 寄存器 / 栈</td><td>保存并恢复</td><td>保存并恢复</td></tr>
+      <tr><td>CR3（页表基址）</td><td>不变</td><td>加载新进程页表基址</td></tr>
+      <tr><td>TLB</td><td>保留</td><td>旧翻译失效，通常刷 TLB</td></tr>
+      <tr><td>L1/L2/L3</td><td>影响小</td><td>不主动刷，但缓存变冷、命中率下降</td></tr>
+      <tr><td>开销</td><td>小</td><td>大</td></tr>
+    </table>
+    <ul>
+      <li><b>CR3</b> 是 x86 控制寄存器，存顶级页表物理地址，MMU 从这开始查；</li>
+      <li><b>PCID/ASID</b> 给 TLB 条目打地址空间标签，跨进程切换时可保留、避免全刷；</li>
+      <li>Linux 中进程和线程都用 <code>task_struct</code> 表示，区别在 <code>clone()</code> 是否带 CLONE_VM/CLONE_FILES 等共享标志：线程共享同一个 <code>mm_struct</code>，进程各有独立 mm_struct。</li>
+    </ul>
+    <h4>一次上下文切换的六个步骤</h4>
+    <div class="diagram">
+      <div class="pathflow" style="margin:4px 0;">
+        <div class="node"><b>1 触发</b>中断/阻塞/抢占</div><div class="sep">→</div>
+        <div class="node"><b>2 存现场</b>PC/寄存器/栈指针存入 TCB</div><div class="sep">→</div>
+        <div class="node"><b>3 选线程</b>调度器从队列选下一个</div><div class="sep">→</div>
+        <div class="node"><b>4 地址空间</b>同进程 CR3 不变；跨进程换 CR3、TLB 失效</div><div class="sep">→</div>
+        <div class="node"><b>5 装现场</b>新线程 PC/寄存器装入 CPU</div><div class="sep">→</div>
+        <div class="node"><b>6 跳转</b>从新 PC 继续执行</div>
+      </div>
+      <div class="cap">图 3-3 上下文切换六步骤（教学简化）</div>
+    </div>
+    <div class="callout note"><b>内核态 TCB 与用户态 TCB：为什么 pthread 还要建一个</b>
+      <b>内核 TCB</b>（task_struct）给内核调度器用，存调度信息、寄存器保存槽、内核栈、页表指针；<b>用户态 TCB</b> 是 pthread 库在用户态维护的结构，存线程栈、TLS、errno、栈边界、线程取消/清理函数等线程私有状态。
+      这些数据（尤其 errno、TLS、栈）运行时高频访问，若放内核每次都要系统调用、开销大，内核也不关心语言库细节；用户态 TCB 让线程库不陷入内核就能管理。注意：线程栈通常是 pthread 用 <b>mmap 分配</b>的（不是 new 到堆），用户态 TCB 结构本身在库管理的内存。</div>
+    <h4>两种"换出"：缓存行淘汰 vs 磁盘 swap</h4>
+    <table class="tbl">
+      <tr><th>对比</th><th>缓存行淘汰 eviction</th><th>磁盘 swap</th></tr>
+      <tr><td>发生位置</td><td>L1/L2/L3 内部</td><td>内核虚拟内存（RAM 页）</td></tr>
+      <tr><td>触发者</td><td>硬件自动</td><td>内核，在内存压力大时</td></tr>
+      <tr><td>去向</td><td>干净行直接丢弃、脏行写回下一级（L1→L2→L3→RAM）</td><td>整页写到磁盘交换区，PTE 标记不在内存</td></tr>
+      <tr><td>速度</td><td>纳秒级</td><td>毫秒级，慢几个数量级</td></tr>
+      <tr><td>再访问</td><td>从下层取回即可</td><td>触发缺页，从磁盘读回</td></tr>
+    </table>
+    <div class="callout note"><b>两个易混点</b>① 脏缓存行写回的是 <b>RAM（不是磁盘）</b>，只是从快缓存挪到慢内存；② 磁盘 swap 存的是<b>整页当时完整的 4KB 字节</b>，不是单个缓存行。</div>
+
+    <h3 class="sec" id="p3-3"><span class="tag">3.3</span>CPU 如何调度线程</h3>
+    <div class="grid">
+      <div class="card"><b>并发（单核）</b>多线程按时间片快速轮转，微观交替、宏观同时。</div>
+      <div class="card ok"><b>并行（多核）</b>多个线程在同一时刻真正同时执行，每个核心有自己的运行队列。</div>
+    </div>
+    <p>线程在<b>就绪、运行、阻塞</b>三态间转换；调度触发时机：时间片用完（时钟中断）、主动阻塞（等 I/O/锁/sleep）、高优先级线程唤醒抢占、线程终止。Linux CFS 调度器选择 vruntime（虚拟运行时间）最小的线程上 CPU。</p>
+    <div class="callout note"><b>教学简化说明</b>上述调度策略（CFS、三态、触发时机）与 3.2 的切换步骤均为教学简化模型；真实 Linux 还含调度类（deadline/rt/cfs）、nice 优先级、负载均衡、cgroup、唤醒抢占等大量机制，具体行为随内核版本而异。</div>
+  </section>
+  <section class="part" style="padding-top:0;">
+    <h3 class="sec" id="p3-4"><span class="tag">3.4</span>竞态条件与临界区</h3>
+    <p>一句 <code>count++</code> 在机器层面是 <b>load → add → store</b> 三条指令，线程可能在任意两条之间被切换。两个线程各加一次，正确结果应为 2，时序交错后可能都基于旧值 0、最终只得到 1（丢更新）。</p>
+    <ul>
+      <li><b>竞态条件</b>：结果取决于线程执行的精确先后，因而不可预测；</li>
+      <li><b>临界区</b>：访问共享资源、中途不能被插入的代码；处理它的代码分四区段——<b>进入区、临界区、退出区、剩余区</b>；</li>
+      <li>解决办法是让临界区<b>互斥</b>：同一时刻只放一个线程进入。</li>
+    </ul>
+    <h4>四个区段各自是干嘛的</h4>
+    <table class="tbl">
+      <tr><th>区段</th><th>职责</th><th>典型代码</th></tr>
+      <tr><td>进入区 entry</td><td>申请进入、检查/设置标志，决定本线程能否进入</td><td><code>mutex.lock()</code></td></tr>
+      <tr><td>临界区 critical</td><td>真正访问共享资源、必须互斥的那段代码</td><td><code>count++</code></td></tr>
+      <tr><td>退出区 exit</td><td>释放访问权、清标志，让其他线程能进入</td><td><code>mutex.unlock()</code></td></tr>
+      <tr><td>剩余区 remainder</td><td>其余不碰共享资源的代码</td><td>普通计算、I/O 等</td></tr>
+    </table>
+
+    <h3 class="sec" id="p3-5"><span class="tag">3.5</span>原子操作与 std::atomic</h3>
+    <p><b>原子性</b>指一个操作要么完整执行完、要么不执行，中间状态对其他线程不可见。<code>std::atomic&lt;T&gt;</code> 编译后使用硬件原子指令：x86 的 LOCK 前缀（如 LOCK XADD）、CMPXCHG；现代实现靠 MESI 做<b>缓存锁</b>，只锁定涉及的缓存行而非整个总线。</p>
+    <div class="callout warn"><b>数据竞争是未定义行为</b>普通非原子变量被多线程并发写，属于 undefined behavior，不是"结果随机"那么简单。单变量计数/标志位用 atomic，多变量或一段逻辑用 mutex。</div>
+
+    <h3 class="sec" id="p3-6"><span class="tag">3.6</span>内存模型与内存序</h3>
+    <p>并发有三个独立问题：<b>原子性</b>（操作不可分）、<b>可见性</b>（写何时对别人可见）、<b>有序性</b>（编译器/CPU 重排）。内存序是 C++ 标准定义的抽象（非 OS 概念），由编译器翻译为硬件屏障（如 MFENCE）。</p>
+    <table class="tbl">
+      <tr><th>内存序</th><th>语义</th></tr>
+      <tr><td><code>relaxed</code></td><td>只保证原子性，无跨线程顺序，适合纯计数</td></tr>
+      <tr><td><code>acquire</code></td><td>读操作，后续读写不重排到它前面</td></tr>
+      <tr><td><code>release</code></td><td>写操作，之前读写不重排到它后面</td></tr>
+      <tr><td><code>acq_rel</code></td><td>读改写兼具两者</td></tr>
+      <tr><td><code>seq_cst</code></td><td>最强、默认，再加全局唯一总顺序</td></tr>
+    </table>
+    <div class="callout note"><b>release/acquire 配对</b>生产者先写数据再 release 置标志，消费者 acquire 读到标志后，生产者 release 之前的所有写都对其可见，构成 happens-before。<code>consume</code> 已不推荐使用。</div>
+  </section>
+  <section class="part" style="padding-top:0;">
+    <h3 class="sec" id="p3-7"><span class="tag">3.7</span>锁、futex 与无锁</h3>
+    <div class="grid">
+      <div class="card"><b>std::mutex（底层 futex）</b>先在用户态 CAS 抢锁，无竞争直接成功；失败才 futex_wait 陷入内核睡眠，解锁时 futex_wake 唤醒。</div>
+      <div class="card"><b>自旋锁</b>抢不到就循环 CAS 忙等，不睡眠、无切换开销，适合持锁极短；单核上纯烧 CPU。</div>
+      <div class="card"><b>无锁 CAS</b>读旧值→算新值→CAS 替换，失败重试；无阻塞、免疫死锁。经典坑 ABA，用版本号解决。</div>
+    </div>
+    <div class="callout note"><b>对照 Java：ReentrantLock/AQS 与 synchronized 锁升级</b>
+      <b>ReentrantLock（AQS）</b>：CAS 抢 state（0 空闲→1 占用），抢不到就封装成 Node 入队、LockSupport.park() 挂起，释放时改 state 并 unpark 队首——与 futex 的"用户态 CAS 快路径 + 失败睡眠"同构。
+      <b>synchronized</b>：在对象头 Mark Word 里做锁升级——<b>偏向锁</b>（单线程，CAS 记录线程 ID，几乎零开销）→ <b>轻量级锁</b>（多线程但竞争不激烈，CAS 自旋，对应自旋锁）→ <b>重量级锁</b>（竞争激烈，膨胀成 monitor，没抢到的挂起，对应 futex 睡眠）。
+      对应关系：CAS 抢 state = AQS；自旋 = 轻量级锁；futex 睡眠 = 重量级锁。</div>
+    <div class="callout warn"><b>死锁四条件（同时满足才发生）</b>互斥、持有并等待、不可抢占、循环等待。破解：固定全局加锁顺序、try_lock 回退、超时、减小锁粒度。</div>
+
+    <h3 class="sec" id="p3-8"><span class="tag">3.8</span>伪共享、缓存行对齐与 thread_local</h3>
+    <div class="callout warn"><b>伪共享 false sharing</b>缓存一致性以缓存行（64B）为单位。若两个线程各自的变量恰好挤在同一行，一方写会让另一方整行失效，缓存行在核间反复弹跳、性能骤降——逻辑上不共享，物理上却被拖累。</div>
+    <ul>
+      <li>用 <code>alignas(64)</code> 让高频写的变量各自独占缓存行，或手动 padding；代价是少量空间换大幅性能；</li>
+      <li><code>thread_local</code> 让变量每线程一份独立副本，线程开始创建、结束销毁，从根上不共享、无需加锁；适合私有缓冲区、分配器、随机数种子等。</li>
+    </ul>
+    <div class="callout tip"><b>一条工程决策线</b>能用栈/thread_local 不共享最快 → 单变量用 atomic → 多变量或一段逻辑用 mutex → 高频写的 atomic 记得 alignas(64) 防伪共享。</div>
+  </section>
+  <!-- ===== 附录 ===== -->
+  <section class="part" id="app">
+    <div class="part-head">
+      <div class="no">APPENDIX</div>
+      <h2>速查与配套</h2>
+      <p>关键量化值、可交互模拟器入口与术语表。</p>
+    </div>
+
+    <h3 class="sec" id="app-num"><span class="tag">A.1</span>关键量化值速查</h3>
+    <table class="tbl">
+      <tr><th>项目</th><th>值 / 说明</th></tr>
+      <tr><td>页大小</td><td>x86 默认 4KB（2<sup>12</sup>）；大页 2MB / 1GB</td></tr>
+      <tr><td>缓存行</td><td>64B；L1 约 32KB</td></tr>
+      <tr><td>mmap 阈值</td><td>默认 128KB，动态调整，64 位上限约 32MB</td></tr>
+      <tr><td>栈上限</td><td>默认 8MB（ulimit -s）</td></tr>
+      <tr><td>地址空间</td><td>x86_64 48 位用户态约 128TB；32 位约 3GB</td></tr>
+      <tr><td>地址公式</td><td>虚拟 = VPN×4096 + 偏移；物理 = PFN&lt;&lt;12 | 偏移</td></tr>
+      <tr><td>bins 顺序</td><td>tcache → fastbins → small bins → unsorted → large bins</td></tr>
+      <tr><td>协议 / 阶段</td><td>MESI 四态 M/E/S/I；流水线五级 IF/ID/EX/MEM/WB</td></tr>
+    </table>
+
+    <h3 class="sec" id="app-sim"><span class="tag">A.2</span>配套可交互模拟器</h3>
+    <p>两个模拟器与本手册位于同一目录，点击即可在浏览器打开（需连同 HTML 文件一起保留）。</p>
+    <div class="toc-cards">
+      <a href="cpp-machine-simulator.html"><b>白盒机器模拟器（第一版）</b><span>预设程序、平铺面板、单步/播放/重置，观察 CPU/内核/RAM/磁盘状态。</span></a>
+      <a href="cpp-whitebox-simulator.html"><b>白盒机器模拟器（重构版）</b><span>可输入汇编与数据、四大模块、动态数据流、分组导航与历史跳转。</span></a>
+    </div>
+
+    <h3 class="sec" id="app-term"><span class="tag">A.3</span>术语表</h3>
+    <table class="tbl">
+      <tr><th>术语</th><th>含义</th></tr>
+      <tr><td>VPN / PFN</td><td>虚拟页号 / 物理页框号</td></tr>
+      <tr><td>MMU / TLB</td><td>地址翻译硬件 / 缓存翻译结果的高速缓存</td></tr>
+      <tr><td>CR3</td><td>存放顶级页表物理地址的 CPU 控制寄存器</td></tr>
+      <tr><td>VMA</td><td>虚拟内存区域，描述一段地址空间的用途与权限</td></tr>
+      <tr><td>mm_struct</td><td>描述进程地址空间的内核结构；线程共享、进程独立</td></tr>
+      <tr><td>task_struct</td><td>内核描述一个线程/进程的结构（即 TCB）</td></tr>
+      <tr><td>futex</td><td>用户态快、内核态阻塞的快速互斥系统调用</td></tr>
+      <tr><td>CAS</td><td>比较并交换，原子指令，无锁编程基础</td></tr>
+      <tr><td>RAII</td><td>资源获取即初始化，生命周期绑定栈对象</td></tr>
+      <tr><td>happens-before</td><td>内存模型中保证一个写对另一个读可见的关系</td></tr>
+      <tr><td>伪共享</td><td>无关变量同处一个缓存行导致的核间失效与弹跳</td></tr>
+      <tr><td>eviction（淘汰）</td><td>缓存行被新数据挤出，干净行丢弃、脏行写回下层</td></tr>
+      <tr><td>demand fill</td><td>访问时硬件才按缓存行从下层加载，而非内核主动回填</td></tr>
+      <tr><td>用户态 TCB</td><td>pthread 库维护的线程结构，管栈/TLS/errno 等</td></tr>
+      <tr><td>AQS</td><td>Java 同步器框架：CAS 抢 state + 队列 park/unpark</td></tr>
+      <tr><td>锁升级</td><td>synchronized 的偏向锁→轻量级锁→重量级锁</td></tr>
+    </table>
+  </section>
+
+</div>
+</main>
+
+<script>
+(function(){
+  try{
+    var sidebar=document.getElementById('sidebar');
+    var btn=document.getElementById('menuBtn');
+    var backdrop=document.getElementById('backdrop');
+    if(!sidebar||!btn||!backdrop) return;
+    function close(){sidebar.classList.remove('open');backdrop.classList.remove('show');}
+    btn.addEventListener('click',function(){
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
+    });
+    backdrop.addEventListener('click',close);
+    var links=document.querySelectorAll('.navlink');
+    for(var i=0;i<links.length;i++){
+      links[i].addEventListener('click',function(){
+        if(window.innerWidth<=900) close();
+      });
+    }
+    var sections=[];
+    for(var j=0;j<links.length;j++){
+      var id=links[j].getAttribute('href').slice(1);
+      var el=document.getElementById(id);
+      if(el) sections.push({el:el,link:links[j]});
+    }
+    if('IntersectionObserver' in window){
+      var obs=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting){
+            links.forEach(function(l){l.classList.remove('active');});
+            for(var k=0;k<sections.length;k++){
+              if(sections[k].el===en.target) sections[k].link.classList.add('active');
+            }
+          }
+        });
+      },{rootMargin:'-20% 0px -70% 0px'});
+      sections.forEach(function(s){obs.observe(s.el);});
+    }
+  }catch(e){console.error(e);}
+})();
+</script>
+</body>
+</html>

@@ -162,6 +162,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: 'C++内存、OS与并发',
+    volume: 'C++',
+    description:
+      '从一行 C++ 到一台机器的三篇全链路：内存管理（分区模型 / new vs malloc / ptmalloc 内部 / 页表 MMU 缺页 / RAII 智能指针）→ CPU 微架构（缓存层级 / MESI 一致性 / 五级流水线 / 乱序与多发射）→ 并发与多线程（进程 vs 线程 / 上下文切换 / CPU 调度 / 竞态 / 原子操作 / 内存模型与序 / 锁与无锁 / 伪共享与 TLS），附量化值速查表与两个可交互白盒模拟器。',
+    href: '/books/cpp-system-handbook/cpp-system-handbook.html',
+    tags: ['C++', '操作系统', '并发', '面试'],
+    accent: '#0e7490',
+    category: 'backend',
+  },
+  {
     title: 'epoll 内部结构与工作流程图解',
     volume: 'C++ 配套',
     description:

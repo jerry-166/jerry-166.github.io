@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>白盒机器 · C++ 到物理内存全流程模拟器</title>
+<style>
+:root{--bg:#08111f;--panel:#101c2d;--panel2:#0b1625;--line:#26364d;--text:#e5edf8;--muted:#8ea1b9;--blue:#60a5fa;--violet:#c4b5fd;--cyan:#67e8f9;--amber:#fbbf24;--green:#86efac;--red:#f87171}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#12223a 0,transparent 32%),var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:13px}button,textarea,input{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:auto;padding:12px 16px 16px}.header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}.title{font-size:21px;font-weight:750;letter-spacing:.2px}.subtitle{font-size:12px;color:var(--muted);margin-top:3px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid #31547d;border-radius:99px;color:#bfdbfe;background:#10243d;font-size:11px;white-space:nowrap}.dot{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 8px #34d399}.card{background:rgba(16,28,45,.96);border:1px solid var(--line);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.12)}.source-card{padding:11px 12px;margin-bottom:10px}.source-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.section-title{font-size:12px;font-weight:700;color:#cbd5e1}.section-note{font-size:10.5px;color:var(--muted)}textarea{display:block;width:100%;height:126px;resize:vertical;border:1px solid #2a3c55;border-radius:7px;background:#081321;color:#d7e6f7;padding:9px 11px;outline:none;font:12px/1.55 Consolas,"SFMono-Regular",monospace;tab-size:4}textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.12)}#asmOutput{color:#a5f3fc;overflow:auto;white-space:pre}.toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.btn{border:1px solid #33465f;border-radius:7px;background:#1a2a40;color:#dbe7f6;padding:7px 12px;min-height:34px;font-size:12px;font-weight:650;transition:.16s}.btn:hover{filter:brightness(1.13);transform:translateY(-1px)}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}.btn-primary{background:#2563eb;border-color:#3b82f6;color:white}.btn-play{background:#047857;border-color:#059669;color:white}.btn-danger{background:#b91c1c;border-color:#dc2626}.examples{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:4px}.examples span{color:var(--muted);font-size:11px}.example-btn{padding:5px 9px;min-height:29px;font-weight:500}.status{margin-left:auto;max-width:46%;font-size:11px;line-height:1.5}.status.ok{color:var(--green)}.status.error{color:var(--red)}.controls{display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:10px}.controls .divider{width:1px;height:24px;background:var(--line);margin:0 3px}.seek-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:160px;margin-left:6px;color:var(--muted);font-size:11px}input[type=range]{width:100%;accent-color:#3b82f6}.step-count{white-space:nowrap;color:#cbd5e1}.step-count b{color:var(--amber)}.current-op{max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bfdbfe;font-size:11px;padding:5px 9px;background:#0b1a2c;border-radius:6px}.machine-card{padding:10px 11px;margin-bottom:10px;overflow:hidden}.machine-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.machine-head .section-title{font-size:13px}.legend{display:flex;gap:12px;color:var(--muted);font-size:10px}.legend i{display:inline-block;width:14px;height:2px;background:#fbbf24;vertical-align:middle;margin-right:4px}.board{position:relative;display:grid;grid-template-columns:1.5fr .9fr 1fr .78fr;gap:11px;align-items:stretch;isolation:isolate}.module{position:relative;min-width:0;border:1px solid var(--module-color);border-radius:9px;background:linear-gradient(145deg,rgba(17,30,48,.98),rgba(9,20,34,.98));padding:9px;z-index:1;transition:border-color .2s,box-shadow .2s}.module.active{box-shadow:0 0 0 1px var(--module-color),0 0 18px color-mix(in srgb,var(--module-color) 25%,transparent)}.module-title{display:flex;justify-content:space-between;align-items:center;color:var(--module-color);font-size:13px;font-weight:750;margin-bottom:7px}.module-tag{font-size:9px;font-weight:500;color:var(--muted);letter-spacing:.4px}.unit{position:relative;background:#091625;border:1px solid #24364e;border-radius:6px;padding:6px;min-width:0;transition:.18s}.unit.active{border-color:#fbbf24;box-shadow:inset 0 0 0 1px rgba(251,191,36,.25)}.unit-title{display:flex;align-items:center;justify-content:space-between;gap:4px;color:#b8c9dd;font-size:10.5px;font-weight:700;margin-bottom:5px}.unit-title small{font-size:8.5px;color:#647d98;font-weight:500}.mono{font-family:Consolas,monospace}.muted{color:var(--muted)}.cpu{--module-color:#3b82f6}.cpu-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.cpu-control{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px}.kv{display:flex;justify-content:space-between;gap:5px;color:var(--muted)}.kv b{color:var(--cyan);font-family:Consolas,monospace}.regs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.reg{display:flex;justify-content:space-between;padding:3px 5px;background:#101f32;border-radius:4px;font:10px Consolas,monospace}.reg span{color:#7f95ae}.reg b{color:var(--cyan)}.alu-value{font:16px Consolas,monospace;color:#f9a8d4;text-align:center;padding:4px}.cache-list{font:9.5px/1.55 Consolas,monospace;max-height:63px;overflow:auto;color:#cbd5e1}.cache-empty{color:#58718e}.kernel{--module-color:#8b5cf6}.kernel-stack{display:flex;flex-direction:column;gap:6px}.vma{font:9.5px/1.55 Consolas,monospace;color:#c4b5fd;max-height:45px;overflow:auto}.pte-list{display:flex;flex-direction:column;gap:3px;max-height:90px;overflow:auto}.pte{display:flex;justify-content:space-between;font:9.5px Consolas,monospace;background:#111c31;padding:3px 5px;border-radius:3px}.pte b{color:var(--amber)}.kernel-action{font-size:10px;line-height:1.45;color:#ddd6fe;min-height:43px}.ram{--module-color:#06b6d4}.frames{display:grid;grid-template-columns:1fr 1fr;gap:5px}.frame{position:relative;min-height:50px;background:#091625;border:1px solid #24364e;border-radius:5px;padding:5px;font:9px/1.45 Consolas,monospace;overflow:hidden}.frame.allocated{border-color:#0e7490}.frame.dirty{border-color:#f87171}.frame-head{display:flex;justify-content:space-between;color:#a5f3fc;font-weight:700}.frame-addr{color:#647d98}.frame-body{color:#a9bad0;margin-top:3px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}.frame.free .frame-head{color:#526b86}.disk{--module-color:#d97706}.disk-stack{display:flex;flex-direction:column;gap:6px}.disk-code,.disk-data{height:127px;overflow:auto;font:9px/1.55 Consolas,monospace;color:#d7e0ec}.disk-data{height:60px;color:#fde68a}.asm-line{display:block;padding:0 3px;border-radius:2px}.asm-line.current{background:#713f12;color:#fef3c7}.flow-svg{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}.flow-path{fill:none;stroke:#fbbf24;stroke-width:2.2;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(251,191,36,.8));stroke-dasharray:7 5;animation:dash .65s linear infinite}.flow-halo{fill:none;stroke:rgba(8,17,31,.8);stroke-width:5;stroke-linecap:round}@keyframes dash{to{stroke-dashoffset:-12}}.bottom-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:10px}.nav-card,.log-card{padding:9px 11px;min-height:92px}.nav-list{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;max-height:62px;overflow:auto}.nav-btn{border:1px solid #33465f;border-radius:5px;background:#15243a;color:#cbd5e1;padding:4px 7px;font-size:10px}.log-list{display:flex;flex-direction:column;gap:2px;max-height:63px;overflow:auto;margin-top:6px}.log-item{font-size:10px;line-height:1.45;border-left:2px solid var(--log-color);padding:2px 6px;background:#0a1625}.log-cycle{color:#647d98;margin-right:5px}.foot{text-align:center;color:#5f748e;font-size:10px;margin-top:9px}@media(max-width:1100px){.board{grid-template-columns:1.4fr 1fr}.ram,.disk{min-height:230px}.disk-code{height:90px}.status{max-width:100%;margin-left:0}.current-op{display:none}}@media(max-width:760px){.app{padding:9px}.source-grid,.board,.bottom-grid{grid-template-columns:1fr}.header{align-items:flex-start}.badge{display:none}textarea{height:150px}.controls{flex-wrap:wrap}.seek-wrap{order:2;flex-basis:100%}.machine-head{align-items:flex-start}.legend{display:none}}
+
+/* 双视图与机器内视：部件、场景均由 JS 注册表驱动，便于逐层扩展。 */
+.view-switch{display:flex;align-items:center;gap:6px;margin:-2px 0 10px;padding:4px;width:max-content;max-width:100%;border:1px solid var(--line);border-radius:9px;background:#0c1828}.view-tab{border:0;border-radius:6px;background:transparent;color:var(--muted);padding:7px 13px;font-size:11px;font-weight:700}.view-tab.active{background:#234a78;color:#eff6ff;box-shadow:0 2px 8px rgba(0,0,0,.2)}.view-hint{font-size:10px;color:#607892;padding:0 8px;border-left:1px solid var(--line)}[hidden]{display:none!important}
+.system-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin-bottom:10px}.scenario-tabs{display:flex;gap:5px;flex-wrap:wrap}.scenario-tab{border:1px solid #2d4059;background:#101f33;color:#91a7c0;border-radius:6px;padding:6px 9px;font-size:10.5px}.scenario-tab.active{color:#fef3c7;border-color:#a16207;background:#422b0b}.scenario-nav{display:flex;gap:5px;white-space:nowrap}.system-grid{display:grid;grid-template-columns:245px minmax(480px,1fr) 300px;gap:10px;align-items:stretch}.system-panel{padding:10px;min-width:0}.panel-caption{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.panel-caption .section-title{font-size:12px}.layer-chip{font-size:8.5px;letter-spacing:.7px;color:#7f96b0;border:1px solid #2b3e56;border-radius:99px;padding:3px 6px}.entity-tree{display:flex;flex-direction:column;gap:7px}.entity-card{border:1px solid #2c3f58;background:#0a1727;border-radius:7px;padding:7px}.entity-card.focus,.machine-part.focus,.kernel-chip.focus,.memory-chip.focus{border-color:#fbbf24!important;box-shadow:0 0 0 1px rgba(251,191,36,.28),0 0 14px rgba(251,191,36,.12)}.entity-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:750;color:#dbeafe;cursor:pointer}.entity-head span:last-child{font:9px Consolas,monospace;color:#a5b4fc}.entity-shared{font-size:9px;line-height:1.5;color:#7189a3;margin:4px 0 6px}.thread-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}.thread-chip{border:1px solid #314765;background:#11243a;color:#a9c5e4;border-radius:4px;padding:4px 5px;text-align:left;font:9px/1.4 Consolas,monospace}.thread-chip small{display:block;color:#647f9d;font-family:"Segoe UI","Microsoft YaHei",sans-serif}.thread-chip.third{grid-template-columns:1fr}.runqueue{margin-top:8px;border-top:1px dashed #2c4059;padding-top:7px}.rq-row{display:flex;align-items:center;gap:5px;font-size:9px;color:#8198b2;margin-top:4px}.rq-row b{color:#67e8f9;min-width:39px}.rq-task{background:#123652;color:#a5f3fc;border-radius:3px;padding:2px 5px}.rq-empty{color:#4f6883}.exploded-panel{position:relative;overflow:hidden}.exploded-panel:before{content:"";position:absolute;inset:38px 0 0;background:linear-gradient(90deg,transparent 49.8%,rgba(71,93,120,.13) 50%,transparent 50.2%);pointer-events:none}.machine-stack{position:relative;display:flex;flex-direction:column;gap:6px}.machine-layer{position:relative;border:1px solid #263c55;background:rgba(8,20,34,.86);border-radius:7px;padding:6px 7px 6px 44px}.machine-layer:not(:last-child):after{content:"";position:absolute;left:50%;bottom:-7px;height:7px;border-left:1px dashed #38516e}.layer-name{position:absolute;left:7px;top:7px;font:8px Consolas,monospace;letter-spacing:.6px;color:#56718e;writing-mode:vertical-rl}.core-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.core{border:1px solid #285a96;background:linear-gradient(145deg,#102a49,#0a1b30);border-radius:6px;padding:6px;cursor:pointer}.core-title{display:flex;justify-content:space-between;color:#93c5fd;font-size:10px;font-weight:750;margin-bottom:5px}.core-title span:last-child{font:8px Consolas,monospace;color:#6f8fb6}.core-units{display:grid;grid-template-columns:1fr 1fr;gap:4px}.machine-part{border:1px solid #2a405b;background:#0a1727;border-radius:4px;padding:4px 5px;color:#a9bdd3;font-size:9px;line-height:1.4;cursor:pointer;transition:.15s}.machine-part:hover,.kernel-chip:hover,.memory-chip:hover,.entity-head:hover{filter:brightness(1.2)}[data-part].selected{outline:1px solid #60a5fa;outline-offset:2px}.machine-part b{display:block;color:#d7e5f5;font-size:9px}.machine-part small{color:#69839f;font-size:8px}.cache-shared{border-color:#0e7490;background:#0b2835}.cache-shared b{color:#a5f3fc}.kernel-chips,.memory-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.kernel-chip,.memory-chip{border:1px solid #44356d;background:#1a1530;color:#c4b5fd;border-radius:4px;padding:5px;font-size:8.5px;line-height:1.35;cursor:pointer}.kernel-chip b,.memory-chip b{display:block;font-size:9px;color:#ddd6fe}.memory-layer .memory-chip{border-color:#155e75;background:#0b2633;color:#67e8f9}.memory-layer .memory-chip b{color:#a5f3fc}.disk-layer .memory-chip{border-color:#92400e;background:#2a1b0b;color:#fbbf24}.disk-layer .memory-chip b{color:#fde68a}.inspector-panel{display:flex;flex-direction:column}.inspector-title{font-size:17px;font-weight:750;color:#f1f5f9;margin:2px 0 3px}.inspector-layer{font-size:9px;color:#67e8f9;letter-spacing:.6px;margin-bottom:9px}.inspector-summary{font-size:11px;line-height:1.65;color:#a9bdd1;margin-bottom:10px}.inspector-section{border-top:1px solid #293c53;padding-top:8px;margin-top:7px}.inspector-section h4{font-size:10px;color:#cbd5e1;margin:0 0 6px}.inspector-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}.inspector-list li{position:relative;padding-left:11px;color:#8fa7c0;font-size:10px;line-height:1.5}.inspector-list li:before{content:"";position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#3b82f6}.inspector-note{margin-top:auto;padding:8px;border:1px solid #53421a;background:#251e0d;color:#fde68a;border-radius:6px;font-size:10px;line-height:1.55}.scenario-detail{margin-top:10px;padding:10px 11px}.scenario-detail-head{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:12px;align-items:start}.scenario-kicker{font-size:9px;color:#fbbf24;letter-spacing:.7px}.scenario-title{font-size:14px;font-weight:750;color:#f8fafc;margin:2px 0 4px}.scenario-desc{font-size:10.5px;color:#9db1c7;line-height:1.55}.scenario-states{display:grid;grid-template-columns:1fr 1fr;gap:4px}.state-cell{background:#0a1727;border:1px solid #293e57;border-radius:4px;padding:4px 6px;font-size:9px;color:#8098b3}.state-cell b{display:block;color:#dbeafe;font:9.5px Consolas,monospace;margin-top:2px}.step-dots{display:flex;gap:5px;margin-top:8px;align-items:center}.step-dot{width:22px;height:5px;padding:0;border:0;border-radius:99px;background:#2c4058}.step-dot.active{background:#fbbf24}.step-hint{margin-left:auto;font-size:9px;color:#5f7894}.model-disclaimer{font-size:9px;color:#5f7894;margin-top:7px;line-height:1.5}
+@media(max-width:1180px){.system-grid{grid-template-columns:220px minmax(430px,1fr)}.inspector-panel{grid-column:1/-1;min-height:220px}.inspector-note{margin-top:10px}.inspector-list{display:grid;grid-template-columns:1fr 1fr}.system-top{align-items:flex-start}.scenario-detail-head{grid-template-columns:1fr}}
+@media(max-width:760px){.view-hint{display:none}.system-grid{grid-template-columns:1fr}.system-top{flex-direction:column}.scenario-nav{align-self:flex-end}.core-grid{grid-template-columns:1fr}.kernel-chips,.memory-chips{grid-template-columns:repeat(2,1fr)}.scenario-states{grid-template-columns:1fr}.inspector-list{grid-template-columns:1fr}.machine-layer{padding-left:35px}}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 版本条：v1 → v2 迭代关系互跳，当前为 v2 -->
+  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:7px 12px;margin-bottom:10px;background:#0c1828;border:1px solid var(--line);border-radius:9px;font-size:11.5px;">
+    <a href="cpp-system-handbook.html" style="color:var(--muted);text-decoration:none;">← C++ 系统知识手册</a>
+    <span style="color:#3d556f;">｜</span>
+    <span style="color:#cbd5e1;">白盒模拟器版本：</span>
+    <a href="cpp-machine-simulator.html" style="color:#60a5fa;text-decoration:none;">← v1 初版 · 指令单步</a>
+    <span style="color:#67e8f9;font-weight:700;">v2 重构 · 双视图 + 机器内视并发（当前）</span>
+  </div>
+
+  <header class="header">
+    <div><div class="title">白盒机器模拟器 <span style="color:#60a5fa">· 从指令到整个系统</span></div><div class="subtitle">执行白盒观察单条指令，机器内视拆解进程、线程、缓存、内核与存储</div></div>
+    <div class="badge"><span class="dot"></span>可扩展教学模型 · 双视图</div>
+  </header>
+  <nav class="view-switch" aria-label="模拟器视图">
+    <button class="view-tab active" data-view="execution">指令执行白盒</button><button class="view-tab" data-view="system">机器内视 · 并发</button><span class="view-hint">点击部件可拆解查看</span>
+  </nav>
+
+  <div id="executionView">
+  <section class="card source-card">
+    <div class="source-grid">
+      <div>
+        <div class="section-head"><span class="section-title">01 / C++ 源代码</span><span class="section-note">支持 int、+ − *、赋值、for 循环</span></div>
+        <textarea id="cppInput" spellcheck="false" aria-label="C++ 源代码"></textarea>
+      </div>
+      <div>
+        <div class="section-head"><span class="section-title">02 / 自动生成的汇编</span><span class="section-note">变量优先绑定 R1–R5 · [VPN:OFFSET]</span></div>
+        <textarea id="asmOutput" spellcheck="false" readonly aria-label="生成的汇编代码"></textarea>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button id="btnLoad" class="btn btn-primary">编译并载入 ▶</button>
+      <div class="examples"><span>示例</span><button class="btn example-btn" data-ex="0">循环求和</button><button class="btn example-btn" data-ex="1">表达式优先级</button><button class="btn example-btn" data-ex="2">缓存与 TLB 命中</button></div>
+      <div id="parseMsg" class="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="card controls">
+    <button id="btnBack" class="btn">◀ 上一步</button><button id="btnStep" class="btn btn-primary">单步 ▶</button><button id="btnPlay" class="btn btn-play">自动播放</button><button id="btnReset" class="btn">重置</button>
+    <div class="divider"></div><div id="currentOp" class="current-op">等待执行</div>
+    <div class="seek-wrap"><input id="seek" type="range" min="0" max="0" value="0" aria-label="执行历史"><span class="step-count">步骤 <b id="sStep">0</b>/<span id="sTotal">0</span></span></div>
+  </section>
+
+  <section class="card machine-card">
+    <div class="machine-head"><span class="section-title">03 / 硬件与内核协同图 · 亮线表示当前步骤语义路径</span><div class="legend"><span><i></i>当前步骤连接</span><span>4 KB / 页 · 8 个物理页框</span></div></div>
+    <div id="machineBoard" class="board">
+      <svg id="flowSvg" class="flow-svg" aria-hidden="true"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"></path></marker></defs><g id="flowPaths"></g></svg>
+
+      <section id="mod-cpu" class="module cpu">
+        <div class="module-title"><span>① CPU</span><span class="module-tag">PROCESSOR</span></div>
+        <div class="cpu-grid">
+          <div id="unit-cpu-pc" class="unit"><div class="unit-title">控制单元 <small>CONTROL</small></div><div class="cpu-control"><div class="kv"><span>PC</span><b id="mPc">0x00</b></div><div class="kv"><span>阶段</span><b id="mStage" style="color:#f9a8d4">IF-1</b></div></div></div>
+          <div id="unit-cpu-alu" class="unit"><div class="unit-title">ALU <small>算术 / 地址</small></div><div id="mAlu" class="alu-value">—</div></div>
+          <div id="unit-cpu-reg" class="unit" style="grid-column:1/-1"><div class="unit-title">寄存器文件 <small>REGISTER FILE</small></div><div id="mRegs" class="regs"></div></div>
+          <div id="unit-cpu-tlb" class="unit"><div class="unit-title">MMU · iTLB / dTLB <small>地址翻译</small></div><div id="mTlb" class="cache-list"><span class="cache-empty">空</span></div></div>
+          <div id="unit-cpu-sram" class="unit"><div class="unit-title">SRAM · L1i / L1d <small>片上缓存</small></div><div id="mL1" class="cache-list"><span class="cache-empty">空</span></div></div>
+        </div>
+      </section>
+
+      <section id="mod-kernel" class="module kernel">
+        <div class="module-title"><span>② 内核</span><span class="module-tag">OS KERNEL</span></div>
+        <div class="kernel-stack">
+          <div id="unit-kernel-vma" class="unit"><div class="unit-title">VMA <small>虚拟内存区域</small></div><div id="mVma" class="vma"></div></div>
+          <div id="unit-kernel-pte" class="unit"><div class="unit-title">页表 PD → PT → PTE <small>物理存于 RAM</small></div><div id="mPte" class="pte-list"></div></div>
+          <div id="unit-kernel-act" class="unit"><div class="unit-title">缺页 / 写回守护 <small>EXCEPTION & I/O</small></div><div id="mKernelAct" class="kernel-action">内核空闲，等待事件</div></div>
+        </div>
+      </section>
+
+      <section id="mod-ram" class="module ram">
+        <div class="module-title"><span>③ RAM 物理内存</span><span class="module-tag">8 × 4 KB</span></div>
+        <div id="mFrames" class="frames"></div>
+      </section>
+
+      <section id="mod-disk" class="module disk">
+        <div class="module-title"><span>④ 磁盘</span><span class="module-tag">STORAGE</span></div>
+        <div class="disk-stack">
+          <div id="unit-disk-code" class="unit"><div class="unit-title">可执行文件 <small>.text 指令镜像</small></div><div id="mDiskCode" class="disk-code"></div></div>
+          <div id="unit-disk-data" class="unit"><div class="unit-title">数据文件 / Swap <small>持久化存储</small></div><div id="mDiskData" class="disk-data"></div></div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <div class="bottom-grid">
+    <section class="card nav-card"><div class="section-title">指令 / 循环快速跳转</div><div id="navMilestones" class="nav-list"></div></section>
+    <section class="card log-card"><div class="section-title">事件日志 <span style="color:#647d98;font-weight:400">· 最近事件在底部</span></div><div id="mLog" class="log-list"></div></section>
+  </div>
+  </div><!-- /executionView -->
+
+  <div id="systemView" hidden>
+    <section class="card system-top">
+      <div class="scenario-tabs" id="scenarioTabs">
+        <button class="scenario-tab active" data-scenario="processSwitch">进程切换</button><button class="scenario-tab" data-scenario="threadSwitch">同进程线程切换</button><button class="scenario-tab" data-scenario="createProcess">创建进程 fork / exec</button><button class="scenario-tab" data-scenario="createThread">创建线程</button><button class="scenario-tab" data-scenario="cacheCoherence">共享变量与 MESI</button><button class="scenario-tab" data-scenario="synchronization">锁与信息交换</button>
+      </div>
+      <div class="scenario-nav"><button id="sysPrev" class="btn">◀ 上一镜</button><button id="sysNext" class="btn btn-primary">下一镜 ▶</button></div>
+    </section>
+
+    <div class="system-grid">
+      <aside class="card system-panel">
+        <div class="panel-caption"><span class="section-title">执行实体 / 地址空间</span><span class="layer-chip">LINUX-LIKE</span></div>
+        <div class="entity-tree">
+          <div class="entity-card" data-part="process-p1">
+            <div class="entity-head" data-part="process-p1"><span>进程 P1</span><span>mm_A · CR3 0x1000</span></div>
+            <div class="entity-shared">线程共享：全局区 / 堆 / VMA / 文件描述符</div>
+            <div class="thread-row"><button class="thread-chip" data-part="thread-t1">T1 · 主线程<small>独立寄存器 / PC / 用户栈 / TLS</small></button><button class="thread-chip" data-part="thread-t2">T2 · 工作线程<small>独立寄存器 / PC / 用户栈 / TLS</small></button></div>
+          </div>
+          <div class="entity-card" data-part="process-p2">
+            <div class="entity-head" data-part="process-p2"><span>进程 P2</span><span>mm_B · CR3 0x7000</span></div>
+            <div class="entity-shared">独立地址空间；与 P1 默认不共享堆和全局变量</div>
+            <div class="thread-row third"><button class="thread-chip" data-part="thread-t3">T3 · 主线程<small>独立执行上下文与两级 TCB</small></button></div>
+          </div>
+          <div class="runqueue">
+            <div class="section-title" data-part="scheduler" style="cursor:pointer">每核运行队列 <span style="color:#58728f;font-weight:400">· 调度对象是线程任务</span></div>
+            <div class="rq-row"><b>Core 0</b><span id="rqCore0" class="rq-task">T1 RUNNING</span><span class="rq-empty">← T2 READY</span></div>
+            <div class="rq-row"><b>Core 1</b><span id="rqCore1" class="rq-task">T3 RUNNING</span><span class="rq-empty">← empty</span></div>
+          </div>
+        </div>
+        <div class="model-disclaimer">这里的 P1/P2、T1/T2/T3 是用于拆解机制的最小实体模型，不是完整 Linux 任务复制。</div>
+      </aside>
+
+      <section class="card system-panel exploded-panel">
+        <div class="panel-caption"><span class="section-title">机器内视 · 点击任意部件</span><span class="layer-chip">EXPLODED VIEW</span></div>
+        <div class="machine-stack">
+          <div class="machine-layer">
+            <span class="layer-name">CORES</span>
+            <div class="core-grid">
+              <div class="core" data-part="core0"><div class="core-title"><span>Core 0</span><span id="core0Running">T1 @ P1</span></div><div class="core-units"><div class="machine-part" data-part="context"><b>执行上下文</b><small>PC · SP · GPR · FLAGS</small></div><div class="machine-part" data-part="tlb"><b>MMU + TLB</b><small>CR3 · PCID / ASID</small></div><div class="machine-part" data-part="l1"><b>L1 i/d · 私有</b><small>缓存行带 MESI 状态</small></div><div class="machine-part" data-part="l2"><b>L2 · 核私有</b><small>切换进程不清空</small></div></div></div>
+              <div class="core" data-part="core1"><div class="core-title"><span>Core 1</span><span id="core1Running">T3 @ P2</span></div><div class="core-units"><div class="machine-part" data-part="context"><b>执行上下文</b><small>每线程一套保存副本</small></div><div class="machine-part" data-part="tlb"><b>MMU + TLB</b><small>按 PCID 区分地址空间</small></div><div class="machine-part" data-part="l1"><b>L1 i/d · 私有</b><small>共享数据也可缓存于此</small></div><div class="machine-part" data-part="l2"><b>L2 · 核私有</b><small>脏行等待写回 / 替换</small></div></div></div>
+            </div>
+          </div>
+          <div class="machine-layer"><span class="layer-name">LLC</span><div class="machine-part cache-shared" data-part="l3"><b>L3 / LLC · 多核共享</b><small>一致性互连 / Snoop 或 Directory · MESI 以缓存行为粒度，不以变量为粒度</small></div></div>
+          <div class="machine-layer"><span class="layer-name">KERNEL</span><div class="kernel-chips"><div class="kernel-chip" data-part="scheduler"><b>调度器</b>运行队列 / 时钟 / 唤醒</div><div class="kernel-chip" data-part="kernel-tcb"><b>task_struct</b>TID / 状态 / 内核栈 / mm</div><div class="kernel-chip" data-part="memory-manager"><b>内存管理</b>mm / VMA / PTE / COW</div><div class="kernel-chip" data-part="sync-ipc"><b>同步与 IPC</b>futex / 信号 / 管道</div></div></div>
+          <div class="machine-layer memory-layer"><span class="layer-name">RAM</span><div class="memory-chips"><div class="memory-chip" data-part="ram-kernel"><b>内核区</b>task / 内核栈 / slab</div><div class="memory-chip" data-part="ram-pte"><b>页表页</b>mm_A / mm_B 的 PTE</div><div class="memory-chip" data-part="ram-user"><b>用户页</b>text / data / heap</div><div class="memory-chip" data-part="ram-stacks"><b>线程栈</b>每线程用户栈 + 内核栈</div><div class="memory-chip" data-part="ram-tls"><b>TLS / 用户 TCB</b>self / DTV / guard</div><div class="memory-chip" data-part="ram-pagecache"><b>Page Cache</b>文件页 / 脏页</div><div class="memory-chip" data-part="ram-shared"><b>共享内存</b>shm / MAP_SHARED</div><div class="memory-chip" data-part="ram-free"><b>空闲页框</b>伙伴系统 / 回收</div></div></div>
+          <div class="machine-layer disk-layer"><span class="layer-name">DISK</span><div class="memory-chips"><div class="memory-chip" data-part="disk-elf"><b>ELF 可执行文件</b>text / data / reloc</div><div class="memory-chip" data-part="disk-lib"><b>共享库</b>ld.so / libc.so</div><div class="memory-chip" data-part="disk-files"><b>文件与映射</b>VFS / inode / mmap</div><div class="memory-chip" data-part="disk-swap"><b>Swap</b>匿名页换出空间</div></div></div>
+        </div>
+      </section>
+
+      <aside class="card system-panel inspector-panel">
+        <div class="panel-caption"><span class="section-title">部件内视</span><span class="layer-chip">INSPECTOR</span></div>
+        <div id="inspectorTitle" class="inspector-title">选择一个部件</div><div id="inspectorLayer" class="inspector-layer">CLICK TO EXPLORE</div><div id="inspectorSummary" class="inspector-summary">点击核心、缓存、TCB、RAM 或磁盘区域，查看其中保存的内容及它在当前场景中的作用。</div>
+        <div class="inspector-section"><h4>里面有什么 / 发生什么</h4><ul id="inspectorList" class="inspector-list"></ul></div>
+        <div id="inspectorNote" class="inspector-note">原则：先建立正确边界，再逐步补充周期、状态字段与真实数据结构。</div>
+      </aside>
+    </div>
+
+    <section class="card scenario-detail">
+      <div class="scenario-detail-head"><div><div id="scenarioKicker" class="scenario-kicker">机制分镜 1 / 5</div><div id="scenarioTitle" class="scenario-title">时钟中断：从用户态进入内核</div><div id="scenarioDesc" class="scenario-desc"></div></div><div id="scenarioStates" class="scenario-states"></div></div>
+      <div id="stepDots" class="step-dots"></div>
+      <div class="model-disclaimer">机制分镜而非周期级仿真：高亮表示本步重点部件。默认采用 Linux-like、x86-like 教学模型；不同架构和内核实现会有差异。</div>
+    </section>
+  </div>
+
+  <div class="foot">教学模型：执行视图使用自定义 RISC 汇编；机器内视用于建立系统结构边界，后续按场景逐步补全，不依赖外部服务</div>
+</div>
+<script>
+(function(){
+'use strict';
+var EXAMPLES=[
+`#include <iostream>
+using namespace std;
+int main() {
+    int x = 11;
+    int y = 22;
+    int sum = 0;
+    for (int i = 0; i < 2; i++) {
+        sum = sum + x + y;
+    }
+    return 0;
+}`,
+`int main() {
+    int a = 2;
+    int b = 3;
+    int c = a + b * 4;
+    c = (c + 1) * 2;
+    return 0;
+}`,
+`int main() {
+    int value = 7;
+    int total = 0;
+    for (int i = 0; i < 3; i++) {
+        total = total + value;
+    }
+    return 0;
+}`
+];
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function hex(n){return '0x'+n.toString(16).toUpperCase().padStart(2,'0')}
+
+// C++ 教学子集 -> 三地址 RISC 汇编。变量存储在数据页，表达式使用 R1-R6。
+function compileCpp(source){
+  var clean=source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,'').replace(/^\s*#.*$/gm,'').replace(/using\s+namespace\s+std\s*;/g,'');
+  var lines=clean.split('\n'), tokens=[];
+  lines.forEach(function(line,li){
+    var re=/\s*([A-Za-z_]\w*|\d+|==|!=|<=|>=|\+\+|--|\+=|-=|\*=|\/=|[{}();=+*\/<>-])/g,m;
+    while((m=re.exec(line))){tokens.push({v:m[1],line:li+1});}
+  });
+  var p=0,vars={},varOrder=[],out=[],errors=[],activeRegs={};
+  function peek(v){return tokens[p]&&(!v||tokens[p].v===v)}
+  function take(v){if(!peek(v)){var got=tokens[p]?tokens[p].v:'EOF';throw new Error('第 '+(tokens[p]?tokens[p].line:'末尾')+' 行：期望 '+(v||'标记')+'，实际为 '+got)}return tokens[p++].v}
+  function maybe(v){if(peek(v)){p++;return true}return false}
+  function isName(v){return /^[A-Za-z_]\w*$/.test(v||'')}
+  function alloc(preferred){
+    var r=null;
+    if(preferred&&!activeRegs[preferred])r=preferred;
+    else for(var i=1;i<=6;i++)if(!activeRegs['R'+i]){r='R'+i;break}
+    if(!r)throw new Error('表达式过深：需要超过 6 个寄存器');activeRegs[r]=true;return r;
+  }
+  function release(r){if(r)delete activeRegs[r]}
+  function declare(name,line){
+    if(vars[name])throw new Error('第 '+line+' 行：变量 '+name+' 重复定义');
+    var idx=varOrder.length,vpn=8+Math.floor(idx/256),off=(idx%256)*4;
+    vars[name]={vpn:vpn,off:off,line:line,home:idx<5?'R'+(idx+1):null};varOrder.push(name);return vars[name];
+  }
+  function mem(name,line){if(!vars[name])throw new Error('第 '+line+' 行：未声明的变量 '+name);return '['+vars[name].vpn+':'+vars[name].off+']'}
+  function expression(preferred){return additive(preferred)}
+  function additive(preferred){var r=multiplicative(preferred);while(peek('+')||peek('-')){var op=take(),r2=multiplicative();out.push((op==='+'?'ADD':'SUB')+' '+r+' '+r+' '+r2);release(r2)}return r}
+  function multiplicative(preferred){var r=primary(preferred);while(peek('*')||peek('/')){var op=take(),r2=primary();out.push((op==='*'?'MUL':'DIV')+' '+r+' '+r+' '+r2);release(r2)}return r}
+  function primary(preferred){
+    if(maybe('(')){var r=expression(preferred);take(')');return r}
+    var t=tokens[p++];if(!t)throw new Error('表达式意外结束');
+    if(/^\d+$/.test(t.v)){var a=alloc(preferred);out.push('LI '+a+' '+parseInt(t.v,10));return a}
+    if(isName(t.v)){var address=mem(t.v,t.line),b=alloc(vars[t.v].home);out.push('LOAD '+b+' '+address);return b}
+    throw new Error('第 '+t.line+' 行：不支持的表达式 '+t.v);
+  }
+  function storeResult(r,name,line){
+    var home=vars[name].home;
+    if(home&&r!==home){out.push('MOV '+home+' '+r);release(r);activeRegs[home]=true;r=home}
+    out.push('STORE '+r+' '+mem(name,line));release(r);
+  }
+  function assignment(name,op,line){
+    var r;
+    if(op==='='){r=expression(vars[name].home)}
+    else{
+      r=alloc(vars[name].home);out.push('LOAD '+r+' '+mem(name,line));var rhs=expression();
+      var base={'+=':'ADD','-=':'SUB','*=':'MUL','/=':'DIV'}[op];out.push(base+' '+r+' '+r+' '+rhs);release(rhs);
+    }
+    storeResult(r,name,line);
+  }
+  function increment(name,line){
+    var r=alloc(vars[name].home);out.push('LOAD '+r+' '+mem(name,line));out.push('ADDI '+r+' 1');out.push('STORE '+r+' '+mem(name,line));release(r);
+  }
+  function simpleStatement(stopAtSemi){
+    var line=tokens[p]?tokens[p].line:0,name,op;
+    if(peek('int')){
+      take('int');var t=tokens[p++];if(!t||!isName(t.v))throw new Error('第 '+line+' 行：int 后需要变量名');name=t.v;declare(name,line);
+      if(maybe('=')){var r=expression(vars[name].home);storeResult(r,name,line)}
+      else{var z=alloc(vars[name].home);out.push('LI '+z+' 0');out.push('STORE '+z+' '+mem(name,line));release(z)}
+    }else if(peek('return')){
+      take('return');if(!peek(';')){var returnReg=expression();release(returnReg);}
+    }else if(isName(tokens[p]&&tokens[p].v)){
+      name=take();op=take();
+      if(op==='++'){increment(name,line)}
+      else if(['=','+=','-=','*=','/='].indexOf(op)>=0){assignment(name,op,line)}
+      else throw new Error('第 '+line+' 行：不支持的语句 '+name+' '+op);
+    }else throw new Error('第 '+line+' 行：仅支持 int、赋值、自增、for 和 return');
+    if(stopAtSemi!==false)take(';');
+  }
+  function forLoop(){
+    var line=tokens[p-1].line;take('(');
+    if(peek('int')||isName(tokens[p]&&tokens[p].v))simpleStatement(true);else take(';');
+    var cond=tokens[p++],cmp=tokens[p++],limit=tokens[p++];take(';');
+    if(!cond||!isName(cond.v)||!cmp||cmp.v!=='<'||!limit||!/^\d+$/.test(limit.v))throw new Error('第 '+line+' 行：for 条件当前仅支持 i < 非负整数');
+    if(!vars[cond.v])throw new Error('第 '+line+' 行：循环变量未声明 '+cond.v);
+    var incName=take(),incOp=take();if(incOp!=='++'||incName!==cond.v)throw new Error('第 '+line+' 行：for 增量当前仅支持 '+cond.v+'++');take(')');take('{');
+    var target=out.length;
+    while(tokens[p]&&!peek('}'))statement();take('}');
+    increment(cond.v,line);var r=alloc(vars[cond.v].home);out.push('LOAD '+r+' '+mem(cond.v,line));out.push('BLT '+r+' '+parseInt(limit.v,10)+' '+target);release(r);
+  }
+  function statement(){
+    if(!tokens[p])return;
+    if(peek('for')){take('for');forLoop();return}
+    if(peek('{')){take('{');while(tokens[p]&&!peek('}'))statement();take('}');return}
+    if(peek('}')||peek(';')){if(peek(';'))take(';');return}
+    simpleStatement(true);
+  }
+  try{
+    while(tokens[p]){
+      if(['#include','using','namespace','std'].indexOf(tokens[p].v)>=0){while(tokens[p]&&!peek(';'))p++;maybe(';');continue}
+      if(peek('int')&&tokens[p+1]&&tokens[p+1].v==='main'){
+        take('int');take('main');take('(');if(!peek(')')){while(tokens[p]&&!peek(')'))p++}take(')');take('{');
+        while(tokens[p]&&!peek('}'))statement();maybe('}');break;
+      }
+      statement();
+    }
+    if(!varOrder.length&&!out.length)errors.push('没有找到可编译的 main 函数或有效语句');
+    out.push('HALT');
+  }catch(e){errors.push(e.message)}
+  var registerMap=varOrder.filter(function(name){return vars[name].home}).map(function(name){return name+'='+vars[name].home}).join('，');
+  var header=registerMap?'# 变量寄存器：'+registerMap+'；其余寄存器用于表达式临时值\n':'';
+  return {assembly:header+out.join('\n'),errors:errors,vars:vars,varOrder:varOrder};
+}
+
+function assert(cond,msg){if(!cond)throw new Error(msg)}
+function parseMem(s){var m=s.match(/^\[(\d+):(\d+)\]$/);if(!m)throw new Error('内存操作数应为 [VPN:OFF]');return {vpn:+m[1],off:+m[2]}}
+function isReg(s){return /^R[1-6]$/.test(s)}
+function parseProgram(codeText){
+  var errors=[],instr=[],lines=codeText.split('\n');
+  lines.forEach(function(raw,i){
+    raw=raw.trim();if(!raw||raw.charAt(0)==='#')return;
+    var p=raw.split(/\s+/),op=p[0].toUpperCase(),idx=instr.length;
+    try{
+      if(op==='LOAD'||op==='STORE'){
+        assert(p.length===3,op+' 需要寄存器和 [VPN:OFF]');assert(isReg(p[1]),'寄存器格式错');var a=parseMem(p[2]);
+        instr.push({addr:idx*4,op:op,vpn:a.vpn,off:a.off,mn:raw});instr[idx][op==='LOAD'?'dst':'src']=p[1];
+      }else if(['ADD','SUB','MUL','DIV'].indexOf(op)>=0){
+        assert(p.length===4,op+' 需要三个寄存器');[p[1],p[2],p[3]].forEach(function(r){assert(isReg(r),'寄存器格式错 '+r)});instr.push({addr:idx*4,op:op,dst:p[1],src:[p[2],p[3]],mn:raw});
+      }else if(op==='MOV'){
+        assert(p.length===3,'MOV 需要目标寄存器和源寄存器');assert(isReg(p[1])&&isReg(p[2]),'寄存器格式错');instr.push({addr:idx*4,op:op,dst:p[1],src:p[2],mn:raw});
+      }else if(op==='LI'){
+        assert(p.length===3,'LI 需要寄存器和立即数');assert(isReg(p[1]),'寄存器格式错');assert(/^-?\d+$/.test(p[2]),'立即数必须是整数');instr.push({addr:idx*4,op:op,dst:p[1],imm:+p[2],mn:raw});
+      }else if(op==='ADDI'){
+        assert(p.length===3,'ADDI 需要寄存器和立即数');assert(isReg(p[1]),'寄存器格式错');assert(/^-?\d+$/.test(p[2]),'立即数必须是整数');instr.push({addr:idx*4,op:op,dst:p[1],imm:+p[2],mn:raw});
+      }else if(op==='BLT'){
+        assert(p.length===4,'BLT 需要寄存器、比较值和目标索引');assert(isReg(p[1]),'寄存器格式错');instr.push({addr:idx*4,op:op,src:p[1],cmp:+p[2],target:+p[3],mn:raw});
+      }else if(op==='HALT'){instr.push({addr:idx*4,op:op,mn:raw})}
+      else throw new Error('未知指令 '+op);
+    }catch(e){errors.push('汇编第 '+(i+1)+' 行：'+e.message)}
+  });
+  instr.forEach(function(x){if(x.op==='BLT'&&(x.target<0||x.target>=instr.length))errors.push('BLT 目标越界')});
+  if(!instr.length)errors.push('没有有效指令');return {instr:instr,errors:errors};
+}
+
+var PROGRAM=[],VARS={},VAR_ORDER=[],usedRegs=[];
+function freshState(){
+  var regs={};for(var i=1;i<=6;i++)regs['R'+i]=0;
+  return {cycle:0,pc:0,ii:0,stage:'IF',phase:0,regs:regs,itlb:[],dtlb:[],l1i:[],l1d:[],pte:{},frames:{},nextPfn:0,alu:null,loadValue:null,takeBranch:false,halted:false,loop:0,flow:null,kernelAct:'内核空闲，等待事件'};
+}
+var S=freshState(),logs=[],history=[],ptr=0,milestones=[],timer=null,compileTimer=null;
+function log(level,text){logs.push({level:level,text:text,cycle:S.cycle,stage:S.stage+'-'+(S.phase+1)});if(logs.length>300)logs.shift()}
+function unit(name){return 'unit-'+name}
+function setFlow(label,paths,act){
+  paths=paths||[];var nodes=[],units=[];
+  paths.forEach(function(pair){pair.forEach(function(u){if(units.indexOf(u)<0)units.push(u);var mod=u.split('-')[0];if(nodes.indexOf(mod)<0)nodes.push(mod)})});
+  S.flow={label:label,paths:paths.map(function(p){return [unit(p[0]),unit(p[1])]}),nodes:nodes,units:units.map(unit)};
+  S.kernelAct=act||'内核空闲，等待事件';
+}
+function allocFrame(vpn,isInstr){
+  var pfn=S.nextPfn++;if(pfn>=8)throw new Error('教学 RAM 的 8 个物理页框已耗尽');
+  var fr={vpn:vpn,dirty:false,kind:isInstr?'code':'data',cells:{}};
+  if(isInstr){PROGRAM.forEach(function(p){fr.cells[p.addr]=p.mn})}
+  S.frames[pfn]=fr;return pfn;
+}
+function translate(vpn,tlb,isInstr,tag){
+  for(var i=0;i<tlb.length;i++)if(tlb[i].vpn===vpn){
+    setFlow(tag+'TLB 命中 · VPN'+vpn+' → PFN'+tlb[i].pfn,[['cpu-pc','cpu-tlb']]);log('hit',tag+'TLB 命中：VPN'+vpn+' → PFN'+tlb[i].pfn);return;
+  }
+  if(S.pte.hasOwnProperty(vpn)){
+    var p1=S.pte[vpn];tlb.push({vpn:vpn,pfn:p1});setFlow(tag+'TLB 未命中 · 查内核页表并回填',[['cpu-tlb','kernel-pte'],['kernel-pte','cpu-tlb']]);log('miss',tag+'TLB 未命中 → 页表命中 PFN'+p1+'，回填 TLB');return;
+  }
+  var pfn=allocFrame(vpn,isInstr);S.pte[vpn]=pfn;tlb.push({vpn:vpn,pfn:pfn});
+  var disk=isInstr?'disk-code':'disk-data';
+  setFlow('缺页 · 分配 PFN'+pfn+'，磁盘读入并建立映射',[['cpu-tlb','kernel-pte'],['kernel-pte',disk],[disk,'ram-frame-'+pfn],['ram-frame-'+pfn,'kernel-pte'],['kernel-pte','cpu-tlb']],'处理缺页异常：分配 PFN'+pfn+'，建立 PTE 并回填 '+tag+'TLB');
+  log('fault',tag+'TLB / 页表均无效 → 缺页：分配 PFN'+pfn+'，建立 PTE、回填 TLB');
+}
+function doIF(inp){
+  if(S.phase===0){translate(0,S.itlb,true,'i');S.phase=1;return}
+  if(S.phase===1){
+    var found=S.l1i.some(function(e){return e.vpn===0});
+    if(found){setFlow('L1i 命中 · 从 SRAM 取指',[['cpu-pc','cpu-sram']]);log('hit','L1i 命中：指令已在 SRAM')}
+    else{S.l1i.push({vpn:0,pfn:S.pte[0]});setFlow('L1i 未命中 · RAM 预读指令页到 SRAM',[['cpu-sram','ram-frame-'+S.pte[0]],['ram-frame-'+S.pte[0],'cpu-sram']]);log('miss','L1i 未命中 → 从 RAM 预读指令页')}
+    S.phase=2;return;
+  }
+  S.pc=inp.addr+4;setFlow('取指完成 · PC 自增到 '+hex(S.pc),[['cpu-sram','cpu-pc']]);log('ok','取指完成，PC 自增 → '+hex(S.pc));S.stage='ID';S.phase=0;
+}
+function doID(inp){setFlow('译码 · '+inp.op+' 解析操作数',[['cpu-pc','cpu-alu'],['cpu-reg','cpu-alu']]);log('ok','译码：'+inp.mn);S.stage='EX';S.phase=0}
+function doEX(inp){
+  if(inp.op==='LOAD'||inp.op==='STORE'){
+    S.alu=inp.vpn*4096+inp.off;setFlow('ALU 计算有效地址 · '+hex(S.alu),[['cpu-reg','cpu-alu']]);log('ok','有效地址 = VPN'+inp.vpn+' × 4096 + '+inp.off+' = '+hex(S.alu));S.stage='MEM';S.phase=0;return;
+  }
+  if(['ADD','SUB','MUL','DIV'].indexOf(inp.op)>=0){
+    var a=S.regs[inp.src[0]],b=S.regs[inp.src[1]];
+    S.alu=inp.op==='ADD'?a+b:inp.op==='SUB'?a-b:inp.op==='MUL'?a*b:(b===0?0:Math.trunc(a/b));
+    if(inp.op==='DIV'&&b===0)log('fault','除数为 0，教学模型写入 0');
+    log('ok','ALU '+inp.op+'：'+a+'，'+b+' → '+S.alu);
+  }else if(inp.op==='MOV'){S.alu=S.regs[inp.src];log('ok','寄存器传送：'+inp.src+' → '+inp.dst+'，值 '+S.alu)}
+  else if(inp.op==='LI'){S.alu=inp.imm;log('ok','载入立即数：'+inp.imm)}
+  else if(inp.op==='ADDI'){S.alu=S.regs[inp.dst]+inp.imm;log('ok','ALU：'+S.regs[inp.dst]+' + '+inp.imm+' = '+S.alu)}
+  else if(inp.op==='BLT'){S.takeBranch=S.regs[inp.src]<inp.cmp;log('ok','分支比较：'+S.regs[inp.src]+' < '+inp.cmp+' ? '+(S.takeBranch?'是':'否'))}
+  else if(inp.op==='HALT'){log('ok','HALT 准备停机')}
+  setFlow('ALU 执行 · '+inp.op,[['cpu-reg','cpu-alu']]);S.stage='WB';S.phase=0;
+}
+function doMEM(inp){
+  if(S.phase===0){translate(inp.vpn,S.dtlb,false,'d');S.phase=1;return}
+  var pfn=S.pte[inp.vpn],fr=S.frames[pfn],inL1d=S.l1d.some(function(e){return e.vpn===inp.vpn});
+  if(inp.op==='LOAD'){
+    if(!inL1d){S.l1d.push({vpn:inp.vpn,pfn:pfn,dirty:false});setFlow('L1d 未命中 · RAM 数据载入 SRAM',[['cpu-sram','ram-frame-'+pfn],['ram-frame-'+pfn,'cpu-sram']]);log('miss','L1d 未命中 → 从 PFN'+pfn+' 读数据并缓存')}
+    else{setFlow('L1d 命中 · SRAM 直接提供数据',[['cpu-sram','cpu-reg']]);log('hit','L1d 命中：数据已在 SRAM')}
+    S.loadValue=fr.cells.hasOwnProperty(inp.off)?fr.cells[inp.off]:0;log('ok','读到 ['+inp.vpn+':'+inp.off+'] = '+S.loadValue);
+  }else{
+    if(!inL1d)S.l1d.push({vpn:inp.vpn,pfn:pfn,dirty:true});else S.l1d.forEach(function(e){if(e.vpn===inp.vpn)e.dirty=true});
+    var val=S.regs[inp.src];fr.cells[inp.off]=val;fr.dirty=true;
+    setFlow('STORE · 寄存器经 SRAM 写入 PFN'+pfn,[['cpu-reg','cpu-sram'],['cpu-sram','ram-frame-'+pfn]]);log('ok','写入 '+inp.src+'='+val+' → PFN'+pfn+' 偏移 '+inp.off+'（脏页）');
+  }
+  S.stage='WB';S.phase=0;
+}
+function doWB(inp){
+  if(inp.op==='LOAD'){S.regs[inp.dst]=S.loadValue;setFlow('写回寄存器 · '+inp.dst+' = '+S.loadValue,[['cpu-sram','cpu-reg']]);log('ok','写回：'+inp.dst+' = '+S.loadValue);nextInstr()}
+  else if(['ADD','SUB','MUL','DIV','ADDI','LI','MOV'].indexOf(inp.op)>=0){S.regs[inp.dst]=S.alu;setFlow('ALU 结果写回 · '+inp.dst+' = '+S.alu,[['cpu-alu','cpu-reg']]);log('ok','写回：'+inp.dst+' = '+S.alu);nextInstr()}
+  else if(inp.op==='STORE'){setFlow('STORE 完成 · 无寄存器写回',[['cpu-sram','cpu-reg']]);log('ok','STORE 无寄存器写回');nextInstr()}
+  else if(inp.op==='BLT'){
+    if(S.takeBranch){S.loop++;S.ii=inp.target;S.pc=PROGRAM[inp.target].addr;setFlow('分支成立 · PC 跳回 '+hex(S.pc),[['cpu-alu','cpu-pc']]);log('ok','跳转回 '+hex(S.pc)+'（循环 '+(S.loop+1)+'）')}
+    else{setFlow('分支不成立 · 顺序执行',[['cpu-alu','cpu-pc']]);log('ok','分支不跳转，顺序执行');nextInstr()}
+    S.stage='IF';S.phase=0;
+  }else if(inp.op==='HALT'){
+    S.halted=true;var anyDirty=Object.keys(S.frames).some(function(f){return S.frames[f].dirty});
+    if(anyDirty){var first=Object.keys(S.frames).filter(function(f){return S.frames[f].dirty})[0];setFlow('停机前 · 内核将脏页写回磁盘',[['ram-frame-'+first,'kernel-act'],['kernel-act','disk-data']],'内核将脏页异步刷盘：page cache → 磁盘');log('halt','停机前：内核将脏页写回磁盘')}
+    else{setFlow('程序结束 · CPU 停机',[['cpu-alu','cpu-pc']]);log('halt','程序结束，CPU 停机')}
+  }
+}
+function nextInstr(){S.ii++;S.pc=PROGRAM[S.ii]?PROGRAM[S.ii].addr:S.pc;S.stage='IF';S.phase=0}
+function executeStep(){S.cycle++;var inp=PROGRAM[S.ii];if(!inp){S.halted=true;return}try{if(S.stage==='IF')doIF(inp);else if(S.stage==='ID')doID(inp);else if(S.stage==='EX')doEX(inp);else if(S.stage==='MEM')doMEM(inp);else if(S.stage==='WB')doWB(inp)}catch(e){log('fault','运行异常：'+e.message);S.halted=true}}
+function snap(){return {S:JSON.parse(JSON.stringify(S)),logs:JSON.parse(JSON.stringify(logs))}}
+function stopPlay(){if(timer){clearInterval(timer);timer=null}$('btnPlay').textContent='自动播放';$('btnPlay').className='btn btn-play'}
+function forward(){
+  if(ptr<history.length-1){ptr++;applySnapshot();render();return}if(S.halted){stopPlay();return}
+  var isEntry=S.stage==='IF'&&S.phase===0,current=S.ii;executeStep();history.push(snap());ptr=history.length-1;
+  if(isEntry)milestones.push({ptr:ptr,loop:S.loop,ii:current,mn:PROGRAM[current].mn});render();
+}
+function back(){stopPlay();if(ptr>0){ptr--;applySnapshot();render()}}
+function jumpTo(p){stopPlay();if(p>=0&&p<history.length){ptr=p;applySnapshot();render()}}
+function applySnapshot(){S=JSON.parse(JSON.stringify(history[ptr].S));logs=JSON.parse(JSON.stringify(history[ptr].logs))}
+
+function line(text,bg,color){return '<div style="background:'+bg+';color:'+color+';border-radius:4px;padding:3px 6px;">'+text+'</div>'}
+function render(){
+  $('mPc').textContent=hex(S.pc);$('mStage').textContent=S.stage+'-'+(S.phase+1);$('mAlu').textContent=S.alu===null?'—':S.alu;
+  $('sStep').textContent=ptr;$('sTotal').textContent=Math.max(0,history.length-1);$('seek').max=Math.max(0,history.length-1);$('seek').value=ptr;
+  $('currentOp').textContent=S.flow?S.flow.label:'等待执行';$('currentOp').title=S.flow?S.flow.label:'';
+  ['cpu','kernel','ram','disk'].forEach(function(n){$('mod-'+n).classList.toggle('active',!!(S.flow&&S.flow.nodes.indexOf(n)>=0))});
+  document.querySelectorAll('.unit.active').forEach(function(el){el.classList.remove('active')});
+  if(S.flow)S.flow.units.forEach(function(id){var el=$(id);if(el)el.classList.add('active')});
+  $('mRegs').innerHTML=Object.keys(S.regs).map(function(r){return '<div class="reg"><span>'+r+'</span><b>'+S.regs[r]+'</b></div>'}).join('');
+  var tl=[];S.itlb.forEach(function(e){tl.push('iTLB V'+e.vpn+' → P'+e.pfn)});S.dtlb.forEach(function(e){tl.push('dTLB V'+e.vpn+' → P'+e.pfn)});$('mTlb').innerHTML=tl.length?tl.join('<br>'):'<span class="cache-empty">尚无地址翻译记录</span>';
+  var l1=[];S.l1i.forEach(function(e){l1.push('L1i  V'+e.vpn+' → P'+e.pfn)});S.l1d.forEach(function(e){l1.push('L1d  V'+e.vpn+' → P'+e.pfn+(e.dirty?' · D':''))});$('mL1').innerHTML=l1.length?l1.join('<br>'):'<span class="cache-empty">尚无缓存行</span>';
+  var dataVpns=VAR_ORDER.map(function(n){return 'V'+VARS[n].vpn}).filter(function(v,i,a){return a.indexOf(v)===i});
+  $('mVma').innerHTML='.text&nbsp; V0 · '+PROGRAM.length+' 条指令<br>.data&nbsp; '+(dataVpns.join(' / ')||'无')+' · '+VAR_ORDER.length+' 个变量';
+  var vpns=Object.keys(S.pte);$('mPte').innerHTML=vpns.length?vpns.map(function(v){return '<div class="pte"><span>VPN '+v+'</span><b>PFN '+S.pte[v]+' · V</b></div>'}).join(''):'<span class="cache-empty">首次访问后建立映射</span>';
+  $('mKernelAct').textContent=S.kernelAct;
+  var fh='';for(var k=0;k<8;k++){
+    var fr=S.frames[k];
+    if(!fr)fh+='<div id="unit-ram-frame-'+k+'" class="frame free"><div class="frame-head"><span>PFN '+k+'</span><span>FREE</span></div><div class="frame-addr">'+hex(k*4096)+'–'+hex(k*4096+4095)+'</div><div class="frame-body">未分配物理页框</div></div>';
+    else{
+      var keys=Object.keys(fr.cells).sort(function(a,b){return a-b}),preview=keys.slice(0,2).map(function(off){return '['+off+'] '+(typeof fr.cells[off]==='number'?fr.cells[off]:esc(fr.cells[off]))}).join(' · ');
+      fh+='<div id="unit-ram-frame-'+k+'" class="frame allocated'+(fr.dirty?' dirty':'')+'" title="'+esc(keys.map(function(off){return '['+off+'] '+fr.cells[off]}).join('\n'))+'"><div class="frame-head"><span>PFN '+k+' ← VPN '+fr.vpn+'</span><span>'+(fr.kind==='code'?'TEXT':'DATA')+(fr.dirty?' · D':'')+'</span></div><div class="frame-addr">PA '+hex(k*4096)+'–'+hex(k*4096+4095)+'</div><div class="frame-body">'+preview+(keys.length>2?' · +'+(keys.length-2):'')+'</div></div>';
+    }
+  }$('mFrames').innerHTML=fh;
+  $('mDiskCode').innerHTML=PROGRAM.map(function(p,i){return '<span class="asm-line'+(i===S.ii&&!S.halted?' current':'')+'">'+hex(p.addr)+'  '+esc(p.mn)+'</span>'}).join('');
+  $('mDiskData').innerHTML=VAR_ORDER.length?VAR_ORDER.map(function(n){var v=VARS[n];return esc(n)+' @ VA '+hex(v.vpn*4096+v.off)+' ['+v.vpn+':'+v.off+']'}).join('<br>'):'（无数据变量）';
+  var cm={hit:'#86efac',miss:'#fbbf24',fault:'#f87171',ok:'#93c5fd',halt:'#f472b6'};
+  $('mLog').innerHTML=logs.slice(-30).map(function(L){return '<div class="log-item" style="--log-color:'+cm[L.level]+'"><span class="log-cycle">#'+L.cycle+' '+L.stage+'</span><span style="color:'+cm[L.level]+'">'+esc(L.text)+'</span></div>'}).join('')||'<span class="cache-empty">点击“单步”开始观察硬件事件…</span>';
+  var logEl=$('mLog');logEl.scrollTop=logEl.scrollHeight;
+  $('navMilestones').innerHTML=milestones.slice(-18).map(function(ms){return '<button class="nav-btn" data-jump="'+ms.ptr+'" title="'+esc(ms.mn)+'">循'+(ms.loop+1)+' · 指'+(ms.ii+1)+'</button>'}).join('')||'<span class="cache-empty">执行后生成指令入口</span>';
+  highlightAssembly();requestAnimationFrame(drawFlows);
+}
+function highlightAssembly(){
+  var lines=$('asmOutput').value.split('\n'),current=S.ii;
+  // textarea 保持可复制；磁盘 .text 区提供当前指令高亮。
+  $('asmOutput').setAttribute('data-current',String(current));
+}
+function drawFlows(){
+  var svg=$('flowSvg'),group=$('flowPaths'),board=$('machineBoard');group.innerHTML='';if(!S.flow||!S.flow.paths.length)return;
+  var br=board.getBoundingClientRect();svg.setAttribute('viewBox','0 0 '+br.width+' '+br.height);
+  S.flow.paths.forEach(function(pair,index){
+    var a=$(pair[0]),b=$(pair[1]);if(!a||!b)return;
+    var ar=a.getBoundingClientRect(),er=b.getBoundingClientRect();
+    var ax=ar.left-br.left+ar.width/2,ay=ar.top-br.top+ar.height/2,bx=er.left-br.left+er.width/2,by=er.top-br.top+er.height/2;
+    var dx=bx-ax,dy=by-ay,dist=Math.sqrt(dx*dx+dy*dy)||1,insetA=Math.min(ar.width,ar.height)*.28,insetB=Math.min(er.width,er.height)*.28;
+    var sx=ax+dx/dist*insetA,sy=ay+dy/dist*insetA,tx=bx-dx/dist*insetB,ty=by-dy/dist*insetB;
+    var bend=Math.min(70,Math.max(22,Math.abs(dx)*.18))*(index%2?1:-1),cx=(sx+tx)/2,cy=(sy+ty)/2+(Math.abs(dx)>Math.abs(dy)?bend:0);
+    var d='M '+sx.toFixed(1)+' '+sy.toFixed(1)+' Q '+cx.toFixed(1)+' '+cy.toFixed(1)+' '+tx.toFixed(1)+' '+ty.toFixed(1);
+    var ns='http://www.w3.org/2000/svg',halo=document.createElementNS(ns,'path'),path=document.createElementNS(ns,'path');
+    halo.setAttribute('d',d);halo.setAttribute('class','flow-halo');path.setAttribute('d',d);path.setAttribute('class','flow-path');path.setAttribute('marker-end','url(#arrow)');group.appendChild(halo);group.appendChild(path);
+  });
+}
+function loadCompiled(showSuccess){
+  stopPlay();var result=compileCpp($('cppInput').value);$('asmOutput').value=result.assembly;
+  var msg=$('parseMsg');if(result.errors.length){msg.className='status error';msg.textContent=result.errors.join('；');return false}
+  var parsed=parseProgram(result.assembly);if(parsed.errors.length){msg.className='status error';msg.textContent=parsed.errors.join('；');return false}
+  PROGRAM=parsed.instr;VARS=result.vars;VAR_ORDER=result.varOrder;usedRegs=['R1','R2','R3','R4','R5','R6'];
+  S=freshState();logs=[];history=[snap()];ptr=0;milestones=[];
+  msg.className='status ok';msg.textContent='编译成功：'+PROGRAM.length+' 条指令，'+VAR_ORDER.length+' 个变量已映射到虚拟数据页；物理页框将在缺页时分配。';
+  render();return true;
+}
+function scheduleCompile(){clearTimeout(compileTimer);compileTimer=setTimeout(function(){loadCompiled(false)},450)}
+$('btnLoad').addEventListener('click',function(){loadCompiled(true)});
+$('cppInput').addEventListener('input',scheduleCompile);
+$('btnStep').addEventListener('click',function(){stopPlay();forward()});$('btnBack').addEventListener('click',back);$('btnReset').addEventListener('click',function(){loadCompiled(true)});
+$('btnPlay').addEventListener('click',function(){if(timer){stopPlay();return}this.textContent='暂停';this.className='btn btn-danger';timer=setInterval(function(){if(S.halted){stopPlay();return}forward()},650)});
+$('seek').addEventListener('input',function(e){jumpTo(+e.target.value)});
+document.querySelectorAll('.example-btn').forEach(function(b){b.addEventListener('click',function(){$('cppInput').value=EXAMPLES[+b.dataset.ex];loadCompiled(true)})});
+$('navMilestones').addEventListener('click',function(e){var j=e.target.getAttribute&&e.target.getAttribute('data-jump');if(j!==null&&j!==undefined)jumpTo(+j)});
+window.addEventListener('resize',function(){if(!$('executionView').hidden)requestAnimationFrame(drawFlows)});
+document.addEventListener('whitebox:viewchange',function(e){if(e.detail.view==='execution')requestAnimationFrame(drawFlows);else stopPlay()});
+$('cppInput').value=EXAMPLES[0];loadCompiled(false);
+})();
+</script>
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id)}
+
+// 部件注册表：以后新增机制时先在这里声明归属、内容和边界，再接入场景。
+var PARTS={
+  'process-p1':{title:'进程 P1 · 资源容器',layer:'PROCESS / ADDRESS SPACE A',summary:'进程提供地址空间与资源边界，本身不是 CPU 的基本执行流。P1 的 T1、T2 共享 mm_A，但各自拥有执行上下文与栈。',items:['mm_A：VMA 链表与页表根，CR3 在运行时装载其页表根物理地址','共享代码、全局变量、堆、文件描述符表与信号处置','T1 / T2 各有用户栈、内核栈、TLS、用户 TCB 与内核 task_struct'],note:'线程共享地址空间；寄存器、PC 和栈不是共享对象。'},
+  'process-p2':{title:'进程 P2 · 独立地址空间',layer:'PROCESS / ADDRESS SPACE B',summary:'P2 默认与 P1 隔离。相同虚拟地址可映射到不同物理页，只有显式共享内存、文件映射等机制才建立共享。',items:['mm_B 与独立页表根；运行时 CR3 与 P1 不同','T3 的 task、上下文、用户栈和内核栈','可通过 pipe、socket、shm 或 MAP_SHARED 与 P1 交换信息'],note:'进程隔离是逻辑映射隔离，不意味着数据永远处于不同缓存或不同 RAM 区域。'},
+  'thread-t1':{title:'T1 · P1 主线程',layer:'THREAD / PRIVATE EXECUTION STATE',summary:'T1 是调度与执行实体。其软件可见寄存器现场、PC、SP、用户栈、内核栈和 TLS 均独立于 T2。',items:['用户 TCB / TLS：self 指针、DTV、stack guard 等实现相关字段','内核 task_struct：TID、状态、mm 指针、内核栈与调度信息','保存现场：trap frame + thread_struct；FPU/向量状态可单独保存'],note:'物理寄存器属于 Core；T1 的建筑寄存器现场在运行时装入 Core，切出时保存。'},
+  'thread-t2':{title:'T2 · P1 工作线程',layer:'THREAD / SAME mm_A AS T1',summary:'T2 与 T1 共享 P1 的地址空间，因此可访问同一堆对象和全局变量；它的 PC、栈和 TLS 仍完全独立。',items:['pthread_create 建立新用户栈与 TLS / 用户 TCB','clone 建立新的内核 task、内核栈与调度实体','与 T1 共享 mm、files 等资源取决于 clone 标志'],note:'同进程线程切换无需切换 CR3，但仍需保存和恢复执行上下文。'},
+  'thread-t3':{title:'T3 · P2 执行流',layer:'THREAD / ADDRESS SPACE B',summary:'T3 在 P2 的 mm_B 上运行。它被调度到某个 Core 时，Core 装载 T3 的现场和 P2 的地址空间。',items:['独立 TID、PC、SP、通用寄存器与内核栈','运行现场只存在于一个 Core；保存副本属于 T3','可在不同 Core 间迁移，迁移不等于复制线程'],note:'调度器选择任务后，还要恢复现场、按需切换地址空间，最后才返回用户态。'},
+  'core0':{title:'Core 0 · 物理执行核心',layer:'HARDWARE / PRIVATE CORE',summary:'Core 持有当前运行线程的物理执行资源。Core 不属于某个固定进程，时间轴上可运行许多不同任务。',items:['当前 PC / SP / GPR / FLAGS 与流水线状态','MMU、TLB、通常核私有的 L1 / L2','当前运行 TID 与该核调度时钟'],note:'Core 上的寄存器是当前线程的一份装载现场，不是所有线程共享的逻辑寄存器。'},
+  'core1':{title:'Core 1 · 并行执行核心',layer:'HARDWARE / PARALLEL CORE',summary:'第二个 Core 可与 Core 0 真正并行运行另一线程。两个 Core 可同时缓存同一物理缓存行，因此需要一致性协议。',items:['独立当前现场、TLB、L1 / L2','独立运行队列与调度 tick（教学模型）','通过缓存一致性互连与其他核通信'],note:'多核并行展示的是固定场景交错，不代表已经模拟真实调度或竞争穷举。'},
+  'context':{title:'执行上下文 · 保存与恢复',layer:'THREAD CONTEXT / CPU STATE',summary:'用户态陷入内核时先形成 trap frame；调度切换再保存内核态现场。恢复时沿相反路径返回。',items:['用户现场：PC、SP、通用寄存器、FLAGS 等保存在内核栈 trap frame','切换现场：内核 SP、被调用者保存寄存器等保存到 thread_struct / 内核栈','恢复下一任务内核现场 → 返回路径恢复其用户寄存器 → 继续执行'],note:'CR3 不属于每个线程都必然变化的通用寄存器现场；只有地址空间变化才切换。'},
+  'tlb':{title:'MMU / TLB · 地址翻译缓存',layer:'CORE PRIVATE / VIRTUAL MEMORY',summary:'TLB 缓存虚拟页到物理页的翻译。不同地址空间通过 PCID / ASID 或失效操作避免错误命中。',items:['命中键可理解为（PCID，VPN）→ PFN 与权限','跨进程且 mm 改变：更新 CR3；无 PCID 时可能失效相关 TLB 项','同进程线程切换：mm 不变，无需因切换任务而换 CR3'],note:'TLB invalidation 与 L1/L2/L3 cache flush 是不同操作，不能混画。'},
+  'l1':{title:'L1 Cache · 核私有 SRAM',layer:'CORE PRIVATE / CACHE LINES',summary:'L1 通常按物理地址标记缓存行。共享变量可以被多个核分别缓存到各自 L1，而不是必须绕过 L1 访问 L3。',items:['每行保存数据、标签与 M / E / S / I 等一致性状态','写命中可产生 RFO，并使其他核同地址副本失效','Dirty 行在写回缓存下不要求立刻更新 RAM'],note:'普通进程切换不清空 L1；缓存一致性按缓存行工作，不按 C++ 变量工作。'},
+  'l2':{title:'L2 Cache · 中间层缓存',layer:'CORE PRIVATE OR CLUSTER / MODEL',summary:'本教学拓扑把 L2 画成核私有。它保存缓存行及一致性状态，实际处理器也可能采用簇共享或不同包含策略。',items:['缓存行可来自任意进程，关键是物理地址与权限','上下文切换后旧行仍可保留并在之后命中','替换或写回时才把 Dirty 数据推向后续层级'],note:'“进程私有 L2”不是正确的软件归属；这里说的是硬件拓扑上的核私有。'},
+  'l3':{title:'L3 / LLC · 共享最后一级缓存',layer:'SHARED HARDWARE / COHERENCE INTERCONNECT',summary:'L3 常被多个 Core 共享，但“多核共享 L3”与“多个线程共享内存”是两种不同概念。',items:['共享或分布式 LLC slice，以及 Snoop / Directory 等一致性机制','同一缓存行可在 LLC、某核 L1/L2 或 RAM 中随访问迁移','MESI 管理副本权限；并不自动保证高级复合操作原子性'],note:'本页只展示简化 MESI，不模拟 MOESI、MESIF、目录协议或真实延迟。'},
+  'scheduler':{title:'调度器 · 选择下一个任务',layer:'KERNEL / PER-CORE RUNQUEUE',summary:'Linux-like 模型中，调度器选择可运行线程任务。进程只是任务关联的资源容器。',items:['RUNNING / READY / BLOCKED 等任务状态与每核运行队列','时钟、主动让出、阻塞与唤醒触发调度决策','保存旧任务、选择新任务、迁移与负载均衡属于不同阶段'],note:'当前采用固定场景顺序，未建模 CFS、实时优先级、NUMA 或真实抢占时序。'},
+  'kernel-tcb':{title:'内核 TCB · task_struct / 内核栈',layer:'KERNEL / ONE TASK PER THREAD',summary:'内核为每个线程维护任务对象。它与用户态 pthread TCB 是两套不同层面的元数据。',items:['TID / TGID、任务状态、调度实体、mm 与 files 等指针','内核栈、trap frame、thread_struct 与保存的现场','创建线程新增 task；同进程线程通常共享 mm 和 files 指向的对象'],note:'具体字段随系统而异；这里只保留理解上下文切换所需的最小集合。'},
+  'memory-manager':{title:'内存管理 · mm / VMA / PTE',layer:'KERNEL / VIRTUAL MEMORY',summary:'VMA 描述一段虚拟地址映射，PTE 在具体访问后把虚拟页连接到物理页。',items:['mmap 先建立 VMA 与映射规则，不等于立即分配全部物理页','首次访问触发缺页，再分配或找到 PFN、填 PTE 并继续执行','fork 私有可写页可暂时共享 PFN 并标 COW；写入时才复制'],note:'MAP_SHARED / MAP_PRIVATE 与是否多线程无关；它们描述映射的共享和写回语义。'},
+  'sync-ipc':{title:'同步与信息交换',layer:'USER ATOMICS + KERNEL FUTEX / IPC',summary:'无竞争锁可在用户态通过 atomic 完成；发生等待时才需要内核睡眠与唤醒。进程间还可使用管道、共享内存等 IPC。',items:['atomic / mutex / condvar 提供同步语义，MESI 只提供缓存一致性','futex WAIT 校验期望值后入队睡眠；WAKE 只唤醒，不保证立即运行','pipe / socket / message queue 传递消息；shm 需配合同步原语'],note:'当前不模拟完整 futex 的 PI、robust、requeue，也不模拟各种内存序。'},
+  'ram-kernel':{title:'RAM · 内核元数据与内核栈',layer:'PHYSICAL MEMORY / KERNEL',summary:'RAM 不只存用户数组，还保存内核对象、调度数据、每线程内核栈与各种 slab 缓存。',items:['task_struct、mm_struct、VMA、fd 对象等','每线程独立内核栈与 trap frame','内核代码、驱动与临时 I/O 缓冲'],note:'这些对象的内核虚拟地址与用户 VMA 不是同一套访问权限。'},
+  'ram-pte':{title:'RAM · 页表页',layer:'PHYSICAL MEMORY / PAGE TABLES',summary:'页表本身也占物理内存，由内核为各地址空间建立和维护。',items:['mm_A 与 mm_B 可有不同页表根和多级页表','多个 PTE 可暂时指向同一 PFN：例如 fork 后的 COW','PTE 包含 PFN、读写权限、Present、Dirty 等标志'],note:'两个页表指向同一 PFN 是实现层共享，不自动等于共享内存语义。'},
+  'ram-user':{title:'RAM · 用户代码与数据页',layer:'PHYSICAL MEMORY / USER PAGES',summary:'用户程序的 text、data、bss、heap 最终由物理页承载，但通常按需调入或分配。',items:['ELF 文件页可经 Page Cache 映射进用户地址空间','匿名 heap / bss 页在缺页时分配','不同进程的同 VA 可对应不同 PFN'],note:'页面被缓存到 L1/L2/L3 后，RAM 中的副本不一定立即反映 Dirty 数据。'},
+  'ram-stacks':{title:'RAM · 每线程用户栈与内核栈',layer:'PHYSICAL MEMORY / THREAD PRIVATE',summary:'每个线程都拥有自己的用户栈；进入内核后使用该线程自己的内核栈。',items:['局部变量、返回地址、调用帧位于各线程用户栈','系统调用和中断使用当前线程内核栈','用户栈附近可设置 guard page，越界访问触发异常'],note:'同一进程的线程共享地址空间不意味着共用一个栈。'},
+  'ram-tls':{title:'RAM · TLS / 用户态 TCB',layer:'USER MEMORY / PER THREAD',summary:'线程库和运行时在线程私有区域维护 TLS 与用户 TCB，具体布局由 libc、ABI 和架构决定。',items:['线程局部变量、self / thread pointer、DTV 等','栈位置与 guard 信息、线程库内部状态','errno 等典型线程局部状态'],note:'用户 TCB 不负责代替内核 task_struct；两层各自记录不同信息。'},
+  'ram-pagecache':{title:'RAM · Page Cache',layer:'PHYSICAL MEMORY / FILE BACKED',summary:'文件页读入 RAM 后由 Page Cache 管理，可被映射到一个或多个地址空间。',items:['ELF、共享库与普通文件页','Dirty 文件页等待写回磁盘','exec / mmap 缺页时可复用已有缓存页'],note:'Page Cache 与 CPU Cache 完全不同：前者是内核管理 RAM 中文件页的机制。'},
+  'ram-shared':{title:'RAM · 显式共享内存',layer:'PHYSICAL MEMORY / SHARED MAPPING',summary:'shm 或 MAP_SHARED 等映射允许多个地址空间访问同一组后备页，需要同步协议保证高级操作正确。',items:['不同进程的 VMA / PTE 指向共享 PFN','共享变量仍可能进入各核私有 CPU Cache','可搭配共享 mutex、semaphore 或原子变量'],note:'物理页共享与缓存一致性、锁和内存序是相互关联但不同层的问题。'},
+  'ram-free':{title:'RAM · 空闲页框与回收',layer:'PHYSICAL MEMORY / ALLOCATOR',summary:'内核跟踪空闲页并在缺页、创建栈和复制 COW 页时分配。',items:['伙伴系统等页分配结构','回收、脏页写回与 Swap 联动','当前仅作框架占位，未模拟 OOM、NUMA 或完整回收'],note:'这里先搭结构，不展示尚未实现的具体分配算法和精确页数。'},
+  'disk-elf':{title:'磁盘 · ELF 可执行文件',layer:'STORAGE / EXECUTABLE IMAGE',summary:'ELF 保存程序头、节/段、代码与初始数据。execve 读取其元数据并建立新的地址空间。',items:['text / rodata / data 等段的文件后备','入口地址、程序头与重定位相关信息','exec 保留 PID，替换旧 mm、代码、栈与 PC'],note:'真实动态链接与重定位暂未建模，这里只展示加载职责边界。'},
+  'disk-lib':{title:'磁盘 · 共享库与动态加载器',layer:'STORAGE / SHARED OBJECTS',summary:'libc、动态加载器等共享库通过文件映射进入地址空间，文件页可在多个进程间复用。',items:['ld.so、libc.so 等只读代码页','按需缺页与 Page Cache 复用','写私有映射时遵循 COW 语义'],note:'首版不模拟真实动态链接器，只保留其所在层和与 exec/mmap 的关系。'},
+  'disk-files':{title:'磁盘 · 文件与 mmap 后备',layer:'STORAGE / VFS / INODE',summary:'普通文件可通过 VFS 访问，也可通过 mmap 映射到用户 VMA。',items:['文件内容、inode 与目录元数据','MAP_SHARED 写回与 MAP_PRIVATE 私有写时复制','管道和共享内存并不都对应普通磁盘文件'],note:'不要把所有信息交换都画成磁盘读写；很多 IPC 只经过内核和 RAM。'},
+  'disk-swap':{title:'磁盘 · Swap',layer:'STORAGE / ANONYMOUS PAGE BACKING',summary:'匿名页在内存回收时可换出到 Swap；再次访问时触发缺页并换入。',items:['换出的匿名页槽位','与 Page Cache 不同的后备机制','当前仅保留结构，未模拟回收策略与 Swap I/O 时序'],note:'Swap 不是线程创建或上下文切换的必经步骤。'}
+};
+
+// 场景是确定性的机制分镜；首版只声明状态与重点，不冒充完整 Linux / pthread 执行器。
+var SCENARIOS={
+  processSwitch:{title:'跨进程上下文切换',steps:[
+    {title:'时钟中断：T1 从用户态陷入内核',desc:'Core 0 保存 T1 的用户 PC、SP、GPR 等到其内核栈 trap frame；此刻仍是 P1 的地址空间。',focus:['context','thread-t1','kernel-tcb','core0'],part:'context',running:['kernel · T1 trap','IDLE'],queue:['T1 → kernel','IDLE'],states:[['Core 0','T1 RUNNING → KERNEL'],['CR3','mm_A 0x1000'],['保存位置','T1 内核栈'],['Cache','不变']]},
+    {title:'保存 T1 内核上下文',desc:'调度切换路径保存 T1 的内核 SP 和需要保留的寄存器到 thread_struct / 内核栈；FPU 等扩展状态可独立处理。',focus:['context','kernel-tcb','ram-kernel','ram-stacks'],part:'kernel-tcb',running:['context_switch(T1)','IDLE'],queue:['T1 READY','IDLE'],states:[['T1 状态','RUNNING → READY'],['保存内容','kernel SP / regs'],['T3 现场','已在 P2 task 中'],['L1 / L2 / L3','不清空']]},
+    {title:'调度器选择 P2 / T3',desc:'Core 0 的运行队列选择 T3。此时只是选定下一任务，还没有开始执行其用户指令。',focus:['scheduler','thread-t3','process-p2'],part:'scheduler',running:['scheduler → T3','IDLE'],queue:['next = T3','IDLE'],states:[['当前 mm','仍为 mm_A'],['下一任务','T3 @ P2'],['T1','READY'],['调度语义','固定分镜']]},
+    {title:'mm 改变：CR3 从 mm_A 切到 mm_B',desc:'因为 P1 与 P2 地址空间不同，恢复 T3 前更新 CR3。PCID 可保留带标签的 TLB 项；无 PCID 时可能失效相关项。',focus:['tlb','memory-manager','ram-pte','process-p1','process-p2'],part:'tlb',running:['switch_mm(A → B)','IDLE'],queue:['T3 准备恢复','IDLE'],states:[['CR3','0x1000 → 0x7000'],['TLB','PCID 保留 / 否则失效'],['L1 / L2','旧缓存行仍可保留'],['L3','无需进程切换清空']]},
+    {title:'恢复 T3 并返回用户态',desc:'恢复 T3 内核现场，再沿返回路径恢复 trap frame 中的用户寄存器；Core 0 从 T3 保存的 PC 继续执行。',focus:['context','thread-t3','core0','process-p2'],part:'context',running:['T3 @ P2','IDLE'],queue:['T3 RUNNING','IDLE'],states:[['Core 0','T3 RUNNING'],['PC','T3.savedPC'],['CR3','mm_B 0x7000'],['Cache','按访问自然替换 / 写回']]}
+  ]},
+  threadSwitch:{title:'同进程线程切换',steps:[
+    {title:'T1 让出 CPU，保存自己的现场',desc:'T1 与 T2 虽属同一进程，但 T1 的 PC、SP、寄存器、用户栈和内核栈仍需独立保存。',focus:['thread-t1','context','ram-stacks'],part:'thread-t1',running:['kernel · save T1','T3 @ P2'],queue:['T1 READY','T3 RUNNING'],states:[['共享','mm_A / heap / fd'],['T1 私有','PC / SP / 栈 / TLS'],['CR3','mm_A'],['Cache','不清空']]},
+    {title:'调度器选择同进程的 T2',desc:'下一任务是 T2。它使用与 T1 相同的 mm_A，所以不会因为线程切换而建立新地址空间。',focus:['scheduler','thread-t2','process-p1'],part:'scheduler',running:['scheduler → T2','T3 @ P2'],queue:['next = T2','T3 RUNNING'],states:[['下一任务','T2 @ P1'],['P1.threads','T1 / T2'],['T2 状态','READY → RUNNING'],['mm','不变']]},
+    {title:'切换内核栈与寄存器现场，CR3 保持',desc:'恢复 T2 的内核 SP 和寄存器。由于 T1/T2 共享 mm_A，无需更新 CR3，也没有由地址空间切换引起的 TLB 失效。',focus:['context','kernel-tcb','tlb','ram-stacks'],part:'context',running:['restore T2','T3 @ P2'],queue:['T2 恢复中','T3 RUNNING'],states:[['CR3','保持 mm_A'],['TLB','无需切换地址空间'],['用户栈','T1.stack → T2.stack'],['TLS','T1.tls → T2.tls']]},
+    {title:'T2 返回用户态，继续自己的执行流',desc:'T2 从自己的 savedPC 继续运行，访问与 T1 共享的堆和全局变量；局部栈变量仍位于 T2 私有栈。',focus:['thread-t2','process-p1','ram-user','ram-tls'],part:'thread-t2',running:['T2 @ P1','T3 @ P2'],queue:['T2 RUNNING','T3 RUNNING'],states:[['Core 0','T2 RUNNING'],['Core 1','T3 RUNNING'],['共享数据','P1 heap / globals'],['线程私有','PC / stack / TLS']]}
+  ]},
+  createProcess:{title:'创建进程：fork → COW → exec',steps:[
+    {title:'fork：先创建子任务与新的进程资源描述',desc:'父任务进入内核，创建子 PID 和 task。fork 不等于 exec：子进程最初仍有父程序地址空间的复制视图。',focus:['kernel-tcb','process-p1','process-p2'],part:'kernel-tcb',running:['T1 fork()','IDLE'],queue:['T1 RUNNING','IDLE'],states:[['父','P1 / T1'],['子','P2 / T3 新建'],['PID','分配新值'],['程序','暂未替换']]},
+    {title:'复制映射并标记 COW，而不是立即复制全部 RAM',desc:'父子拥有不同页表根；私有可写页可暂时指向同一 PFN，并将双方 PTE 设为只读 / COW。',focus:['memory-manager','ram-pte','ram-user','process-p1','process-p2'],part:'memory-manager',running:['copy_mm(COW)','IDLE'],queue:['T3 READY','IDLE'],states:[['P1 PTE','PFN42 · RO · COW'],['P2 PTE','同一 PFN42 · COW'],['物理页','refcount 增加'],['写入后','fault → 复制页']]},
+    {title:'子任务进入运行队列',desc:'子进程现在可被调度。父子继续执行 fork 返回路径，返回值不同；文件描述符等资源的共享程度由创建方式决定。',focus:['scheduler','thread-t3','kernel-tcb'],part:'scheduler',running:['T1 @ P1','IDLE'],queue:['T1 / T3 READY','IDLE'],states:[['T3','READY'],['地址空间','mm_B'],['COW','等待首次写入'],['fd','教学模型：复制引用']]},
+    {title:'execve：保留 PID，替换地址空间与执行入口',desc:'T3 调用 execve 后，旧 mm_B 被新程序映射替代；读取 ELF 元数据，建立 text/data/heap/stack VMA 并设置新 PC。',focus:['disk-elf','memory-manager','thread-t3','ram-pagecache'],part:'disk-elf',running:['T3 execve(new ELF)','IDLE'],queue:['T3 RUNNING','IDLE'],states:[['PID','保持 P2'],['mm','旧映射被替换'],['PC','ELF entry'],['VMA','text/data/heap/stack']]},
+    {title:'执行新程序时按需缺页',desc:'建立 VMA 不代表整个 ELF 已读入 RAM。访问未 Present 页时通过 Page Cache / 文件读入 PFN，再填 PTE。',focus:['memory-manager','ram-pagecache','ram-user','disk-elf','tlb'],part:'ram-pagecache',running:['T3 page_fault','IDLE'],queue:['T3 → I/O 或继续','IDLE'],states:[['VMA','已存在'],['PTE','Invalid → Present'],['PFN','按需分配 / 复用'],['后续指令','重新执行访存']]}
+  ]},
+  createThread:{title:'创建同进程线程',steps:[
+    {title:'pthread_create：线程库准备新栈与 TLS / 用户 TCB',desc:'线程库为 T2 准备独立用户栈和线程私有元数据；这些内存位于 P1 地址空间中，但逻辑上由 T2 使用。',focus:['thread-t2','ram-stacks','ram-tls','process-p1'],part:'ram-tls',running:['T1 pthread_create','IDLE'],queue:['T1 RUNNING','IDLE'],states:[['新实体','T2'],['用户栈','T2.stack'],['TLS / TCB','T2.tls'],['mm','仍为 mm_A']]},
+    {title:'mmap 建立栈 VMA，物理页按需分配',desc:'新栈可经 mmap 获得虚拟映射与 guard page；首次触碰栈页才触发匿名页缺页并分配 PFN。',focus:['memory-manager','ram-stacks','ram-free','ram-pte'],part:'memory-manager',running:['mmap(T2.stack)','IDLE'],queue:['T1 RUNNING','IDLE'],states:[['VMA','新增 T2.stack'],['PTE','初始 Invalid'],['首次访问','缺页 → PFN'],['guard page','无权限']]},
+    {title:'clone：新增内核 task，共享 mm / files',desc:'使用 CLONE_VM、CLONE_FILES 等标志时，内核创建 T2 的 task、内核栈和调度实体，但 T1/T2 指向同一 mm 与文件表。',focus:['kernel-tcb','process-p1','ram-kernel','scheduler'],part:'kernel-tcb',running:['clone(T2)','IDLE'],queue:['T2 READY','IDLE'],states:[['TID','新值'],['TGID','与 T1 相同'],['mm','共享 mm_A'],['内核栈','T2 私有']]},
+    {title:'T2 可在另一核运行，但仍有独立上下文',desc:'Core 1 装载 T2 的 PC / SP / TLS。两核可并行执行同一进程的两个线程，CR3 在每个核上都指向 mm_A。',focus:['core1','context','thread-t2','tlb'],part:'core1',running:['T1 @ P1','T2 @ P1'],queue:['T1 RUNNING','T2 RUNNING'],states:[['Core 0','T1 @ mm_A'],['Core 1','T2 @ mm_A'],['共享','heap / globals / fd'],['私有','两套现场与两套栈']]}
+  ]},
+  cacheCoherence:{title:'共享变量、MESI 与伪共享',steps:[
+    {title:'T1 / T2 访问同一缓存行中的 x 和 y',desc:'假设 64B 缓存行：x 在 offset 0，y 在 offset 4。两核读取后都可能持有该行的 Shared 副本。',focus:['core0','core1','l1','l2','l3','ram-shared'],part:'l1',running:['T1 read x','T2 read y'],queue:['T1 RUNNING','T2 RUNNING'],states:[['Cache line','64B：x + y + …'],['Core 0 L1','S · line A'],['Core 1 L1','S · line A'],['RAM','共享 PFN 的后备页']]},
+    {title:'Core 0 写 x：获得所有权并使其他副本失效',desc:'写入触发 RFO / 一致性事务。Core 0 的行变 Modified，Core 1 的同一行变 Invalid；RAM 不必立即更新。',focus:['l1','l2','l3','core0','core1'],part:'l3',running:['T1 write x','T2 ready'],queue:['T1 RUNNING','T2 RUNNING'],states:[['Core 0 line A','S → M（Dirty）'],['Core 1 line A','S → I'],['一致性粒度','整个 64B 行'],['RAM','可暂时是旧值']]},
+    {title:'Core 1 读 y 也发生一致性未命中',desc:'虽然 y 没被修改，但它与 x 位于同一行。Core 1 的整行已失效，因此读取 y 仍需重新获得包含最新 x 的行。',focus:['l1','l3','ram-shared','thread-t2'],part:'l1',running:['T1 @ P1','T2 read y · miss'],queue:['T1 RUNNING','T2 coherence wait'],states:[['读取变量','y（逻辑上未改）'],['未命中原因','line A = I'],['Core 0','提供 / 写回新行'],['结果','两核可重新变为 S']]},
+    {title:'这是 false sharing，不是普通数据竞争',desc:'x 与 y 是不同变量，仍因共享缓存行产生频繁失效和流量。MESI 保证看到一致的数据，但无法消除这种性能抖动。',focus:['l1','l2','l3'],part:'l3',running:['T1 write x','T2 write y'],queue:['反复 RFO / invalidation','反复 RFO / invalidation'],states:[['正确性','缓存行一致'],['性能','互相无效化'],['变量级共享','实际上无'],['缓存行级共享','持续发生']]},
+    {title:'padding / alignas：把热变量分到不同缓存行',desc:'通过填充或对齐让 x、y 落入不同行，可减少伪共享。它只是性能优化，不替代 atomic、锁或正确的内存序。',focus:['l1','ram-user','sync-ipc'],part:'l1',running:['T1 write x · line A','T2 write y · line B'],queue:['line A 独立','line B 独立'],states:[['x','line A · padding'],['y','line B · 独立'],['伪共享','减少'],['数据竞争','仍需同步原语']]}
+  ]},
+  synchronization:{title:'锁、futex 与信息交换',steps:[
+    {title:'无竞争：atomic 快路径获得锁',desc:'T1 在用户态通过原子比较交换把 mutex 从 free 改为 locked。无等待时无需每次 lock 都进入内核。',focus:['sync-ipc','thread-t1','l1','l3'],part:'sync-ipc',running:['T1 atomic CAS','T2 @ P1'],queue:['T1 RUNNING','T2 RUNNING'],states:[['mutex','free → locked'],['系统调用','无'],['T1','进入临界区'],['MESI','维护缓存行一致性']]},
+    {title:'发生竞争：futex WAIT 校验后睡眠',desc:'T2 获取锁失败。慢路径调用 futex WAIT，内核复核等待值仍匹配后将 T2 入队并置为 BLOCKED；值已变化则可能返回重试。',focus:['sync-ipc','scheduler','kernel-tcb','thread-t2'],part:'sync-ipc',running:['T1 critical section','T2 futex_wait'],queue:['T1 RUNNING','T2 BLOCKED'],states:[['等待值','locked / 期望匹配'],['T2','READY/RUNNING → BLOCKED'],['运行队列','移除 T2'],['唤醒队列','加入 futex queue']]},
+    {title:'临界区访问共享数据：锁与 MESI 各管一层',desc:'T1 在临界区更新共享对象。MESI 保证缓存行一致，mutex 保证互斥与同步语义；二者不可互相替代。',focus:['ram-shared','l1','l3','sync-ipc'],part:'ram-shared',running:['T1 update shared','T2 BLOCKED'],queue:['T1 RUNNING','T2 sleeping'],states:[['共享对象','由 mutex 保护'],['Cache line','M / S / I 变化'],['复合操作','由锁保证互斥'],['RAM','Dirty 行可暂未写回']]},
+    {title:'unlock + FUTEX_WAKE：唤醒不等于立即运行',desc:'T1 释放锁并唤醒等待者。T2 变为 READY，等待调度后重新竞争锁；它不会在 wake 的瞬间自动持有锁。',focus:['scheduler','sync-ipc','thread-t2'],part:'scheduler',running:['T1 unlock / wake','T2 READY'],queue:['T1 RUNNING','T2 READY → RUNNING'],states:[['mutex','unlocked'],['T2','BLOCKED → READY'],['下一步','被调度后重新 acquire'],['保证','不保证立即运行']]},
+    {title:'信息交换：线程共享内存，进程可选 IPC',desc:'同进程线程可直接操作共享对象并配合同步；跨进程可用 pipe、socket、消息队列或 shm。共享内存同样需要锁或原子协议。',focus:['sync-ipc','ram-shared','disk-files','process-p1','process-p2'],part:'sync-ipc',running:['T1 / T2 shared memory','P2 IPC'],queue:['线程同步','进程通信'],states:[['线程','shared memory + mutex'],['进程','pipe / socket / shm'],['磁盘','不是所有 IPC 的必经层'],['正确性','同步 + 映射 + 一致性共同作用']]}
+  ]}
+};
+
+var store={view:'execution',scenario:'processSwitch',step:0,selected:'context'};
+function currentStep(){return SCENARIOS[store.scenario].steps[store.step]}
+function setView(view){
+  store.view=view;$('executionView').hidden=view!=='execution';$('systemView').hidden=view!=='system';
+  document.querySelectorAll('.view-tab').forEach(function(b){b.classList.toggle('active',b.dataset.view===view)});
+  document.dispatchEvent(new CustomEvent('whitebox:viewchange',{detail:{view:view}}));
+}
+function selectPart(id){if(!PARTS[id])return;store.selected=id;renderInspector()}
+function renderInspector(){
+  var part=PARTS[store.selected]||PARTS.core0;
+  $('inspectorTitle').textContent=part.title;$('inspectorLayer').textContent=part.layer;$('inspectorSummary').textContent=part.summary;$('inspectorNote').textContent=part.note;
+  var list=$('inspectorList');list.innerHTML='';part.items.forEach(function(text){var li=document.createElement('li');li.textContent=text;list.appendChild(li)});
+  document.querySelectorAll('#systemView [data-part]').forEach(function(el){el.classList.toggle('selected',el.dataset.part===store.selected)});
+}
+function renderScenario(){
+  var scenario=SCENARIOS[store.scenario],step=currentStep();
+  document.querySelectorAll('.scenario-tab').forEach(function(b){b.classList.toggle('active',b.dataset.scenario===store.scenario)});
+  document.querySelectorAll('#systemView .focus').forEach(function(el){el.classList.remove('focus')});
+  step.focus.forEach(function(id){document.querySelectorAll('#systemView [data-part="'+id+'"]').forEach(function(el){el.classList.add('focus')})});
+  $('scenarioKicker').textContent=scenario.title+' · 机制分镜 '+(store.step+1)+' / '+scenario.steps.length;
+  $('scenarioTitle').textContent=step.title;$('scenarioDesc').textContent=step.desc;
+  $('core0Running').textContent=step.running[0];$('core1Running').textContent=step.running[1];$('rqCore0').textContent=step.queue[0];$('rqCore1').textContent=step.queue[1];
+  var states=$('scenarioStates');states.innerHTML='';step.states.forEach(function(pair){var cell=document.createElement('div');cell.className='state-cell';var label=document.createTextNode(pair[0]);var value=document.createElement('b');value.textContent=pair[1];cell.appendChild(label);cell.appendChild(value);states.appendChild(cell)});
+  var dots=$('stepDots');dots.innerHTML='';scenario.steps.forEach(function(_,i){var b=document.createElement('button');b.className='step-dot'+(i===store.step?' active':'');b.setAttribute('aria-label','跳到第 '+(i+1)+' 镜');b.addEventListener('click',function(){goStep(i)});dots.appendChild(b)});
+  var hint=document.createElement('span');hint.className='step-hint';hint.textContent='黄色：本步重点 · 蓝框：正在内视';dots.appendChild(hint);
+  $('sysPrev').disabled=store.step===0;$('sysNext').disabled=store.step===scenario.steps.length-1;
+}
+function goStep(index){
+  var steps=SCENARIOS[store.scenario].steps;store.step=Math.max(0,Math.min(index,steps.length-1));store.selected=steps[store.step].part;renderScenario();renderInspector();
+}
+function selectScenario(id){if(!SCENARIOS[id])return;store.scenario=id;store.step=0;store.selected=SCENARIOS[id].steps[0].part;renderScenario();renderInspector()}
+
+document.querySelectorAll('.view-tab').forEach(function(b){b.addEventListener('click',function(){setView(b.dataset.view)})});
+document.querySelectorAll('.scenario-tab').forEach(function(b){b.addEventListener('click',function(){selectScenario(b.dataset.scenario)})});
+$('sysPrev').addEventListener('click',function(){goStep(store.step-1)});$('sysNext').addEventListener('click',function(){goStep(store.step+1)});
+$('systemView').addEventListener('click',function(e){var target=e.target.closest('[data-part]');if(target)selectPart(target.dataset.part)});
+document.querySelectorAll('#systemView .machine-part,#systemView .kernel-chip,#systemView .memory-chip,#systemView .thread-chip,#systemView .entity-head,#systemView .core').forEach(function(el){el.tabIndex=0;el.setAttribute('role','button');el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();selectPart(el.dataset.part)}})});
+renderScenario();renderInspector();
+})();
+</script>
+</body>
+</html>

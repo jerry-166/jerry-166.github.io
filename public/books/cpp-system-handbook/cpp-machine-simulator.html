@@ -1,0 +1,502 @@
+<html style="margin:0;padding:0;">
+<title>白盒机器：输入代码，单步看 CPU/内核/RAM/磁盘协作</title>
+<div id="root" style="font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#0b1220;padding:20px;width:100%;box-sizing:border-box;color:#e2e8f0;">
+<div style="max-width:1280px;margin:0 auto;">
+
+  <!-- 版本条：v1 → v2 迭代关系互跳，当前为 v1 -->
+  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:8px 14px;margin-bottom:14px;background:#111c2e;border:1px solid #24324a;border-radius:10px;font-size:12px;">
+    <a href="cpp-system-handbook.html" style="color:#94a3b8;text-decoration:none;">← C++ 系统知识手册</a>
+    <span style="color:#334e70;">｜</span>
+    <span style="color:#cbd5e1;">白盒模拟器版本：</span>
+    <span style="color:#67e8f9;font-weight:700;">v1 初版 · 指令单步（当前）</span>
+    <a href="cpp-whitebox-simulator.html" style="color:#60a5fa;text-decoration:none;">v2 重构 · 双视图 + 机器内视并发 →</a>
+  </div>
+
+  <div style="margin-bottom:14px;">
+    <div style="font-size:22px;font-weight:700;color:#f8fafc;">白盒机器模拟器 · 代码 → OS 全流程</div>
+    <div style="font-size:12.5px;color:#94a3b8;margin-top:4px;">在左框写汇编、右框给初始数据，点"解析并运行"，再单步观察数据在 CPU / 内核 / RAM / 磁盘之间的真实流动</div>
+  </div>
+
+  <!-- 输入区 -->
+  <div style="background:#111c2e;border:1px solid #24324a;border-radius:10px;padding:14px;margin-bottom:14px;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1.4;min-width:300px;">
+        <div style="font-size:12.5px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">汇编代码（# 注释，地址自动 0x00,0x04…）</div>
+        <textarea id="codeInput" spellcheck="false" style="width:100%;box-sizing:border-box;min-height:170px;background:#0b1220;color:#a5f3fc;border:1px solid #24324a;border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:12.5px;line-height:1.6;resize:vertical;"></textarea>
+      </div>
+      <div style="flex:1;min-width:240px;">
+        <div style="font-size:12.5px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">初始数据（语法 VPN:OFF = 值）</div>
+        <textarea id="dataInput" spellcheck="false" style="width:100%;box-sizing:border-box;min-height:170px;background:#0b1220;color:#fde68a;border:1px solid #24324a;border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:12.5px;line-height:1.6;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:11px;">
+      <button id="btnLoad" style="min-height:46px;padding:0 22px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;">解析并运行 ▶</button>
+      <span style="font-size:12px;color:#94a3b8;">载入示例：</span>
+      <button class="exbtn" data-ex="0" style="min-height:44px;padding:0 14px;font-size:12.5px;background:#334155;color:#e2e8f0;border:none;border-radius:8px;cursor:pointer;">循环求和</button>
+      <button class="exbtn" data-ex="1" style="min-height:44px;padding:0 14px;font-size:12.5px;background:#334155;color:#e2e8f0;border:none;border-radius:8px;cursor:pointer;">纯运算无访存</button>
+      <button class="exbtn" data-ex="2" style="min-height:44px;padding:0 14px;font-size:12.5px;background:#334155;color:#e2e8f0;border:none;border-radius:8px;cursor:pointer;">多页缺页对比</button>
+    </div>
+    <div id="parseMsg" style="margin-top:10px;font-size:12px;line-height:1.7;"></div>
+  </div>
+
+  <!-- 拓扑流动图 -->
+  <div style="background:#111c2e;border:1px solid #24324a;border-radius:10px;padding:14px;margin-bottom:14px;">
+    <div style="font-size:13px;font-weight:700;color:#cbd5e1;margin-bottom:12px;">模块拓扑与当前数据流</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <div id="node-cpu" class="toponode" style="flex:1;min-width:120px;text-align:center;border:2px solid #334155;border-radius:9px;padding:12px 8px;background:#0b1220;">
+        <div style="font-weight:700;color:#60a5fa;">CPU</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">寄存器·ALU·TLB·L1</div>
+      </div>
+      <div id="edge-e3" class="edge" style="flex:0 0 70px;text-align:center;color:#475569;font-size:20px;">→</div>
+      <div id="node-kernel" class="toponode" style="flex:1;min-width:120px;text-align:center;border:2px solid #334155;border-radius:9px;padding:12px 8px;background:#0b1220;">
+        <div style="font-weight:700;color:#c4b5fd;">内核 Kernel</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">VMA·页表·缺页·页缓存</div>
+      </div>
+      <div id="edge-e2" class="edge" style="flex:0 0 70px;text-align:center;color:#475569;font-size:20px;">→</div>
+      <div id="node-ram" class="toponode" style="flex:1;min-width:120px;text-align:center;border:2px solid #334155;border-radius:9px;padding:12px 8px;background:#0b1220;">
+        <div style="font-weight:700;color:#67e8f9;">RAM</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">物理页框 4KB</div>
+      </div>
+      <div id="edge-e1" class="edge" style="flex:0 0 70px;text-align:center;color:#475569;font-size:20px;">→</div>
+      <div id="node-disk" class="toponode" style="flex:1;min-width:120px;text-align:center;border:2px solid #334155;border-radius:9px;padding:12px 8px;background:#0b1220;">
+        <div style="font-weight:700;color:#fbbf24;">磁盘 Disk</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">可执行文件·数据·swap</div>
+      </div>
+    </div>
+    <div id="flowBar" style="margin-top:12px;background:#0b1220;border:1px dashed #334155;border-radius:8px;padding:10px;font-size:12.5px;text-align:center;color:#94a3b8;">尚未运行</div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px;">注：CPU 经 MMU/缓存直连 RAM（e4），非相邻路径在上方数据流条表达</div>
+  </div>
+
+  <!-- 控制 + 分组导航 -->
+  <div style="background:#111c2e;border:1px solid #24324a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;">
+      <button id="btnBack" style="min-height:46px;padding:0 16px;font-size:13.5px;font-weight:700;background:#475569;color:#fff;border:none;border-radius:8px;cursor:pointer;">◀ 上一步</button>
+      <button id="btnStep" style="min-height:46px;padding:0 20px;font-size:13.5px;font-weight:700;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;">单步 ▶</button>
+      <button id="btnPlay" style="min-height:46px;padding:0 18px;font-size:13.5px;font-weight:700;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;">自动播放</button>
+      <button id="btnReset" style="min-height:46px;padding:0 18px;font-size:13.5px;font-weight:700;background:#475569;color:#fff;border:none;border-radius:8px;cursor:pointer;">重置</button>
+      <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:9px;font-size:12px;">
+        <input id="seek" type="range" min="0" max="0" value="0" style="flex:1;min-height:30px;accent-color:#2563eb;">
+        <span>步骤 <b id="sStep" style="color:#fbbf24;">0</b>/<span id="sTotal">0</span></span>
+      </div>
+    </div>
+    <div style="margin-top:11px;">
+      <div style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">分组导航（按循环 / 指令跳转）</div>
+      <div id="navMilestones" style="display:flex;gap:7px;flex-wrap:wrap;font-size:11.5px;"></div>
+    </div>
+  </div>
+
+  <!-- 四大模块 -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- CPU -->
+    <div id="mod-cpu" style="flex:1;min-width:300px;background:#111c2e;border:1px solid #1d4ed8;border-radius:10px;padding:13px;box-sizing:border-box;">
+      <div style="font-size:14px;font-weight:700;color:#60a5fa;margin-bottom:10px;">① CPU（芯片硬件）</div>
+      <div style="font-size:11.5px;background:#0b1220;border-radius:7px;padding:9px;margin-bottom:9px;line-height:1.8;">
+        PC <b id="mPc" style="color:#67e8f9;">0x00</b> ｜ 阶段 <b id="mStage" style="color:#f472b6;">—</b>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-bottom:5px;">寄存器文件</div>
+      <div id="mRegs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11.5px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">
+        <div style="flex:1;min-width:120px;"><div style="color:#93c5fd;font-weight:700;margin-bottom:4px;">iTLB / dTLB</div><div id="mTlb" style="line-height:1.7;"></div></div>
+        <div style="flex:1;min-width:120px;"><div style="color:#86efac;font-weight:700;margin-bottom:4px;">L1i / L1d</div><div id="mL1" style="line-height:1.7;"></div></div>
+      </div>
+    </div>
+
+    <!-- 内核 -->
+    <div id="mod-kernel" style="flex:1;min-width:300px;background:#111c2e;border:1px solid #7c3aed;border-radius:10px;padding:13px;box-sizing:border-box;">
+      <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:10px;">② 内核（管理软件）</div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-bottom:5px;">VMA 虚拟内存区域</div>
+      <div id="mVma" style="font-size:11px;background:#0b1220;border-radius:7px;padding:8px;margin-bottom:9px;line-height:1.7;"></div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-bottom:5px;">页表（PD→PT→PTE，物理在 RAM、内核拥有）</div>
+      <div id="mPte" style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:monospace;margin-bottom:9px;"></div>
+      <div id="mKernelAct" style="font-size:11.5px;background:#2e1065;border-radius:7px;padding:8px;line-height:1.6;color:#ddd6fe;">内核空闲，等待事件</div>
+    </div>
+
+    <!-- RAM -->
+    <div id="mod-ram" style="flex:1.2;min-width:320px;background:#111c2e;border:1px solid #0891b2;border-radius:10px;padding:13px;box-sizing:border-box;">
+      <div style="font-size:14px;font-weight:700;color:#67e8f9;margin-bottom:10px;">③ RAM 物理内存</div>
+      <div id="mFrames" style="display:flex;flex-direction:column;gap:7px;font-size:11px;"></div>
+    </div>
+
+    <!-- 磁盘 -->
+    <div id="mod-disk" style="flex:1;min-width:280px;background:#111c2e;border:1px solid #d97706;border-radius:10px;padding:13px;box-sizing:border-box;">
+      <div style="font-size:14px;font-weight:700;color:#fbbf24;margin-bottom:10px;">④ 磁盘</div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-bottom:5px;">可执行文件（指令镜像）</div>
+      <div id="mDiskCode" style="font-size:10.5px;font-family:monospace;background:#0b1220;border-radius:7px;padding:8px;line-height:1.6;margin-bottom:9px;"></div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-bottom:5px;">数据文件 / swap</div>
+      <div id="mDiskData" style="font-size:10.5px;font-family:monospace;background:#0b1220;border-radius:7px;padding:8px;line-height:1.6;"></div>
+    </div>
+  </div>
+
+  <!-- 日志 -->
+  <div style="background:#111c2e;border:1px solid #24324a;border-radius:10px;padding:12px;margin-top:14px;">
+    <div style="font-size:13px;font-weight:700;color:#cbd5e1;margin-bottom:8px;">事件日志</div>
+    <div id="mLog" style="display:flex;flex-direction:column;gap:4px;font-size:12px;max-height:260px;overflow-y:auto;"></div>
+  </div>
+
+  <div style="text-align:center;font-size:11px;color:#64748b;margin-top:12px;">教学模拟器：地址/数值为简化示意，重点呈现模块状态与触发关系</div>
+</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- 内置示例 ----------
+  var EXAMPLES = [
+    { code:
+'# 计算 z = x + y，循环 2 次\nLOAD R1 [8:0]\nLOAD R2 [8:4]\nADD R3 R1 R2\nSTORE R3 [4:0]\nADDI R4 1\nBLT R4 2 0\nHALT',
+      data:'8:0 = 11\n8:4 = 22' },
+    { code:
+'# 纯寄存器运算，不访问数据内存\nADD R1 R1 R2\nADDI R3 5\nADD R4 R1 R3\nHALT',
+      data:'' },
+    { code:
+'# 访问三个不同数据页，观察多次缺页\nLOAD R1 [8:0]\nLOAD R2 [12:0]\nLOAD R3 [16:0]\nADD R4 R1 R2\nSTORE R4 [20:0]\nHALT',
+      data:'8:0 = 1\n12:0 = 2\n16:0 = 3' }
+  ];
+
+  // ---------- 解析器 ----------
+  function assert(cond,msg){ if(!cond) throw new Error(msg); }
+  function parseMem(s){
+    var m=s.match(/^\[(\d+):(\d+)\]$/);
+    if(!m) throw new Error('内存操作数格式应为 [VPN:OFF]');
+    return {vpn:parseInt(m[1],10),off:parseInt(m[2],10)};
+  }
+  function isReg(s){ return /^R[1-6]$/.test(s); }
+
+  function parseProgram(codeText,dataText){
+    var errors=[], instr=[], lines=codeText.split('\n');
+    for(var i=0;i<lines.length;i++){
+      var raw=lines[i].trim();
+      if(!raw||raw.charAt(0)==='#') continue;
+      var line=raw.replace(/#.*$/,'').trim();
+      if(!line) continue;
+      var p=line.split(/\s+/), op=p[0].toUpperCase(), idx=instr.length;
+      try{
+        if(op==='LOAD'){
+          assert(p.length===3,'LOAD 需要 寄存器 和 [VPN:OFF]');
+          assert(isReg(p[1]),'寄存器格式错');
+          var a=parseMem(p[2]);
+          instr.push({addr:idx*4,op:'LOAD',dst:p[1],vpn:a.vpn,off:a.off,mn:line});
+        }else if(op==='STORE'){
+          assert(p.length===3,'STORE 需要 寄存器 和 [VPN:OFF]');
+          assert(isReg(p[1]),'寄存器格式错');
+          var b=parseMem(p[2]);
+          instr.push({addr:idx*4,op:'STORE',src:p[1],vpn:b.vpn,off:b.off,mn:line});
+        }else if(op==='ADD'){
+          assert(p.length===4,'ADD 需要 目标 源 源');
+          [p[1],p[2],p[3]].forEach(function(r){assert(isReg(r),'寄存器格式错 '+r);});
+          instr.push({addr:idx*4,op:'ADD',dst:p[1],src:[p[2],p[3]],mn:line});
+        }else if(op==='ADDI'){
+          assert(p.length===3,'ADDI 需要 寄存器 和 立即数');
+          assert(isReg(p[1]),'寄存器格式错');
+          var imm=parseInt(p[2],10); assert(!isNaN(imm),'立即数必须是整数');
+          instr.push({addr:idx*4,op:'ADDI',dst:p[1],imm:imm,mn:line});
+        }else if(op==='BLT'){
+          assert(p.length===4,'BLT 需要 寄存器 比较值 目标索引');
+          assert(isReg(p[1]),'寄存器格式错');
+          var cmp=parseInt(p[2],10),tgt=parseInt(p[3],10);
+          assert(!isNaN(cmp)&&!isNaN(tgt),'比较值与目标必须是整数');
+          instr.push({addr:idx*4,op:'BLT',src:p[1],cmp:cmp,target:tgt,mn:line});
+        }else if(op==='HALT'){
+          instr.push({addr:idx*4,op:'HALT',mn:line});
+        }else throw new Error('未知指令 '+op);
+      }catch(e){ errors.push('第 '+(i+1)+' 行：'+e.message+'（'+raw+'）'); }
+    }
+    for(var k=0;k<instr.length;k++){
+      if(instr[k].op==='BLT' && (instr[k].target<0||instr[k].target>=instr.length))
+        errors.push('BLT 目标索引 '+instr[k].target+' 越界（共 '+instr.length+' 条指令）');
+    }
+    var data={}, dl=[];
+    var dlines=dataText.split('\n');
+    for(var d=0;d<dlines.length;d++){
+      var dr=dlines[d].trim();
+      if(!dr||dr.charAt(0)==='#') continue;
+      var dm=dr.match(/^(\d+):(\d+)\s*=\s*(-?\d+)$/);
+      if(!dm){ errors.push('数据第 '+(d+1)+' 行格式错，应为 VPN:OFF = 值：'+dr); continue; }
+      data[dm[1]+':'+dm[2]]=parseInt(dm[3],10);
+    }
+    if(!instr.length) errors.push('没有任何有效指令');
+    return {instr:instr,errors:errors,data:data};
+  }
+
+  // ---------- 运行时状态 ----------
+  var PROGRAM=[], DATA={}, usedRegs=[];
+  function freshState(){
+    var regs={}; usedRegs.forEach(function(r){regs[r]=0;});
+    return {cycle:0,pc:0x00,ii:0,stage:'IF',phase:0,regs:regs,
+      itlb:[],dtlb:[],l1i:[],l1d:[],pte:{},frames:{},nextPfn:0,
+      alu:null,loadValue:null,takeBranch:false,halted:false,loop:0,
+      flow:null,kernelAct:'内核空闲，等待事件'};
+  }
+  var S=freshState(), logs=[], history=[], ptr=0, milestones=[], timer=null;
+
+  function hex(n){return '0x'+n.toString(16).toUpperCase().padStart(2,'0');}
+  function log(level,text){logs.push({level:level,text:text,cycle:S.cycle,stage:S.stage+'-'+(S.phase+1)});if(logs.length>300)logs.shift();}
+  function setFlow(edge,nodes,dir,label,act){
+    S.flow={edge:edge,nodes:nodes,dir:dir,label:label};
+    if(act)S.kernelAct=act;
+  }
+
+  function allocFrame(vpn,isInstr){
+    var pfn=S.nextPfn++, fr={vpn:vpn,dirty:false,kind:isInstr?'code':'data',cells:{}};
+    if(isInstr){ PROGRAM.forEach(function(p){fr.cells[p.addr]=p.mn;}); }
+    else{
+      Object.keys(DATA).forEach(function(key){
+        var q=key.split(':');
+        if(parseInt(q[0],10)===vpn) fr.cells[parseInt(q[1],10)]=DATA[key];
+      });
+    }
+    S.frames[pfn]=fr; return pfn;
+  }
+
+  function translate(vpn,tlb,isInstr,tag){
+    for(var i=0;i<tlb.length;i++){ if(tlb[i].vpn===vpn){
+      setFlow(null,['cpu'],'',tag+'TLB 命中');
+      log('hit',tag+'TLB 命中：VPN'+vpn+' → PFN'+tlb[i].pfn);
+      return {pfn:tlb[i].pfn,fault:false};
+    }}
+    if(S.pte.hasOwnProperty(vpn)){
+      var p1=S.pte[vpn]; tlb.push({vpn:vpn,pfn:p1});
+      setFlow('e3',['cpu','kernel'],'cpu->kernel','查页表');
+      log('miss',tag+'TLB 未命中 → 页表命中 PFN'+p1+'，回填 TLB');
+      return {pfn:p1,fault:false};
+    }
+    var pfn=allocFrame(vpn,isInstr); S.pte[vpn]=pfn; tlb.push({vpn:vpn,pfn:pfn});
+    setFlow('e2',['kernel','ram','disk'],'disk->ram','缺页：分配页框并读入','处理缺页中断：分配 PFN'+pfn+'，建立 PTE');
+    log('fault',tag+'TLB/页表均无效 → 缺页中断：内核分配 PFN'+pfn+(isInstr?'（读入指令页）':'（分配数据页并从磁盘读入）')+'，建立 PTE、回填 TLB');
+    return {pfn:pfn,fault:true};
+  }
+
+  // ---------- 阶段 ----------
+  function doIF(inp){
+    if(S.phase===0){ translate(0,S.itlb,true,'i'); S.phase=1; return; }
+    if(S.phase===1){
+      var found=S.l1i.some(function(e){return e.vpn===0;});
+      if(found){ setFlow(null,['cpu'],'','L1i 命中'); log('hit','L1i 命中：完整指令已在 SRAM'); }
+      else{ S.l1i.push({vpn:0,pfn:S.pte[0]}); setFlow('e4',['ram','cpu'],'ram->cpu','读指令到 L1i'); log('miss','L1i 未命中 → 从 RAM 读完整指令（整页预读进 L1i）'); }
+      S.phase=2; return;
+    }
+    S.pc=inp.addr+4; setFlow(null,['cpu'],'','PC 自增'); log('ok','取指完成，PC 自增 → '+hex(S.pc));
+    S.stage='ID'; S.phase=0;
+  }
+  function doID(inp){
+    var d='opcode='+inp.op;
+    if(inp.src){ if(Array.isArray(inp.src)) d+='，源 '+inp.src.join('、'); else d+='，源 '+inp.src; }
+    setFlow(null,['cpu'],'','译码'); log('ok','译码：解析操作码（'+d+'）');
+    S.stage='EX'; S.phase=0;
+  }
+  function doEX(inp){
+    if(inp.op==='LOAD'||inp.op==='STORE'){
+      S.alu=inp.vpn*4096+inp.off;
+      setFlow(null,['cpu'],'','ALU 算有效地址');
+      log('ok','执行：ALU 有效地址 = VPN'+inp.vpn+'×4096 + '+inp.off+' = '+S.alu+'（'+hex(S.alu)+'）');
+      S.stage='MEM'; S.phase=0; return;
+    }
+    if(inp.op==='ADD'){ S.alu=S.regs[inp.src[0]]+S.regs[inp.src[1]]; log('ok','执行：ALU '+S.regs[inp.src[0]]+' + '+S.regs[inp.src[1]]+' = '+S.alu); }
+    else if(inp.op==='ADDI'){ S.alu=S.regs[inp.dst]+inp.imm; log('ok','执行：ALU '+S.regs[inp.dst]+' + '+inp.imm+' = '+S.alu); }
+    else if(inp.op==='BLT'){ S.takeBranch=S.regs[inp.src]<inp.cmp; log('ok','执行：比较 '+S.regs[inp.src]+' < '+inp.cmp+' ? '+(S.takeBranch?'成立':'不成立')); }
+    else if(inp.op==='HALT'){ log('ok','执行：HALT 准备停机'); }
+    setFlow(null,['cpu'],'','ALU 运算');
+    S.stage='WB'; S.phase=0;
+  }
+  function doMEM(inp){
+    if(S.phase===0){ translate(inp.vpn,S.dtlb,false,'d'); S.phase=1; return; }
+    var pfn=S.pte[inp.vpn], fr=S.frames[pfn];
+    var inL1d=S.l1d.some(function(e){return e.vpn===inp.vpn;});
+    if(inp.op==='LOAD'){
+      if(!inL1d){ S.l1d.push({vpn:inp.vpn,pfn:pfn,dirty:false}); setFlow('e4',['ram','cpu'],'ram->cpu','读数据到 L1d'); log('miss','L1d 未命中 → 从 PFN'+pfn+' 读数据并缓存'); }
+      else{ setFlow('e4',['ram','cpu'],'ram->cpu','L1d 命中'); log('hit','L1d 命中：数据已在 SRAM'); }
+      S.loadValue=fr.cells.hasOwnProperty(inp.off)?fr.cells[inp.off]:0;
+      log('ok','读到 ['+inp.vpn+':'+inp.off+'] = '+S.loadValue);
+    }else{
+      if(!inL1d) S.l1d.push({vpn:inp.vpn,pfn:pfn,dirty:true});
+      else S.l1d.forEach(function(e){if(e.vpn===inp.vpn)e.dirty=true;});
+      var val=S.regs[inp.src]; fr.cells[inp.off]=val; fr.dirty=true;
+      setFlow('e4',['cpu','ram'],'cpu->ram','写内存（脏页）');
+      log('ok','写入：'+inp.src+'='+val+' → PFN'+pfn+' 偏移'+inp.off+'（脏页，稍后异步刷盘）');
+    }
+    S.stage='WB'; S.phase=0;
+  }
+  function doWB(inp){
+    if(inp.op==='LOAD'){ S.regs[inp.dst]=S.loadValue; setFlow(null,['cpu'],'','写回寄存器'); log('ok','写回：'+inp.dst+' = '+S.loadValue); nextInstr(); }
+    else if(inp.op==='ADD'||inp.op==='ADDI'){ S.regs[inp.dst]=S.alu; setFlow(null,['cpu'],'','写回寄存器'); log('ok','写回：'+inp.dst+' = '+S.alu); nextInstr(); }
+    else if(inp.op==='STORE'){ setFlow(null,['cpu'],'','STORE 无 WB'); log('ok','STORE 无寄存器写回'); nextInstr(); }
+    else if(inp.op==='BLT'){
+      if(S.takeBranch){ S.loop++; S.ii=inp.target; S.pc=PROGRAM[inp.target].addr; setFlow(null,['cpu'],'','跳转循环'); log('ok','跳转：回到 '+hex(S.pc)+'（循环 '+(S.loop+1)+'）'); }
+      else{ setFlow(null,['cpu'],'','顺序执行'); log('ok','分支不跳转，顺序执行'); nextInstr(); }
+      S.stage='IF'; S.phase=0;
+    }else if(inp.op==='HALT'){
+      S.halted=true;
+      var anyDirty=Object.keys(S.frames).some(function(f){return S.frames[f].dirty;});
+      if(anyDirty){ setFlow('e1',['ram','kernel','disk'],'ram->disk','刷脏页到磁盘','内核把脏页写回磁盘'); log('halt','停机前：内核将脏页异步刷盘（page cache → 磁盘）'); }
+      else{ setFlow(null,['cpu'],'','停机'); log('halt','程序结束，CPU 停机；栈对象弹栈自动析构'); }
+    }
+  }
+  function nextInstr(){ S.ii++; S.pc=PROGRAM[S.ii]?PROGRAM[S.ii].addr:S.pc; S.stage='IF'; S.phase=0; }
+
+  // ---------- 执行一步（真实推进）----------
+  function executeStep(){
+    S.cycle++;
+    var inp=PROGRAM[S.ii];
+    try{
+      if(S.stage==='IF')doIF(inp); else if(S.stage==='ID')doID(inp);
+      else if(S.stage==='EX')doEX(inp); else if(S.stage==='MEM')doMEM(inp);
+      else if(S.stage==='WB')doWB(inp);
+    }catch(e){ log('fault','运行异常: '+e.message); }
+  }
+  function snap(){ return {S:JSON.parse(JSON.stringify(S)),logs:JSON.parse(JSON.stringify(logs))}; }
+
+  // ---------- 历史导航 ----------
+  function forward(){
+    if(ptr<history.length-1){ ptr++; applySnapshot(); return; }
+    if(S.halted) return;
+    var isEntry=(S.stage==='IF'&&S.phase===0);
+    executeStep();
+    history.push(snap()); ptr=history.length-1;
+    if(isEntry) milestones.push({ptr:ptr,loop:S.loop,ii:S.ii,mn:PROGRAM[S.ii].mn});
+    render();
+  }
+  function back(){ if(ptr>0){ptr--;applySnapshot();render();} }
+  function jumpTo(p){ if(p>=0&&p<history.length){ptr=p;applySnapshot();render();} }
+  function applySnapshot(){
+    var h=history[ptr];
+    S=JSON.parse(JSON.stringify(h.S));
+    logs=JSON.parse(JSON.stringify(h.logs));
+  }
+
+  // ---------- 渲染 ----------
+  function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  function $(id){return document.getElementById(id);}
+  function line(text,bg,color){return '<div style="background:'+bg+';color:'+color+';border-radius:5px;padding:4px 7px;margin-bottom:3px;">'+text+'</div>';}
+
+  function render(){
+    if(!$('mPc'))return;
+    $('mPc').textContent=hex(S.pc);
+    $('mStage').textContent=S.stage+'-'+(S.phase+1);
+    $('sStep').textContent=ptr; $('sTotal').textContent=Math.max(0,history.length-1);
+    var seek=$('seek'); seek.max=Math.max(0,history.length-1); seek.value=ptr;
+
+    // 拓扑高亮
+    var nodes=['cpu','kernel','ram','disk'];
+    nodes.forEach(function(n){
+      var el=$('node-'+n), on=S.flow&&S.flow.nodes.indexOf(n)>=0;
+      el.style.borderColor=on?({cpu:'#3b82f6',kernel:'#8b5cf6',ram:'#06b6d4',disk:'#f59e0b'})[n]:'#334155';
+      el.style.boxShadow=on?'0 0 14px rgba(96,165,250,.5)':'none';
+    });
+    ['e3','e2','e1'].forEach(function(e){
+      var el=$('edge-'+e); var on=S.flow&&S.flow.edge===e;
+      el.style.color=on?'#fbbf24':'#475569';
+      el.className='edge'+(on?' edgeflow':'');
+    });
+    var fb=$('flowBar');
+    if(S.flow&&S.flow.label){ fb.style.color='#e2e8f0'; fb.textContent=S.flow.label+' ｜ 路径 '+S.flow.nodes.join(' → ')+(S.flow.dir?'（'+S.flow.dir+'）':''); }
+    else{ fb.style.color='#94a3b8'; fb.textContent='CPU 内部动作（无跨模块数据流动）'; }
+
+    // 寄存器
+    $('mRegs').innerHTML=usedRegs.map(function(r){
+      return '<div style="background:#0b1220;border:1px solid #24324a;border-radius:6px;padding:7px;text-align:center;"><div style="color:#94a3b8;font-size:10px;">'+r+'</div><b style="color:#67e8f9;">'+S.regs[r]+'</b></div>';
+    }).join('');
+
+    // TLB / L1
+    function tlbStr(){
+      var out=[];
+      S.itlb.forEach(function(e){out.push('i:VPN'+e.vpn+'→PFN'+e.pfn);});
+      S.dtlb.forEach(function(e){out.push('d:VPN'+e.vpn+'→PFN'+e.pfn);});
+      return out.length?out.join('<br>'):'<span style="color:#64748b;">空</span>';
+    }
+    $('mTlb').innerHTML=tlbStr();
+    function l1Str(){
+      var out=[];
+      S.l1i.forEach(function(){out.push('L1i 指令页');});
+      S.l1d.forEach(function(e){out.push('L1d VPN'+e.vpn+(e.dirty?' 脏D':''));});
+      return out.length?out.join('<br>'):'<span style="color:#64748b;">空</span>';
+    }
+    $('mL1').innerHTML=l1Str();
+
+    // VMA
+    $('mVma').innerHTML='指令区 VPN0（.text）<br>数据页：'+
+      (PROGRAM.filter(function(p){return p.vpn;}).map(function(p){return 'VPN'+p.vpn;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join('、')||'无');
+
+    // 页表
+    var vpns=Object.keys(S.pte);
+    $('mPte').innerHTML=vpns.length?vpns.map(function(v){
+      return '<div style="background:#0b1220;border:1px solid #24324a;border-radius:5px;padding:5px 7px;display:flex;justify-content:space-between;"><span>PTE(VPN'+v+')</span><b style="color:#fbbf24;">PFN'+S.pte[v]+'</b></div>';
+    }).join(''):'<span style="color:#64748b;">尚未建立任何映射</span>';
+    $('mKernelAct').textContent=S.kernelAct;
+
+    // 物理帧
+    var fh='';
+    for(var k=0;k<S.nextPfn;k++){
+      var fr=S.frames[k];
+      var cells=Object.keys(fr.cells).map(function(off){return '['+off+'] '+(typeof fr.cells[off]==='number'?fr.cells[off]:esc(fr.cells[off]));}).join('<br>');
+      fh+='<div style="background:#0b1220;border:1px '+(fr.dirty?'solid #f87171':'solid #24324a')+';border-radius:7px;padding:8px;"><b style="color:#c4b5fd;">PFN'+k+' · VPN'+fr.vpn+' · '+(fr.kind==='code'?'指令':'数据')+(fr.dirty?' · <span style="color:#f87171;">脏D</span>':'')+'</b><div style="font-family:monospace;margin-top:4px;line-height:1.6;">'+cells+'</div></div>';
+    }
+    $('mFrames').innerHTML=fh||'<span style="color:#64748b;">还没有物理页框</span>';
+
+    // 磁盘
+    $('mDiskCode').innerHTML=PROGRAM.map(function(p){return hex(p.addr)+' '+esc(p.mn);}).join('<br>');
+    $('mDiskData').innerHTML=Object.keys(DATA).length?Object.keys(DATA).map(function(k){return k+' = '+DATA[k];}).join('<br>'):'（无数据文件）';
+
+    // 日志
+    var cm={hit:'#86efac',miss:'#fbbf24',fault:'#f87171',ok:'#93c5fd',halt:'#f472b6'};
+    $('mLog').innerHTML=logs.map(function(L){
+      return '<div style="padding:4px 7px;border-left:3px solid '+cm[L.level]+';background:#0b1220;border-radius:3px;"><span style="color:#64748b;">#'+L.cycle+' '+L.stage+'</span> <span style="color:'+cm[L.level]+';">'+esc(L.text)+'</span></div>';
+    }).join('')||'<span style="color:#64748b;">点击单步开始…</span>';
+
+    // 里程碑导航
+    $('navMilestones').innerHTML=milestones.map(function(ms){
+      return '<button data-jump="'+ms.ptr+'" style="min-height:38px;padding:0 10px;background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:7px;cursor:pointer;font-size:11px;">循'+(ms.loop+1)+'·指'+(ms.ii+1)+'</button>';
+    }).join('')||'<span style="color:#64748b;">运行后在此按指令/循环跳转</span>';
+  }
+
+  // ---------- 加载/运行 ----------
+  function loadAndRun(){
+    var codeText=$('codeInput').value, dataText=$('dataInput').value;
+    var r=parseProgram(codeText,dataText);
+    var msg=$('parseMsg');
+    if(r.errors.length){
+      msg.innerHTML='<div style="color:#f87171;">解析未通过：<br>'+r.errors.map(function(e){return '• '+esc(e);}).join('<br>')+'</div>';
+      return;
+    }
+    msg.innerHTML='<div style="color:#86efac;">解析通过：'+r.instr.length+' 条指令，'+Object.keys(r.data).length+' 项初始数据，可单步执行</div>';
+    PROGRAM=r.instr; DATA=r.data;
+    var regSet={};
+    PROGRAM.forEach(function(p){
+      if(p.dst)regSet[p.dst]=1;
+      if(p.src){ if(Array.isArray(p.src))p.src.forEach(function(x){regSet[x]=1;}); else regSet[p.src]=1; }
+    });
+    usedRegs=Object.keys(regSet).sort();
+    S=freshState(); logs=[]; history=[snap()]; ptr=0; milestones=[];
+    if(timer){clearInterval(timer);timer=null;$('btnPlay').textContent='自动播放';$('btnPlay').style.background='#059669';}
+    render();
+  }
+
+  // ---------- 事件绑定 ----------
+  $('btnLoad').addEventListener('click',loadAndRun);
+  $('btnStep').addEventListener('click',forward);
+  $('btnBack').addEventListener('click',back);
+  $('btnReset').addEventListener('click',loadAndRun);
+  $('btnPlay').addEventListener('click',function(){
+    if(timer){clearInterval(timer);timer=null;this.textContent='自动播放';this.style.background='#059669';return;}
+    this.textContent='暂停';this.style.background='#dc2626';
+    timer=setInterval(function(){
+      if(S.halted||ptr>=history.length-1&&S.halted){clearInterval(timer);timer=null;$('btnPlay').textContent='自动播放';$('btnPlay').style.background='#059669';return;}
+      forward();
+    },600);
+  });
+  $('seek').addEventListener('input',function(e){jumpTo(parseInt(e.target.value,10));});
+  document.querySelectorAll('.exbtn').forEach(function(b){
+    b.addEventListener('click',function(){
+      var ex=EXAMPLES[parseInt(b.dataset.ex,10)];
+      $('codeInput').value=ex.code; $('dataInput').value=ex.data;
+      loadAndRun();
+    });
+  });
+  $('navMilestones').addEventListener('click',function(e){
+    var j=e.target.getAttribute&&e.target.getAttribute('data-jump');
+    if(j!==null&&j!==undefined) jumpTo(parseInt(j,10));
+  });
+
+  // 初始载入示例1
+  $('codeInput').value=EXAMPLES[0].code; $('dataInput').value=EXAMPLES[0].data;
+  loadAndRun();
+})();
+</script>
+</html>

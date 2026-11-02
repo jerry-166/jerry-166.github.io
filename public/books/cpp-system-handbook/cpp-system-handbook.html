@@ -660,10 +660,10 @@ private:
     </table>
 
     <h3 class="sec" id="app-sim"><span class="tag">A.2</span>配套可交互模拟器</h3>
-    <p>两个模拟器与本手册位于同一目录，点击即可在浏览器打开（需连同 HTML 文件一起保留）。</p>
+    <p>两个模拟器与本手册位于同一目录，点击即可在浏览器打开（需连同 HTML 文件一起保留）。两版是同一模拟器的迭代关系：v1 聚焦指令级单步，v2 重构为双视图并扩展到系统级，页顶版本条可互跳。</p>
     <div class="toc-cards">
-      <a href="cpp-machine-simulator.html"><b>白盒机器模拟器（第一版）</b><span>预设程序、平铺面板、单步/播放/重置，观察 CPU/内核/RAM/磁盘状态。</span></a>
-      <a href="cpp-whitebox-simulator.html"><b>白盒机器模拟器（重构版）</b><span>可输入汇编与数据、四大模块、动态数据流、分组导航与历史跳转。</span></a>
+      <a href="cpp-machine-simulator.html"><b>白盒机器模拟器 · v1 初版</b><span>载入示例或自写汇编与数据、平铺面板、单步/播放/重置，观察 CPU/内核/RAM/磁盘状态。</span></a>
+      <a href="cpp-whitebox-simulator.html"><b>白盒机器模拟器 · v2 重构</b><span>双视图：指令执行白盒（四大模块、动态数据流、分组导航与历史跳转）+ 机器内视·并发（进程/线程/runqueue 系统拓扑、部件拆解 inspector），注册表驱动可扩展。</span></a>
     </div>
 
     <h3 class="sec" id="app-term"><span class="tag">A.3</span>术语表</h3>

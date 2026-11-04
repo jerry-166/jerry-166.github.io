@@ -169,6 +169,9 @@ footer p{font-size:13px;color:var(--faint);font-family:var(--mono)}
   .nav-links{display:none}
 }
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+/* 批注边栏打开时（body.anno-squeeze 给 body 让出右侧 430px），fixed 顶部导航同步右缩，
+   避免被悬浮的批注边栏盖住右端 */
+body.anno-squeeze .nav{right:430px}
 </style>
 </head>
 <body>
@@ -785,6 +788,13 @@ function mountAllSeqs(){
 }
 mountAllSeqs();
 window.addEventListener('load',mountAllSeqs);
+</script>
+<script>
+  /* 批注脚本正文容器显式配置（修复划词批注失效）：
+     本页无 main/article/.content 等约定容器，anno.js 兜底启发式
+     会把内联 <script>（源码文本最长）误判为"正文容器"，
+     导致划词选区全部被裁空、批注工具条永不弹出 —— 显式指定 body 为划线全域 */
+  window.ANNO_CONFIG = { root: 'body' };
 </script>
 <script src="anno.js"></script>
 </body>

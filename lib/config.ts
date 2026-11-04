@@ -92,6 +92,16 @@ export const tutorialBooks: TutorialBook[] = [
     category: 'backend',
   },
   {
+    title: 'TCP 与 UDP 深度拆解',
+    volume: '后端',
+    description:
+      '传输层双雄的取舍全景：先定位传输层干什么（端口区分进程、数据封装 Segment/Packet/Frame 逐层拆解），再深挖 TCP 面向连接的可靠字节流（三次握手四次挥手、确认重传、滑动窗口），对比 UDP 无连接的极简报文（8B 固定首部、不保证不排队），最后横向对比与选型——没有优劣只有取舍。',
+    href: '/books/tcp-udp-tutorial/tcp-udp-tutorial.html',
+    tags: ['计算机网络', 'TCP', 'UDP', '面试'],
+    accent: '#0284C7',
+    category: 'backend',
+  },
+  {
     title: 'FastAPI 从 0 到 1 · 原理与面试全解',
     volume: '后端',
     description:
